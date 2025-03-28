@@ -47,6 +47,11 @@ dependencies:
   animated_segmented_tab_control: ^2.0.0
   timelines: ^0.1.0
   file_picker: ^8.3.1
+  iconsax: ^0.0.8
+  shimmer: ^3.0.0
+  flutter_svg: ^2.0.17
+  page_transition: ^2.2.1
+  animations: ^2.0.11
 
 dev_dependencies:
   flutter_test:
