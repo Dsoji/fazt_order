@@ -1,13 +1,16 @@
-import 'package:fazt_order/src/common/ui_helpers.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
+
 import '../../../datamodels/menu_items.dart';
 import '../../../datamodels/restaurant.dart';
 import '../../../providers/restaurant_provider.dart';
 import '../../common/app_colors.dart';
+import '../../common/ui_helpers.dart';
 import '../../common/widgets/text_styles.dart';
+import 'checkout_view.dart';
 
 class RestaurantDetailsView extends ConsumerStatefulWidget {
   final Restaurant restaurant;
@@ -23,6 +26,7 @@ class RestaurantDetailsView extends ConsumerStatefulWidget {
 
 class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
   String _selectedCategory = "All";
+  List<MenuItem> _selectedItems = []; // Track selected items
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +85,7 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                   ),
                 ),
                 child: SingleChildScrollView(
-                  controller: scrollController, // Attach the scroll controller for dragging
+                  controller: scrollController,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                     child: Column(
@@ -105,7 +109,7 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                           children: [
                             Expanded(
                               child: Text(
-                                "${widget.restaurant.name} - ${widget.restaurant.location}",
+                                widget.restaurant.name,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -114,7 +118,7 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                             ),
                             IconButton(
                               icon: Icon(
-                                widget.restaurant.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                widget.restaurant.isFavorite ? Iconsax.heart : Iconsax.heart5,
                                 color: Colors.grey,
                               ),
                               onPressed: () {
@@ -131,53 +135,75 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        verticalSpace(1),
                         // Rating
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Icon(
-                              Icons.star,
-                              color: Colors.yellow,
-                              size: 16,
+                            Row(
+                              children: [
+                                const Icon(Iconsax.location, color: kcPrimaryNeutral500,),
+                                Text(widget.restaurant.location, style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral500),),
+                              ],
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "${widget.restaurant.rating} (${widget.restaurant.reviewCount})",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
+
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.star,
+                                  color: kcPrimaryOrange700,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "${widget.restaurant.rating} (${widget.restaurant.reviewCount})",
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: kcPrimaryNeutral500,
+                                  ),
+                                ),
+                              ],
+                            )
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        horizontalSpace(8),
                         // Price and Delivery Time
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              "From ₦${widget.restaurant.price}",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
+                            Row(
+                              children: [
+                                SvgPicture.asset('asset/svgs/delivery_icon.svg'),
+                                horizontalSpaceTiny,
+                                Text(
+                                  "From ₦${widget.restaurant.price}",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(width: 16),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: kcPrimaryOrange500,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
                                 widget.restaurant.deliveryTime,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Colors.grey[600],
+                                  color: kcWhite,
                                 ),
                               ),
                             ),
                           ],
                         ),
+                        verticalSpaceSmall,
+                        SvgPicture.asset('asset/svgs/dotted_line.svg'),
+                        verticalSpaceSmall,
                         const SizedBox(height: 8),
                         // Opening Hours and Delivery Type
                         Row(
@@ -194,7 +220,7 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                                   "OPENING UNTIL ${widget.restaurant.openingHours}",
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey[600],
+                                    color: kcPrimaryNeutral400,
                                   ),
                                 ),
                               ],
@@ -202,30 +228,39 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                             const SizedBox(width: 16),
                             Row(
                               children: [
-                                Icon(
-                                  Icons.local_shipping,
-                                  color: Colors.grey[600],
-                                  size: 16,
-                                ),
+                                SvgPicture.asset('asset/svgs/delivery_icon.svg'),
                                 const SizedBox(width: 4),
                                 Text(
                                   widget.restaurant.deliveryType.toUpperCase(),
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey[600],
+                                    color: kcPrimaryNeutral400,
                                   ),
                                 ),
                               ],
                             ),
                           ],
                         ),
-                        const Divider(height: 32),
+
+                        Padding(
+                          padding: const EdgeInsets.only(left: 15.0, right: 75),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('9:00 PM ', style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral100),),
+                              Text('Instant Delivery', style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral100),)
+                            ],
+                          ),
+                        ),
+                        verticalSpace(20),
+
+                        SvgPicture.asset("asset/svgs/dotted_line.svg"),
+                        verticalSpaceMedium,
                         // Category Tabs
                         SizedBox(
                           height: screenHeight(context) * 0.032,
                           child: ListView(
                             scrollDirection: Axis.horizontal,
-                            // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               _buildCategoryTab("All"),
                               _buildCategoryTab("Main Course"),
@@ -246,7 +281,39 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                             return _buildMenuItem(menuItem);
                           },
                         ),
-                        verticalSpace(12),
+                        verticalSpaceMassive,
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _selectedItems.isNotEmpty
+                                ? () {
+                              // Navigate to CheckoutScreen with selected items
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CheckoutScreen(
+                                    selectedItems: _selectedItems,
+                                  ),
+                                ),
+                              );
+                            }
+                                : null, // Disable button if no items are selected
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kcPrimary400,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: const Text(
+                              "Proceed to Checkout",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -272,15 +339,14 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isSelected ? kcPrimary300 : kcWhite,
+              color: isSelected ? kcPrimary700 : kcWhite,
               borderRadius: BorderRadius.circular(20),
               border: isSelected ? null : Border.all(color: kcPrimary700, width: 1),
             ),
             child: Text(
               title.toUpperCase(),
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.black,
-                fontWeight: FontWeight.bold,
+                color: isSelected ? kcPrimary300 : kcPrimary400,
                 fontSize: 12,
               ),
             ),
@@ -292,6 +358,7 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
   }
 
   Widget _buildMenuItem(MenuItem menuItem) {
+    final isSelected = _selectedItems.contains(menuItem);
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
@@ -342,53 +409,52 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
           ),
           // Add Button or Out of Stock Label
           menuItem.isAvailable
-              ? ElevatedButton(
-            onPressed: () {
-              // Implement add to cart functionality
+              ? GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              setState(() {
+                if (isSelected) {
+                  _selectedItems.remove(menuItem);
+                } else {
+                  _selectedItems.add(menuItem);
+                }
+              });
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected ? kcPrimary300 : kcPrimary300,
+                borderRadius: BorderRadius.circular(30),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            ),
-            child: const Text(
-              "Add",
-              style: TextStyle(fontSize: 14, color: Colors.white),
+              child: Row(
+                children: [
+                  Text(
+                    isSelected ? "Added" : "+  Add",
+                    style: ktBodyRegularSize16.copyWith(color: kcWhite),
+                  ),
+                ],
+              ),
             ),
           )
               : Row(
             children: [
-              GestureDetector(
-                onTap: () {
-                  // Implement notify me functionality
-                },
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.notifications_none,
-                      color: Colors.grey[600],
-                      size: 16,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "Notify Me",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(width: 8),
-              Text(
-                "Out of Stock",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.bold,
+              GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: kcPrimary800,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        "Out of Stock",
+                        style: ktBodyRegularSize16.copyWith(color: kcPrimary300),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

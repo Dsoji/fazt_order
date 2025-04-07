@@ -1,7 +1,12 @@
 import 'dart:ui';
 
+import 'package:fazt_order/src/common/app_colors.dart';
+import 'package:fazt_order/src/common/ui_helpers.dart';
+import 'package:fazt_order/src/common/widgets/text_styles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:iconsax/iconsax.dart';
 
 class FilterBottomSheet extends StatefulWidget {
   const FilterBottomSheet({Key? key}) : super(key: key);
@@ -36,31 +41,33 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Close button
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(Icons.close, size: 24),
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Title
+                  const Text(
+                    "Filter",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Iconsax.close_circle, size: 24),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
               ),
-              // Title
-              const Text(
-                "Filter",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
+              verticalSpaceSmall,
               // Vendors Section
               const Text(
                 "VENDORS",
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey,
+                  color: kcPrimaryNeutral100,
                 ),
               ),
               CheckboxListTile(
@@ -72,16 +79,16 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   });
                 },
                 controlAffinity: ListTileControlAffinity.trailing,
-                activeColor: Colors.green,
+                activeColor: kcPrimary300,
               ),
-              const Divider(),
+              SvgPicture.asset('asset/svgs/dotted_line.svg'),
+              verticalSpaceSmall,
               // Rating Section
               const Text(
                 "RATING",
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
+                  color: kcPrimaryNeutral100,
                 ),
               ),
               const SizedBox(height: 8),
@@ -95,17 +102,18 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   _buildRatingButton(3.0),
                 ],
               ),
-              const Divider(),
+              verticalSpace(18),
+              SvgPicture.asset('asset/svgs/dotted_line.svg'),
+              verticalSpaceSmall,
               // Delivery Time Section
-              const Text(
-                "DELIVERY TIME",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
+              Text(
+                "Delivery Time",
+                style: ktBodyRegularSize16.copyWith(
+                  color: kcPrimaryNeutral100
+                )
               ),
               CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
                 title: const Text("Less than 30 mins"),
                 value: selectedDeliveryTime == "30 mins",
                 onChanged: (value) {
@@ -114,9 +122,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   });
                 },
                 controlAffinity: ListTileControlAffinity.trailing,
-                activeColor: Colors.green,
+                activeColor: kcPrimary300,
+
               ),
               CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
                 title: const Text("Less than 45 mins"),
                 value: selectedDeliveryTime == "45 mins",
                 onChanged: (value) {
@@ -125,9 +135,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   });
                 },
                 controlAffinity: ListTileControlAffinity.trailing,
-                activeColor: Colors.green,
+                activeColor: kcPrimary300,
               ),
               CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
                 title: const Text("Less than 1 hour"),
                 value: selectedDeliveryTime == "1 hour",
                 onChanged: (value) {
@@ -136,60 +147,79 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   });
                 },
                 controlAffinity: ListTileControlAffinity.trailing,
-                activeColor: Colors.green,
+                activeColor: kcPrimary300,
               ),
-              const Divider(),
+              verticalSpaceSmall,
+              SvgPicture.asset('asset/svgs/dotted_line.svg'),
+              verticalSpaceSmall,
               // Delivery Fee Range Section
               const Text(
-                "DELIVERY FEE RANGE",
+                "Delivery Fee Range",
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
+                  color: kcPrimaryNeutral100,
                 ),
               ),
-              const SizedBox(height: 8),
+              verticalSpaceMedium,
               Row(
                 children: [
                   Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: "From",
-                        hintText: "0.0",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'From', style: ktBodyRegularSize12.copyWith(
+                          color: kcPrimaryNeutral200,
+                        ),),
+                        verticalSpaceTiny,
+                        TextField(
+                          decoration: InputDecoration(
+                            hintText: "00",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: kcPrimaryNeutral950,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            setState(() {
+                              deliveryFeeFrom = value;
+                            });
+                          },
                         ),
-                        filled: true,
-                        fillColor: Colors.pink[50],
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        setState(() {
-                          deliveryFeeFrom = value;
-                        });
-                      },
+                      ],
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        labelText: "To",
-                        hintText: "0.0",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'To', style: ktBodyRegularSize12.copyWith(
+                          color: kcPrimaryNeutral200,
+                        ),),
+                        verticalSpaceTiny,
+                        TextField(
+                          decoration: InputDecoration(
+                            hintText: "00",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: kcPrimaryNeutral950,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            setState(() {
+                              deliveryFeeTo = value;
+                            });
+                          },
                         ),
-                        filled: true,
-                        fillColor: Colors.pink[50],
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        setState(() {
-                          deliveryFeeTo = value;
-                        });
-                      },
+                      ],
                     ),
                   ),
                 ],
@@ -199,17 +229,16 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
+                  onPressed: () {Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: kcPrimary400,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text(
+                   child: const Text(
                     "Apply",
                     style: TextStyle(
                       fontSize: 16,
@@ -219,7 +248,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              verticalSpaceMedium
             ],
           ),
         ),
@@ -237,25 +266,28 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selectedRating == rating ? Colors.green : Colors.grey[200],
+          color: selectedRating == rating ?kcPrimary300 : kcTransparent,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: kcPrimary700)
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              rating.toString(),
-              style: TextStyle(
-                color: selectedRating == rating ? Colors.white : Colors.black,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(width: 4),
             Icon(
               Icons.star,
               size: 16,
-              color: selectedRating == rating ? Colors.white : Colors.yellow,
+              color: selectedRating == rating ? kcWhite : kcPrimary400,
+
             ),
+            horizontalSpaceTiny,
+            Text(
+              rating.toString(),
+              style: TextStyle(
+                color: selectedRating == rating ? kcWhite : kcPrimary400,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
           ],
         ),
       ),
