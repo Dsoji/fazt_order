@@ -57,6 +57,16 @@ class OrderNotifier extends StateNotifier<OrderState> {
     }
   }
 
+  void updateDeliveryAddress(String newAddress) {
+    state = OrderState(
+      items: state.items,
+      deliveryFee: state.deliveryFee,
+      taxAndFees: state.taxAndFees,
+      deliveryAddress: newAddress,
+      restaurantName: state.restaurantName,
+    );
+  }
+
 }
 
 final orderProvider = StateNotifierProvider.family<OrderNotifier, OrderState, List<MenuItem>>(

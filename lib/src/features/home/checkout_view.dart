@@ -11,15 +11,23 @@ import 'package:iconsax/iconsax.dart';
 import '../../../datamodels/menu_items.dart';
 import '../../../datamodels/order_items.dart';
 import '../../../providers/order_provider.dart';
+import '../bottom_sheets/edit_address_sheet.dart';
 
-class CheckoutScreen extends ConsumerWidget {
+class CheckoutScreen extends ConsumerStatefulWidget {
   final List<MenuItem> selectedItems;
 
-  const CheckoutScreen({required this.selectedItems, Key? key}) : super(key: key);
+  const CheckoutScreen({required this.selectedItems, Key? key})
+      : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final orderState = ref.watch(orderProvider(selectedItems));
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+  bool _isSelectionVisible = true;
+  @override
+  Widget build(BuildContext context) {
+    final orderState = ref.watch(orderProvider(widget.selectedItems));
 
     return Scaffold(
       appBar: AppBar(
@@ -39,7 +47,7 @@ class CheckoutScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Delivery', style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral200),),
+            Text('Delivery', style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral200)),
             verticalSpaceSmall,
             // Delivery Section
             Row(
@@ -71,15 +79,29 @@ class CheckoutScreen extends ConsumerWidget {
                 ),
                 GestureDetector(
                   behavior: HitTestBehavior.translucent,
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      // shape: const RoundedRectangleBorder(
+                      //   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      // ),
+                      builder: (context) => EditAddressBottomSheet(
+                        currentAddress: orderState.deliveryAddress,
+                        onUpdate: (newAddress) {
+                          ref.read(orderProvider(widget.selectedItems).notifier).updateDeliveryAddress(newAddress);
+                        },
+                      ),
+                    );
+                  },
                   child: Row(
                     children: [
-                      const Icon(Iconsax.edit, size: 15, color: kcPrimaryOrange400,),
-                     horizontalSpace(7),
-                     Text('Edit', style: ktBodyRegularSize14.copyWith(color: kcPrimaryOrange400), )
+                      const Icon(Iconsax.edit, size: 15, color: kcPrimaryOrange400),
+                      horizontalSpace(7),
+                      Text('Edit', style: ktBodyRegularSize14.copyWith(color: kcPrimaryOrange400)),
                     ],
                   ),
-                ),
-              ],
+                ),              ],
             ),
             verticalSpaceSmall,
 
@@ -168,18 +190,34 @@ class CheckoutScreen extends ConsumerWidget {
                 ),
                 Row(
                   children: [
-                    Text("Hide Selection", style: ktBodyRegularSize12.copyWith(
-                        color: kcPrimaryNeutral300
-                    ),),
-                    horizontalSpaceTiny,
-                    const Icon(Iconsax.arrow_up_2, size: 15,),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isSelectionVisible = !_isSelectionVisible;
+                        });
+                      },
+                      child: Row(
+                        children: [
+                          Text(
+                            _isSelectionVisible ? "Hide Selection" : "Show Selection",
+                            style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral300),
+                          ),
+                          horizontalSpaceTiny,
+                          Icon(
+                            _isSelectionVisible ? Iconsax.arrow_up_2 : Iconsax.arrow_down_1,
+                            size: 15,
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
-                )
+                ),
               ],
             ),
             verticalSpace(16),
 
             // Order Items
+          if (_isSelectionVisible) ...[
             ...orderState.items.asMap().entries.map((entry) {
               int index = entry.key;
               OrderItem item = entry.value;
@@ -245,13 +283,13 @@ class CheckoutScreen extends ConsumerWidget {
                                   children: [
                                     GestureDetector(
                                       behavior: HitTestBehavior.translucent,
-                                      onTap: (){ref.read(orderProvider(selectedItems).notifier).updateQuantity(index, item.quantity - 1);},
+                                      onTap: (){ref.read(orderProvider(widget.selectedItems).notifier).updateQuantity(index, item.quantity - 1);},
                                       child: const Icon(Iconsax.minus, color: kcPrimary400)
                                     ),
                                     Text("${item.quantity}", style: ktBodyRegularSize16.copyWith(color: kcPrimary400),),
                                     GestureDetector(
                                       behavior: HitTestBehavior.translucent,
-                                      onTap: (){ ref.read(orderProvider(selectedItems).notifier).updateQuantity(index, item.quantity + 1);},
+                                      onTap: (){ ref.read(orderProvider(widget.selectedItems).notifier).updateQuantity(index, item.quantity + 1);},
                                         child: const Icon(Iconsax.add, color: kcPrimary400)
                                     ),
                                   ]
@@ -265,7 +303,7 @@ class CheckoutScreen extends ConsumerWidget {
                           right: 10,
                           child: GestureDetector(
                             onTap: () {
-                              ref.read(orderProvider(selectedItems).notifier).deleteItem(index);
+                              ref.read(orderProvider(widget.selectedItems).notifier).deleteItem(index);
                             },
                             child: const SizedBox(
                               height: 25,
@@ -284,15 +322,16 @@ class CheckoutScreen extends ConsumerWidget {
                 ],
               );
             }).toList(),
+          ],
 
             // Add Another Pack Button
             GestureDetector(
               onTap: () {
-                ref.read(orderProvider(selectedItems).notifier).addNewPack();
+                ref.read(orderProvider(widget.selectedItems).notifier).addNewPack();
               },
               child: Container(
                 width: screenWidth(context) * 0.45,
-                height: screenHeight(context) * 0.055,
+                height: screenHeight(context) * 0.045,
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(30),
@@ -331,8 +370,6 @@ class CheckoutScreen extends ConsumerWidget {
               ],
             ),
 
-            verticalSpaceMedium,
-            SvgPicture.asset('asset/svgs/dotted_line.svg'),
             verticalSpaceMedium,
 
             // Payment Details
