@@ -1,7 +1,7 @@
 class OrderItem {
   final String name;
   int quantity;
-  final num price;
+  final int price;
 
   OrderItem({required this.name, required this.quantity, required this.price});
 }
