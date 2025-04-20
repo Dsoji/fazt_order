@@ -1,4 +1,7 @@
+import 'package:fazt_order/src/features/home/dashboard_view.dart';
+import 'package:fazt_order/src/features/home/home_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
@@ -40,7 +43,13 @@ class OnboardingScreen extends HookWidget {
       },
     ];
 
-    return Scaffold(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+        statusBarColor: AppColors.brand200,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+    ),
+    child: Scaffold(
       backgroundColor: AppColors.brand200, // Dark green background
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -85,12 +94,12 @@ class OnboardingScreen extends HookWidget {
             CustomGetStartedButton(
               onPressed: () {
                 if (currentPage.value == pages.length - 1) {
-                  // Navigator.pushReplacement(
-                  //   context,
-                  //   MaterialPageRoute(
-                  //     builder: (context) => const RegistrationScreen(),
-                  //   ),
-                  // );
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DashboardView(),
+                    ),
+                  );
                 } else {
                   pageController.nextPage(
                     duration: const Duration(milliseconds: 300),
@@ -102,7 +111,7 @@ class OnboardingScreen extends HookWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
