@@ -132,6 +132,7 @@ class HomeView extends ConsumerWidget {
               ),
             ),
           ),
+          verticalSpace(15),
           // Restaurant List (Single ListView)
           Expanded(
             child: ListView.builder(

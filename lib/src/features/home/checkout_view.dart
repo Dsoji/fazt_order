@@ -1,23 +1,49 @@
-import 'package:fazt_order/src/common/app_colors.dart';
-import 'package:fazt_order/src/common/ui_helpers.dart';
-import 'package:fazt_order/src/common/widgets/text_styles.dart';
 import 'package:fazt_order/src/features/home/payment_view.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-
 import '../../../datamodels/menu_items.dart';
 import '../../../datamodels/order_items.dart';
 import '../../../providers/order_provider.dart';
+import '../../common/app_colors.dart';
+import '../../common/ui_helpers.dart';
+import '../../common/widgets/text_styles.dart';
 import '../bottom_sheets/edit_address_sheet.dart';
+
+
+// Placeholder EditAddressBottomSheet (replace with your actual implementation)
+// class EditAddressBottomSheet extends StatelessWidget {
+//   final String currentAddress;
+//   final Function(String) onUpdate;
+//
+//   const EditAddressBottomSheet({required this.currentAddress, required this.onUpdate, Key? key})
+//       : super(key: key);
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       padding: const EdgeInsets.all(16),
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           TextField(
+//             decoration: const InputDecoration(labelText: "New Address"),
+//             onSubmitted: (value) {
+//               onUpdate(value);
+//               Navigator.pop(context);
+//             },
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   final List<MenuItem> selectedItems;
 
-  const CheckoutScreen({required this.selectedItems, Key? key})
-      : super(key: key);
+  const CheckoutScreen({required this.selectedItems, Key? key}) : super(key: key);
 
   @override
   ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -25,21 +51,23 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _isSelectionVisible = true;
+
   @override
   Widget build(BuildContext context) {
-    final orderState = ref.watch(orderProvider(widget.selectedItems));
+    final orderState = ref.watch(orderProvider);
+    final cartItems = orderState.items.where((item) => item.tab == 'cart').toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Checkout", style: ktBodyRegularSize20.copyWith(
-          fontSize: 24,
-          fontWeight: FontWeight.w600
-        ),),
+        title: Text(
+          "Checkout",
+          style: ktBodyRegularSize20.copyWith(fontSize: 24, fontWeight: FontWeight.w600),
+        ),
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
           },
-            icon: const Icon(Iconsax.arrow_left_2)
+          icon: const Icon(Iconsax.arrow_left_2),
         ),
       ),
       body: SingleChildScrollView(
@@ -55,23 +83,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Iconsax.location, color: kcPrimaryNeutral200, size: 18,),
+                    const Icon(Iconsax.location, color: kcPrimaryNeutral200, size: 18),
                     horizontalSpace(8),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           "Computer Village",
-                          style: ktBodyRegularSize16.copyWith(
-                            color: kcPrimaryNeutral200
-                          )
+                          style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral200),
                         ),
                         verticalSpaceSmall,
                         Text(
                           orderState.deliveryAddress,
-                          style: ktBodyRegularSize12.copyWith(
-                              color: kcPrimaryNeutral500
-                          ),
+                          style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral500),
                         ),
                       ],
                     ),
@@ -83,13 +107,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
-                      // shape: const RoundedRectangleBorder(
-                      //   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                      // ),
                       builder: (context) => EditAddressBottomSheet(
                         currentAddress: orderState.deliveryAddress,
                         onUpdate: (newAddress) {
-                          ref.read(orderProvider(widget.selectedItems).notifier).updateDeliveryAddress(newAddress);
+                          ref
+                              .read(orderProvider.notifier)
+                              .updateDeliveryAddress(newAddress);
                         },
                       ),
                     );
@@ -101,7 +124,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       Text('Edit', style: ktBodyRegularSize14.copyWith(color: kcPrimaryOrange400)),
                     ],
                   ),
-                ),              ],
+                ),
+              ],
             ),
             verticalSpaceSmall,
 
@@ -114,18 +138,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   decoration: BoxDecoration(
                       color: kcPrimary980,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: kcPrimary400)
-                  ),
-                  child:  Padding(
+                      border: Border.all(color: kcPrimary400)),
+                  child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 8),
                     child: Row(
                       children: [
-                        const Icon(Iconsax.clock, color: kcPrimary200,),
+
+                        const Icon(Iconsax.clock, color: kcPrimary200),
                         horizontalSpaceTiny,
                         Column(
                           children: [
-                            Text("Standard", style: ktBodyRegularSize14.copyWith(color: kcPrimary200),),
-                            Text("30-40 Mins", style: ktBodyRegularSize14.copyWith(color: kcPrimary500),)
+                            Text(
+                              "Standard",
+                              style: ktBodyRegularSize14.copyWith(color: kcPrimary200),
+                            ),
+                            Text(
+                              "30-40 Mins",
+                              style: ktBodyRegularSize14.copyWith(color: kcPrimary500),
+                            ),
                           ],
                         ),
                       ],
@@ -138,18 +168,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   decoration: BoxDecoration(
                       color: kcTransparent,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: kcPrimaryNeutral800)
-                  ),
+                      border: Border.all(color: kcPrimaryNeutral800)),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 8),
                     child: Row(
                       children: [
-                        const Icon(Iconsax.calendar_edit, color: kcPrimaryNeutral200,),
+                        const Icon(Iconsax.calendar_edit, color: kcPrimaryNeutral200),
                         horizontalSpaceTiny,
                         Column(
                           children: [
-                            Text("Schedule", style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral200),),
-                            Text("Select Time", style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral500),)
+                            Text(
+                              "Schedule",
+                              style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral200),
+                            ),
+                            Text(
+                              "Select Time",
+                              style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral500),
+                            ),
                           ],
                         ),
                       ],
@@ -168,7 +203,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: [
                 CircleAvatar(
                   backgroundColor: Colors.grey[300],
-                  child: Icon(Icons.restaurant, color: Colors.white),
+                  child: const Icon(Icons.restaurant, color: Colors.white),
                 ),
                 horizontalSpace(8),
                 Expanded(
@@ -180,10 +215,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         style: ktBodyRegularSize16,
                       ),
                       Text(
-                        "${orderState.items.length} item",
-                        style: ktBodyRegularSize14.copyWith(
-                          color: kcPrimaryNeutral500
-                        ),
+                        "${cartItems.length} item",
+                        style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral500),
                       ),
                     ],
                   ),
@@ -217,126 +250,139 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             verticalSpace(16),
 
             // Order Items
-          if (_isSelectionVisible) ...[
-            ...orderState.items.asMap().entries.map((entry) {
-              int index = entry.key;
-              OrderItem item = entry.value;
-              return Column(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: kcPrimaryNeutral800),
-                    ),
-                    child: Stack(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 15),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text("Pack ${index + 1}"),
-                                      ],
-                                    ),
-                                    verticalSpaceSmall,
-                                    Text(item.name),
-                                    verticalSpaceTiny,
-                                    Text("₦${(item.price * item.quantity).toStringAsFixed(0)}"),
-                                    verticalSpace(15),
-                                    Row(
-                                      children: [
-                                        const Text("Your menu", style: TextStyle(color: kcPrimaryNeutral200)),
-                                        horizontalSpaceSmall,
-                                        GestureDetector(
-                                          behavior: HitTestBehavior.translucent,
+            if (_isSelectionVisible) ...[
+              ...cartItems.asMap().entries.map((entry) {
+                int index = entry.key;
+                OrderItem item = entry.value;
+                return Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(color: kcPrimaryNeutral800),
+                      ),
+                      child: Stack(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 15),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text("Pack ${index + 1}"),
+                                        ],
+                                      ),
+                                      verticalSpaceSmall,
+                                      Text(item.name),
+                                      verticalSpaceTiny,
+                                      Text("₦${(item.price * item.quantity).toStringAsFixed(0)}"),
+                                      verticalSpace(15),
+                                      Row(
+                                        children: [
+                                          const Text(
+                                              "Your menu", style: TextStyle(color: kcPrimaryNeutral200)),
+                                          horizontalSpaceSmall,
+                                          GestureDetector(
+                                            behavior: HitTestBehavior.translucent,
                                             child: const Row(
                                               children: [
-                                                Icon(Iconsax.edit, size: 15,color: kcPrimary400,),
+                                                Icon(Iconsax.edit, size: 15, color: kcPrimary400),
                                                 horizontalSpaceTiny,
                                                 Text("Edit", style: TextStyle(color: kcPrimary400)),
                                               ],
                                             ),
-                                        ),
-                                      ],
-                                    ),
-                                    verticalSpaceSmall,
-                                    const Text("Spicy", style: TextStyle(color: kcPrimaryNeutral500)),
-                                    verticalSpaceSmall,
-                                  ],
+                                          ),
+                                        ],
+                                      ),
+                                      verticalSpaceSmall,
+                                      const Text("Spicy", style: TextStyle(color: kcPrimaryNeutral500)),
+                                      verticalSpaceSmall,
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Container(
-                                height: screenHeight(context) * 0.04,
-                                width: screenWidth(context) * 0.25,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: kcPrimary400),
+                                Container(
+                                  height: screenHeight(context) * 0.04,
+                                  width: screenWidth(context) * 0.25,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: kcPrimary400),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: [
+                                      GestureDetector(
+                                        behavior: HitTestBehavior.translucent,
+                                        onTap: () {
+                                          ref
+                                              .read(orderProvider.notifier)
+                                              .updateQuantity(index, item.quantity - 1, tab: 'cart');
+                                        },
+                                        child: const Icon(Iconsax.minus, color: kcPrimary400),
+                                      ),
+                                      Text(
+                                        "${item.quantity}",
+                                        style: ktBodyRegularSize16.copyWith(color: kcPrimary400),
+                                      ),
+                                      GestureDetector(
+                                        behavior: HitTestBehavior.translucent,
+                                        onTap: () {
+                                          ref
+                                              .read(orderProvider.notifier)
+                                              .updateQuantity(index, item.quantity + 1, tab: 'cart');
+                                        },
+                                        child: const Icon(Iconsax.add, color: kcPrimary400),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: [
-                                    GestureDetector(
-                                      behavior: HitTestBehavior.translucent,
-                                      onTap: (){ref.read(orderProvider(widget.selectedItems).notifier).updateQuantity(index, item.quantity - 1);},
-                                      child: const Icon(Iconsax.minus, color: kcPrimary400)
-                                    ),
-                                    Text("${item.quantity}", style: ktBodyRegularSize16.copyWith(color: kcPrimary400),),
-                                    GestureDetector(
-                                      behavior: HitTestBehavior.translucent,
-                                      onTap: (){ ref.read(orderProvider(widget.selectedItems).notifier).updateQuantity(index, item.quantity + 1);},
-                                        child: const Icon(Iconsax.add, color: kcPrimary400)
-                                    ),
-                                  ]
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: GestureDetector(
-                            onTap: () {
-                              ref.read(orderProvider(widget.selectedItems).notifier).deleteItem(index);
-                            },
-                            child: const SizedBox(
-                              height: 25,
-                              width: 25,
-                              child: CircleAvatar(
-                                backgroundColor: kcPrimaryRed900,
-                                child: Icon(Iconsax.trash, color: kcPrimaryRed200, size: 15),
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: GestureDetector(
+                              onTap: () {
+                                ref
+                                    .read(orderProvider.notifier)
+                                    .deleteItem(index, tab: 'cart');
+                              },
+                              child: const SizedBox(
+                                height: 25,
+                                width: 25,
+                                child: CircleAvatar(
+                                  backgroundColor: kcPrimaryRed900,
+                                  child: Icon(Iconsax.trash, color: kcPrimaryRed200, size: 15),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  verticalSpaceSmall,
-                ],
-              );
-            }).toList(),
-          ],
+                    verticalSpaceSmall,
+                  ],
+                );
+              }).toList(),
+            ],
 
             // Add Another Pack Button
             GestureDetector(
               onTap: () {
-                ref.read(orderProvider(widget.selectedItems).notifier).addNewPack();
+                ref.read(orderProvider.notifier).addNewPack();
               },
               child: Container(
                 width: screenWidth(context) * 0.45,
                 height: screenHeight(context) * 0.045,
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: kcPrimary400)
-                ),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: kcPrimary400)),
                 child: const Row(
                   children: [
                     Icon(Icons.add, color: kcPrimary400),
@@ -352,9 +398,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             // Leave a Message Section
             Row(
               children: [
-                const Icon(Iconsax.message, size: 20,),
+                const Icon(Iconsax.message, size: 20),
                 horizontalSpaceSmall,
-                Text('Leave a message for the restaurant', style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral200),),
+                Text(
+                  'Leave a message for the restaurant',
+                  style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral200),
+                ),
               ],
             ),
 
@@ -364,9 +413,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
             Row(
               children: [
-                SvgPicture.asset('asset/svgs/delivery_icon.svg',  width: 20, height: 20,),
+                SvgPicture.asset('asset/svgs/delivery_icon.svg', width: 20, height: 20),
                 horizontalSpaceSmall,
-                Text('Leave a note for the rider', style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral200),),
+                Text(
+                  'Leave a note for the rider',
+                  style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral200),
+                ),
               ],
             ),
 
@@ -384,15 +436,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 children: [
                   Text(
                     "Payment Details",
-                    style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral100, fontWeight: FontWeight.w500),
+                    style: ktBodyRegularSize16.copyWith(
+                        color: kcPrimaryNeutral100, fontWeight: FontWeight.w500),
                   ),
                   verticalSpaceSmall,
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Subtotal (${orderState.items.length} items)", style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral300)),
-                      Text("₦${orderState.subtotal.toStringAsFixed(0)}",
-                        style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral300, fontWeight: FontWeight.w400),
+                      Text(
+                        "Subtotal (${cartItems.length} items)",
+                        style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral300),
+                      ),
+                      Text(
+                        "₦${orderState.subtotal.toStringAsFixed(0)}",
+                        style: ktBodyRegularSize14.copyWith(
+                            color: kcPrimaryNeutral300, fontWeight: FontWeight.w400),
                       ),
                     ],
                   ),
@@ -400,9 +458,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Delivery Fee", style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral300)),
-                      Text("₦${orderState.deliveryFee.toStringAsFixed(0)}",
-                        style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral100, fontWeight: FontWeight.w400),
+                      Text(
+                        "Delivery Fee",
+                        style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral300),
+                      ),
+                      Text(
+                        "₦${orderState.deliveryFee.toStringAsFixed(0)}",
+                        style: ktBodyRegularSize14.copyWith(
+                            color: kcPrimaryNeutral100, fontWeight: FontWeight.w400),
                       ),
                     ],
                   ),
@@ -410,9 +473,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("Tax and other fees", style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral300)),
-                      Text("₦${orderState.taxAndFees.toStringAsFixed(0)}",
-                        style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral100, fontWeight: FontWeight.w400),
+                      Text(
+                        "Tax and other fees",
+                        style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral300),
+                      ),
+                      Text(
+                        "₦${orderState.taxAndFees.toStringAsFixed(0)}",
+                        style: ktBodyRegularSize14.copyWith(
+                            color: kcPrimaryNeutral100, fontWeight: FontWeight.w400),
                       ),
                     ],
                   ),
@@ -422,11 +490,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     children: [
                       Text(
                         "TOTAL",
-                        style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral100, fontWeight: FontWeight.w600),
+                        style: ktBodyRegularSize16.copyWith(
+                            color: kcPrimaryNeutral100, fontWeight: FontWeight.w600),
                       ),
                       Text(
                         "₦${orderState.total.toStringAsFixed(0)}",
-                        style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral100, fontWeight: FontWeight.w600),
+                        style: ktBodyRegularSize16.copyWith(
+                            color: kcPrimaryNeutral100, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -448,14 +518,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         deliveryFee: orderState.deliveryFee,
                         taxAndFees: orderState.taxAndFees,
                         total: orderState.total,
-                        orderItems: orderState.items,
+                        orderItems: cartItems,
                       ),
                     ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kcPrimary400,
-                  padding: EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text(
                   "Make Payment",

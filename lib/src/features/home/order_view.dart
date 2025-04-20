@@ -1,12 +1,15 @@
-import 'package:fazt_order/src/common/app_colors.dart';
-import 'package:fazt_order/src/common/ui_helpers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lottie/lottie.dart';
 import '../../../datamodels/menu_items.dart';
 import '../../../datamodels/order_items.dart';
+import '../../../providers/order_provider.dart';
+import '../../common/app_colors.dart';
+import '../../common/ui_helpers.dart';
 import 'checkout_view.dart';
+import 'ongoing_orders_view.dart';
 
 class OrderView extends ConsumerStatefulWidget {
   const OrderView({Key? key}) : super(key: key);
@@ -17,25 +20,6 @@ class OrderView extends ConsumerStatefulWidget {
 
 class _OrderViewState extends ConsumerState<OrderView> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final List<OrderItem> _cartItems = [
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-  ];
-
-  // Add a list of ongoing orders
-  List<OrderItem> _ongoingItems = [
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-    OrderItem(name: "Abacha", quantity: 3, price: 5000),
-  ];
 
   @override
   void initState() {
@@ -54,58 +38,63 @@ class _OrderViewState extends ConsumerState<OrderView> with SingleTickerProvider
     super.dispose();
   }
 
-  void _removeItem(int index) {
-    setState(() {
-      _cartItems.removeAt(index);
-    });
-  }
-
-  void _clearCart() {
-    setState(() {
-      _cartItems.clear();
-    });
+  void _clearItems() {
+    final notifier = ref.read(orderProvider.notifier);
+    if (_tabController.index == 0) {
+      notifier.clearCartItems();
+    } else if (_tabController.index == 1) {
+      notifier.clearOngoingItems();
+    } else if (_tabController.index == 2) {
+      notifier.clearCompletedItems();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final orderState = ref.watch(orderProvider);
+    final cartItems = orderState.items.where((item) => item.tab == 'cart').toList();
+    final ongoingItems = orderState.items.where((item) => item.tab == 'ongoing').toList();
+    final completedItems = orderState.items.where((item) => item.tab == 'completed').toList();
+
     return Scaffold(
-      appBar:
-      // AppBar(
-      //   title: const Text("Orders", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      //   actions: [
-      //     TextButton(
-      //       onPressed: _cartItems.isNotEmpty ? _clearCart : null,
-      //       child: Text(
-      //         "Clear cart items",
-      //         style: TextStyle(color: _cartItems.isNotEmpty ? kcPrimary400 : Colors.grey, decoration: TextDecoration.underline,),
-      //
-      //       ),
-      //     ),
-      //   ],
-      // ),
-      AppBar(
+      appBar: AppBar(
         title: const Text("Orders", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
         actions: [
           GestureDetector(
-            onTap: _cartItems.isNotEmpty ? _clearCart : null,
+            onTap: (cartItems.isNotEmpty && _tabController.index == 0) ||
+                (ongoingItems.isNotEmpty && _tabController.index == 1) ||
+                (completedItems.isNotEmpty && _tabController.index == 2)
+                ? _clearItems
+                : null,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0), // Match TextButton padding
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    "Clear cart items",
+                    _tabController.index == 0
+                        ? "Clear cart items"
+                        : _tabController.index == 1
+                        ? "Clear ongoing items"
+                        : "Clear completed items",
                     style: TextStyle(
-                      color: _cartItems.isNotEmpty ? kcPrimary400 : Colors.grey,
+                      color: (cartItems.isNotEmpty && _tabController.index == 0) ||
+                          (ongoingItems.isNotEmpty && _tabController.index == 1) ||
+                          (completedItems.isNotEmpty && _tabController.index == 2)
+                          ? kcPrimary400
+                          : kcPrimaryNeutral700,
                     ),
                   ),
-                  // horizontalLine(width: 90, color: _cartItems.isNotEmpty ? kcPrimary400 : Colors.grey, thicknessValue: 1),
-                  verticalSpace(1),
+                  const SizedBox(height: 1),
                   Container(
                     height: 1,
-                    width: 90,
-                    color: _cartItems.isNotEmpty ? kcPrimary400 : Colors.grey,
+                    width: 100,
+                    color: (cartItems.isNotEmpty && _tabController.index == 0) ||
+                        (ongoingItems.isNotEmpty && _tabController.index == 1) ||
+                        (completedItems.isNotEmpty && _tabController.index == 2)
+                        ? kcPrimary400
+                        : kcPrimaryNeutral700,
                   ),
                 ],
               ),
@@ -183,125 +172,163 @@ class _OrderViewState extends ConsumerState<OrderView> with SingleTickerProvider
             child: TabBarView(
               controller: _tabController,
               children: [
-                // My Cart Tab
-                _cartItems.isEmpty
-                    ? const Center(child: Text("Your cart is empty", style: TextStyle(fontSize: 14, color: kcPrimary400),))
+                /// My Cart Tab
+                cartItems.isEmpty
+                    ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        height: 200,
+                        width: 200,
+                        child: Lottie.asset('asset/lottie/DBSkpgXyIT.json'),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          // Navigator.push(
+                            // context,
+                            // MaterialPageRoute(
+                              // builder: (context) => const OrderView(),
+                            // ),
+                          // );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: kcPrimary400,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            "Place Order Now",
+                            style: TextStyle(fontSize: 14, color: kcWhite),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
                     : ListView.builder(
-                  itemCount: _cartItems.length,
+                  itemCount: cartItems.length,
                   itemBuilder: (context, index) {
-                    final item = _cartItems[index];
+                    final item = cartItems[index];
                     return Column(
                       children: [
                         Stack(
                           children: [
                             Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                            child: Row(
-                              children: [
-                                // Image
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Image.asset(
-                                    "asset/images/Frame 269.png",
-                                    width: 80,
-                                    height: 80,
-                                    fit: BoxFit.cover,
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                              child: Row(
+                                children: [
+                                  // Image
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Image.asset(
+                                      "asset/images/Frame 269.png",
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
-                                ),
-                                horizontalSpace(7),
-                                // Details
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            item.name,
-                                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                                          ),
-                                        ],
-                                      ),
-                                      verticalSpaceTiny,
-                                      Row(
-                                        children: [
-                                          SvgPicture.asset("asset/svgs/delivery_icon.svg"),
-                                          horizontalSpaceTiny,
-                                          const Text(
-                                            "12, Oritshe street, Ikeja, Lagos State",
-                                            maxLines: 2,
-                                            softWrap: true,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(color: kcPrimaryNeutral300, fontSize: 12),
-                                          ),
-                                        ],
-                                      ),
-                                      verticalSpaceTiny,
-                                      Text(
-                                        "${item.quantity} items",
-                                        style: const TextStyle(color: kcPrimaryNeutral300, fontSize: 12),
-                                      ),
-                                      verticalSpaceTiny,
-                                      Text(
-                                        "₦${item.price.toStringAsFixed(0)}",
-                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: kcPrimaryNeutral300),
-                                      ),
-                                    ],
+                                  const SizedBox(width: 7),
+                                  // Details
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              item.name,
+                                              style: const TextStyle(
+                                                  fontSize: 14, fontWeight: FontWeight.w500),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            SvgPicture.asset("asset/svgs/delivery_icon.svg"),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              orderState.deliveryAddress,
+                                              maxLines: 2,
+                                              softWrap: true,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                  color: kcPrimaryNeutral300, fontSize: 12),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "${item.quantity} items",
+                                          style: const TextStyle(
+                                              color: kcPrimaryNeutral300, fontSize: 12),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "₦${(item.price * item.quantity).toStringAsFixed(0)}",
+                                          style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w400,
+                                              color: kcPrimaryNeutral300),
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                ],
+                              ),
+                            ),
+                            Positioned(
+                              top: 10,
+                              right: 10,
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onTap: () =>
+                                    ref.read(orderProvider.notifier).deleteItem(index, tab: 'cart'),
+                                child: const CircleAvatar(
+                                  backgroundColor: kcPrimaryRed900,
+                                  radius: 12,
+                                  child: Icon(Iconsax.trash, size: 15, color: kcPrimaryRed200),
                                 ),
-                                // Actions
-                                verticalSpaceTiny,
-                              ],
+                              ),
                             ),
-                          ),
-                          Positioned(
-                          top: 10,
-                          right: 10,
-                          child: GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                            onTap: () => _removeItem(index),
-                            child: const CircleAvatar(
-                                backgroundColor: kcPrimaryRed900,
-                                radius: 12,
-                                child: Icon(Iconsax.trash, size: 15, color: kcPrimaryRed200),
-                            ),
-                          ),
-                          ),
-                          Positioned(
-                          bottom: 10,
-                          right: 10,
-                          child: GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CheckoutScreen(
-                                  selectedItems: [
+                            Positioned(
+                              bottom: 10,
+                              right: 10,
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onTap: () {
+                                  final selectedItems = [
                                     MenuItem(
                                       name: item.name,
-                                      description: "Delicious Abacha",
+                                      description: "Delicious ${item.name}",
                                       price: item.price,
                                       imageUrl: "https://via.placeholder.com/80",
                                       isAvailable: true,
                                     ),
-                                  ],
+                                  ];
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CheckoutScreen(
+                                        selectedItems: selectedItems,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: kcPrimary300,
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  child: const Text('Checkout', style: TextStyle(color: kcWhite)),
                                 ),
                               ),
-                            );
-                          },
-                          child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: kcPrimary300,
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              child: const Text('Checkout', style: TextStyle(color: kcWhite))
-                          ),
-                        ),
-                        )
-                      ]
+                            ),
+                          ],
                         ),
                         SvgPicture.asset("asset/svgs/dotted_line.svg"),
                       ],
@@ -309,40 +336,71 @@ class _OrderViewState extends ConsumerState<OrderView> with SingleTickerProvider
                   },
                 ),
 
-
-                // Ongoing Tab (Placeholder)
-                _ongoingItems.isEmpty
-                    ? const Center(child: Text("No ongoing orders"))
+                /// Ongoing Tab
+                ongoingItems.isEmpty
+                    ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        height: 200,
+                        width: 200,
+                        child: Lottie.asset('asset/lottie/DBSkpgXyIT.json'),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(
+                          //     builder: (context) => const OrderView(),
+                          //   ),
+                          // );
+                        },
+                       child: Container(
+                         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                         decoration: BoxDecoration(
+                           color: kcPrimary400,
+                           borderRadius: BorderRadius.circular(20),
+                         ),
+                          child: const Text(
+                            "Place Order Now",
+                            style: TextStyle(fontSize: 14, color: kcWhite),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
                     : ListView.builder(
-                  padding: EdgeInsets.all(16),
-                  itemCount: _ongoingItems.length + (_ongoingItems.length ~/ 2), // Add delivery sections
+                  padding: const EdgeInsets.all(16),
+                  itemCount: ongoingItems.length + (ongoingItems.length ~/ 2),
                   itemBuilder: (context, index) {
-                    // Check if the current index is for a delivery section
                     if (index % 3 == 2) {
-                      // Show "Delivery to Computer Villa..." section after every 2 items
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
                         child: Row(
                           children: [
-                            Image.asset('asset/images/Frame 2693.png',
-                            width: 80,
-                            height: 80,),
-                            verticalSpaceMedium,
-                            const Column(
+                            Image.asset(
+                              'asset/images/Frame 2693.png',
+                              width: 80,
+                              height: 80,
+                            ),
+                            const SizedBox(width: 16),
+                            Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   "Delivery to Computer Villa...",
                                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
-                                verticalSpaceTiny,
+                                const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    Icon(Iconsax.location, size: 16, color: Colors.grey),
-                                    SizedBox(width: 4),
+                                    const Icon(Iconsax.location, size: 16, color: Colors.grey),
+                                    const SizedBox(width: 4),
                                     Text(
-                                      "12, Oritshe street, Ikeja, Lagos State",
-                                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                                      orderState.deliveryAddress,
+                                      style: const TextStyle(color: Colors.grey, fontSize: 12),
                                     ),
                                   ],
                                 ),
@@ -353,70 +411,217 @@ class _OrderViewState extends ConsumerState<OrderView> with SingleTickerProvider
                       );
                     }
 
-                    // Calculate the actual item index (subtract the delivery sections)
                     final itemIndex = index - (index ~/ 3);
-                    final item = _ongoingItems[itemIndex];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.asset(
-                                  "asset/images/Frame 269.png",
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
+                    final item = ongoingItems[itemIndex];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OngoingOrderView(
+                              orderItems: [item],
+                              orderTime: "2:00 pm",
+                              estimatedTime: "20-25 Minute",
+                              deliveryAddress: orderState.deliveryAddress,
+                              otp: "0987",
+                              subtotal: (item.price * item.quantity),
+                              deliveryFee: 1000,
+                              taxAndFees: 1000,
+                              total: (item.price * item.quantity + 1000 + 1000).toDouble(),
+                              currentStep: 2,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.asset(
+                                    "asset/images/Frame 269.png",
+                                    width: 80,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
-                              ),
-                              horizontalSpaceMedium,
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.name,
+                                        style: const TextStyle(
+                                            fontSize: 16, fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          const Icon(Iconsax.location, size: 16, color: Colors.grey),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            orderState.deliveryAddress,
+                                            style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        "${item.quantity} items",
+                                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        "₦${(item.price * item.quantity).toStringAsFixed(0)}",
+                                        style: const TextStyle(
+                                            fontSize: 16, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            SvgPicture.asset("asset/svgs/dotted_line.svg"),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                /// Completed Tab
+                completedItems.isEmpty
+                    ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        height: 200,
+                        width: 200,
+                        child: Lottie.asset('asset/lottie/DBSkpgXyIT.json'),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(
+                          //     builder: (context) => const OrderView(),
+                          //   ),
+                          // );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: kcPrimary400,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            "Place Order Now",
+                            style: TextStyle(fontSize: 14, color: kcWhite),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                    :
+                ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: completedItems.length,
+                  itemBuilder: (context, index) {
+                    final item = completedItems[index];
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      item.name,
-                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                    ),
-                                    verticalSpaceTiny,
                                     Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Icon(Iconsax.location, size: 16, color: Colors.grey),
-                                        SizedBox(width: 4),
                                         Text(
-                                          "12, Oritshe street, Ikeja, Lagos State",
-                                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                                          item.deliveryAddress ?? "Unknown Address",
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                        Text(
+                                          item.dateTime ?? "Unknown Date",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                          ),
                                         ),
                                       ],
                                     ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      "${item.quantity} items",
-                                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      "₦${item.price.toStringAsFixed(0)}",
-                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    verticalSpaceTiny,
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          "Order ID #${item.orderId ?? 'Unknown'}",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                        GestureDetector(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => OngoingOrderView(
+                                                  orderItems: [item],
+                                                  orderTime: "2:00 pm",
+                                                  estimatedTime: "20-25 Minute",
+                                                  deliveryAddress: orderState.deliveryAddress,
+                                                  otp: "0987",
+                                                  subtotal: (item.price * item.quantity),
+                                                  deliveryFee: 1000,
+                                                  taxAndFees: 1000,
+                                                  total: (item.price * item.quantity + 1000 + 1000).toDouble(),
+                                                  currentStep: 8,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          child: const Text(
+                                            "VIEW",
+                                            style: TextStyle(
+                                              color: kcPrimary400,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+
+                                      ],
                                     ),
                                   ],
                                 ),
                               ),
                             ],
                           ),
-                          verticalSpaceSmall,
-                          SvgPicture.asset("asset/svgs/dotted_line.svg"),
-                        ],
-                      ),
+                        ),
+                        verticalSpaceSmall,
+                        SvgPicture.asset('asset/svgs/dotted_line.svg'),
+                        verticalSpaceSmall,
+                      ],
                     );
                   },
                 ),
-
-
-                // Completed Tab (Placeholder)
-                const Center(child: Text("No completed orders")),
               ],
             ),
           ),

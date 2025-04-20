@@ -12,7 +12,7 @@ import 'profile.dart';
 class DashboardView extends ConsumerWidget {
   const DashboardView({Key? key}) : super(key: key);
 
-  static final List<Widget> _pages = [
+  static final List<Widget> _pages = <Widget>[
     const AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: kcPrimaryNeutral950,
@@ -29,7 +29,6 @@ class DashboardView extends ConsumerWidget {
       ),
       child: OrderView(),
     ),
-    // CourierView: Use the global status bar color (Colors.pink[50])
     const AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: kcPrimaryNeutral950,
@@ -64,7 +63,7 @@ class DashboardView extends ConsumerWidget {
             right: 16.0,
             bottom: 16.0,
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
@@ -129,25 +128,11 @@ BottomNavigationBarItem _buildNavItem({
     icon: Stack(
       alignment: Alignment.center,
       children: [
-        // Icon
         SizedBox(
           height: 24,
           width: 24,
           child: icon,
         ),
-        // Green dot indicator above the icon when selected
-        if (isSelected)
-          Positioned(
-            top: -4,
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
       ],
     ),
     label: label,
