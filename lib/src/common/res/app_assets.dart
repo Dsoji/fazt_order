@@ -46,6 +46,9 @@ class ImageAssets {
 
 class SvgAssets {
   static const _base = BasePaths.baseSvgPath;
+  static const failure = '$_base/failure.svg';
+  static const verify = '$_base/verify.svg';
+  static const info = '$_base/info.svg';
 
   // static const splashLogo = '$_base/splash_logo.svg';
 }

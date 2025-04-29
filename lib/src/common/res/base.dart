@@ -1,6 +1,6 @@
 class BasePaths {
   static const baseImagePath = "asset/images";
-  static const baseSvgPath = "asset/svg";
+  static const baseSvgPath = "asset/svgs";
   static const lottiePath = "asset/lottie";
   static const baseIconPath = "asset/iconsAsset";
   static const baseGifPath = "asset/gif";
