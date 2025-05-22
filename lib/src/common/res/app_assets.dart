@@ -42,6 +42,8 @@ class ImageAssets {
   static const upload = '$_base/upload.png';
   static const google = '$_base/google.png';
   static const apple = '$_base/apple.png';
+  static const twofa = '$_base/twofa.png';
+  static const mapBackground = '$_base/map_background.png';
 }
 
 class SvgAssets {
@@ -69,7 +71,6 @@ class LottieAssets {
 
   // static const loader = '$_base/foax_loader.json';
 }
-
 
 // class IconAssets {
 //   static const _base = BasePaths.baseIconPath;

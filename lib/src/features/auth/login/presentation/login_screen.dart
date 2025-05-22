@@ -6,9 +6,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../common/res/app_assets.dart';
 import '../../../../common/res/app_colors.dart';
+import '../../../../common/utils/validator.dart';
 import '../../../../common/widgets/custom_textfield.dart';
 import '../../../../common/widgets/or_divider.dart';
 import '../../../../common/widgets/reusable_buttons.dart';
+import '../../register/presentation/registration_screen.dart';
 
 class LoginScreen extends HookConsumerWidget {
   const LoginScreen({super.key});
@@ -84,6 +86,7 @@ class LoginScreen extends HookConsumerWidget {
                       fieldName: "email",
                       keyboardType: TextInputType.emailAddress,
                       controller: emailController,
+                      validator: Validators.emailValidator,
                     ),
                     const Gap(16),
 
@@ -95,17 +98,8 @@ class LoginScreen extends HookConsumerWidget {
                       fieldName: "password",
                       keyboardType: TextInputType.text,
                       controller: passwordController,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          isPasswordVisible.value
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: Colors.grey,
-                        ),
-                        onPressed: () {
-                          isPasswordVisible.value = !isPasswordVisible.value;
-                        },
-                      ),
+                      isPassword: true,
+                      validator: Validators.passwordValidator,
                     ),
                     const Gap(48),
 
@@ -161,7 +155,13 @@ class LoginScreen extends HookConsumerWidget {
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
-                                  Navigator.pushNamed(context, '/register');
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const RegistrationScreen(),
+                                    ),
+                                  );
                                 },
                             ),
                           ],

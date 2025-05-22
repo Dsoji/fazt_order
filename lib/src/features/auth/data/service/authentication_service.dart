@@ -75,7 +75,7 @@ class AuthenticationService {
           'lastName': lastName,
           'email': email,
           'phone': phone,
-          'role': "vendor",
+          'role': "user",
           'password': password,
         },
       ),

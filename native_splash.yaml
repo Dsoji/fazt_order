@@ -1,0 +1,7 @@
+flutter_native_splash:
+  android: true
+  ios: true
+  web: false
+
+  color: "#C1DB3C"
+  image: "asset/images/fazt_logo.png"

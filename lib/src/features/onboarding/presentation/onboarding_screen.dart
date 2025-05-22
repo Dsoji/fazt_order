@@ -1,5 +1,3 @@
-import 'package:fazt_order/src/features/home/dashboard_view.dart';
-import 'package:fazt_order/src/features/home/home_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -8,6 +6,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../common/res/app_assets.dart';
 import '../../../common/res/app_colors.dart';
+import '../../auth/login/presentation/login_screen.dart';
 
 class OnboardingScreen extends HookWidget {
   const OnboardingScreen({super.key});
@@ -44,74 +43,74 @@ class OnboardingScreen extends HookWidget {
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle(
-        statusBarColor: AppColors.brand200,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-    ),
-    child: Scaffold(
-      backgroundColor: AppColors.brand200, // Dark green background
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 60), // Space for indicator alignment
-            // Page Indicator
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: List.generate(
-                pages.length,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: currentPage.value == index ? 40 : 12,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: currentPage.value == index
-                        ? AppColors.brand700
-                        : AppColors.brand100,
-                    borderRadius: BorderRadius.circular(4),
+        value: const SystemUiOverlayStyle(
+          statusBarColor: AppColors.brand200,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
+        child: Scaffold(
+          backgroundColor: AppColors.brand200, // Dark green background
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                const SizedBox(height: 60), // Space for indicator alignment
+                // Page Indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: List.generate(
+                    pages.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: currentPage.value == index ? 40 : 12,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: currentPage.value == index
+                            ? AppColors.brand700
+                            : AppColors.brand100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const Gap(40),
+                // PageView for onboarding slides
+                Expanded(
+                  child: PageView.builder(
+                    controller: pageController,
+                    itemCount: pages.length,
+                    itemBuilder: (context, index) {
+                      final page = pages[index];
+                      return OnboardingPage(
+                        title: page["title"] as String,
+                        imagePath: page["image"] as String,
+                      );
+                    },
+                  ),
+                ),
+                // Get Started Button
+                CustomGetStartedButton(
+                  onPressed: () {
+                    if (currentPage.value == pages.length - 1) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                      );
+                    } else {
+                      pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  },
+                ),
+              ],
             ),
-            const Gap(40),
-            // PageView for onboarding slides
-            Expanded(
-              child: PageView.builder(
-                controller: pageController,
-                itemCount: pages.length,
-                itemBuilder: (context, index) {
-                  final page = pages[index];
-                  return OnboardingPage(
-                    title: page["title"] as String,
-                    imagePath: page["image"] as String,
-                  );
-                },
-              ),
-            ),
-            // Get Started Button
-            CustomGetStartedButton(
-              onPressed: () {
-                if (currentPage.value == pages.length - 1) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DashboardView(),
-                    ),
-                  );
-                } else {
-                  pageController.nextPage(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    ));
+          ),
+        ));
   }
 }
 

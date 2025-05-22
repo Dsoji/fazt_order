@@ -36,9 +36,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Lato',
         scaffoldBackgroundColor: kcPrimaryNeutral950,
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: kcPrimaryNeutral950,
-          elevation: 0
-        ),
+            backgroundColor: kcPrimaryNeutral950, elevation: 0),
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),

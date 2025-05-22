@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -9,6 +10,7 @@ class FullButton extends StatelessWidget {
   final Color textColor;
   final VoidCallback onPressed;
   final double fontSize;
+  final bool isLoading;
 
   const FullButton({
     super.key,
@@ -19,27 +21,31 @@ class FullButton extends StatelessWidget {
     required this.color,
     required this.textColor,
     this.fontSize = 16,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onPressed,
+      onTap: isLoading ? null : onPressed,
       child: Container(
         height: height,
         width: width,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(50),
-          color: color,
+          color: isLoading ? color.withOpacity(0.7) : color,
         ),
         child: Center(
-          child: Text(
-            text,
-            style: TextStyle(
-                color: textColor,
-                fontSize: fontSize,
-                fontWeight: FontWeight.w500),
-          ),
+          child: isLoading
+              ? const CupertinoActivityIndicator(radius: 12)
+              : Text(
+                  text,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
         ),
       ),
     );
