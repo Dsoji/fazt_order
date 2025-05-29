@@ -154,7 +154,7 @@ class AccountVerificationScreen extends HookConsumerWidget {
                         // );
 
                         // if (result == true) {
-                        Navigator.pushReplacement(
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const MapLocationScreen(),

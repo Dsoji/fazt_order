@@ -6,6 +6,7 @@ import '../../../../common/api/api_client.dart';
 import '../../../../common/api/api_request_helper.dart';
 import '../../../../common/api/dio_api_client.dart';
 import '../../../../common/utils/utils.dart';
+import '../model/payload/address_payload.dart';
 import '../model/payload/profile_payload.dart';
 import '../model/response/user_model/user_model.dart';
 
@@ -159,6 +160,28 @@ class AuthenticationService {
 
   Future<ResultValue<String>> updateProfile({
     ProfilePayload? payload,
+  }) async {
+    final String accessToken = await box.get('accessToken');
+
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'user/profile/updateProfile',
+        header: {
+          'Authorization': 'Bearer $accessToken',
+        },
+        data: payload,
+      ),
+      parser: (data) {
+        print(data);
+        return BaseModel.toRawString(data);
+      },
+      showErrorToast: true,
+      showSuccessToast: true,
+    );
+  }
+
+  Future<ResultValue<String>> updateAddress({
+    AddressPayload? payload,
   }) async {
     final String accessToken = await box.get('accessToken');
 
