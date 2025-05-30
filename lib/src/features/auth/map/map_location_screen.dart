@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
+import 'package:fazt_order/src/features/auth/data/controller/authentication_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
@@ -13,6 +15,8 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import '../../../common/res/app_assets.dart';
 import '../../../common/res/app_colors.dart';
 import '../../../common/widgets/custom_textfield.dart';
+import '../../home/dashboard_view.dart';
+import '../data/model/payload/address_payload.dart';
 
 class MapLocationScreen extends HookConsumerWidget {
   const MapLocationScreen({super.key});
@@ -255,14 +259,15 @@ class MapLocationScreen extends HookConsumerWidget {
                                 controller.clear();
                               },
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.green),
+                                side:
+                                    const BorderSide(color: AppColors.brand400),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(24),
                                 ),
                               ),
                               child: const Text(
                                 'Change',
-                                style: TextStyle(color: Colors.green),
+                                style: TextStyle(color: AppColors.brand400),
                               ),
                             ),
                           ],
@@ -271,29 +276,41 @@ class MapLocationScreen extends HookConsumerWidget {
                         Text(
                           selectedAddress.value!['address'] ?? '',
                           style: const TextStyle(
-                            color: Colors.black54,
-                            fontSize: 15,
+                            color: AppColors.neutral500,
+                            fontSize: 12,
                           ),
                         ),
                         const SizedBox(height: 24),
-                        SizedBox(
+                        FullButton(
+                          text: 'Verify',
+                          isLoading: ref
+                              .watch(authenticationControllerProvider)
+                              .addressUpdate
+                              .isLoading,
                           width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // Handle verify action
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green[700],
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(32),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 18),
-                            ),
-                            child: const Text(
-                              'Verify',
-                              style: TextStyle(fontSize: 20),
-                            ),
-                          ),
+                          height: 50,
+                          onPressed: () async {
+                            final result = await ref
+                                .read(authenticationControllerProvider.notifier)
+                                .updateAddress(
+                                  AddressPayload(
+                                    address: selectedAddress.value!['address'],
+                                    city: selectedAddress.value!['city'],
+                                    state: selectedAddress.value!['state'],
+                                    lat: selectedAddress.value!['lat'],
+                                    long: selectedAddress.value!['lng'],
+                                  ),
+                                );
+                            if (result == true) {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const DashboardView()));
+                            }
+                          },
+                          color: AppColors.brand400,
+                          textColor: Colors.white,
                         ),
                       ],
                     ),

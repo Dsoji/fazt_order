@@ -9,7 +9,7 @@ class AddressPayload extends MapView<String, dynamic> {
     String? city,
     String? state,
     String? long,
-    bool? lat,
+    String? lat,
   }) : super({
           'location': {
             'address': address,

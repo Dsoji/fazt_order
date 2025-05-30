@@ -101,7 +101,7 @@ class AccountVerificationScreen extends HookConsumerWidget {
                       hintText: "0000",
                       fieldName: "Pin",
                       keyboardType: TextInputType.number,
-                      controller: pinController, // First name controller
+                      controller: pinController,
                       validator: (value) =>
                           Validators.requiredField(value, "Pin"),
                     ),
@@ -145,22 +145,22 @@ class AccountVerificationScreen extends HookConsumerWidget {
                       width: double.infinity,
                       height: 48,
                       onPressed: () async {
-                        // if (!formKey.currentState!.validate()) {
-                        //   return;
-                        // }
-                        // final result = await authService.emailConfirm(
-                        //   email,
-                        //   pinController.text.trim(),
-                        // );
-
-                        // if (result == true) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const MapLocationScreen(),
-                          ),
+                        if (!formKey.currentState!.validate()) {
+                          return;
+                        }
+                        final result = await authService.emailConfirm(
+                          email,
+                          pinController.text.trim(),
                         );
-                        // }
+
+                        if (result == true) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MapLocationScreen(),
+                            ),
+                          );
+                        }
                       },
                       color: AppColors.brand400,
                       textColor: Colors.white,

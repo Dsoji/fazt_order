@@ -186,8 +186,8 @@ class AuthenticationService {
     final String accessToken = await box.get('accessToken');
 
     return apiRequestHelper.handleApiRequest(
-      () => apiClient.post(
-        'user/profile/updateProfile',
+      () => apiClient.patch(
+        'users/update',
         header: {
           'Authorization': 'Bearer $accessToken',
         },

@@ -1,5 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../model/payload/address_payload.dart';
 import '../model/payload/profile_payload.dart';
 import '../model/payload/sign_up_payload.dart';
 import '../model/response/user_model/user_model.dart';
@@ -209,6 +210,31 @@ class AuthenticationController extends StateNotifier<AuthenticationState> {
       (success) {
         state = state.copyWith(
           forgotPassword: AsyncValue.data(success),
+        );
+        return true;
+      },
+    );
+  }
+
+  Future<bool> updateAddress(
+    AddressPayload payload,
+  ) async {
+    state = state.copyWith(addressUpdate: const AsyncValue.loading());
+
+    final result = await _authenticationRepository.updateAddress(
+      payload: payload,
+    );
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+          addressUpdate: AsyncValue.error(error, StackTrace.current),
+        );
+        return false;
+      },
+      (success) {
+        state = state.copyWith(
+          addressUpdate: AsyncValue.data(success),
         );
         return true;
       },

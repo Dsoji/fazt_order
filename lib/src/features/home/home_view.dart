@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
+
 import '../../../providers/restaurant_provider.dart';
 import '../../common/app_colors.dart';
 import '../../common/components/restaurant_card.dart';
@@ -11,38 +12,36 @@ import '../bottom_sheets/filters_sheet.dart';
 import '../bottom_sheets/location_sheet.dart';
 import 'search_restaurant_view.dart';
 
-class HomeView extends ConsumerWidget {
-  const HomeView({Key? key}) : super(key: key);
-
-  // Function to show the bottom sheet
-  void _showLocationBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return const LocationBottomSheet();
-      },
-    );
-  }
-
-  void _showFilterBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return const FilterBottomSheet();
-      },
-    );
-  }
-
+class HomeView extends HookConsumerWidget {
+  const HomeView({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    void showLocationBottomSheet(BuildContext context) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) {
+          return const LocationBottomSheet();
+        },
+      );
+    }
+
+    void showFilterBottomSheet(BuildContext context) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) {
+          return const FilterBottomSheet();
+        },
+      );
+    }
+
     // Access the list of restaurants
     final restaurants = ref.watch(restaurantProvider);
 
@@ -52,7 +51,7 @@ class HomeView extends ConsumerWidget {
         title: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () {
-            _showLocationBottomSheet(context);
+            showLocationBottomSheet(context);
           },
           child: Row(
             children: [
@@ -74,7 +73,7 @@ class HomeView extends ConsumerWidget {
           GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: () {
-              _showFilterBottomSheet(context);
+              showFilterBottomSheet(context);
             },
             child: Row(
               children: [
@@ -99,7 +98,8 @@ class HomeView extends ConsumerWidget {
         children: [
           // Search Bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: TextField(
               onChanged: (value) {
                 if (value.isNotEmpty) {
@@ -109,7 +109,8 @@ class HomeView extends ConsumerWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => SearchRestaurantView(initialQuery: value),
+                      builder: (context) =>
+                          SearchRestaurantView(initialQuery: value),
                     ),
                   );
                 }

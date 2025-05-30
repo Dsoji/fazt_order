@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
+
 import '../../../providers/navigation_provider.dart';
 import '../../common/app_colors.dart';
 import 'courier.dart';
@@ -9,8 +10,8 @@ import 'home_view.dart';
 import 'order_view.dart';
 import 'profile.dart';
 
-class DashboardView extends ConsumerWidget {
-  const DashboardView({Key? key}) : super(key: key);
+class DashboardView extends HookConsumerWidget {
+  const DashboardView({super.key});
 
   static final List<Widget> _pages = <Widget>[
     const AnnotatedRegion<SystemUiOverlayStyle>(
@@ -81,22 +82,22 @@ class DashboardView extends ConsumerWidget {
                 elevation: 0,
                 items: [
                   _buildNavItem(
-                    icon: Icon(Iconsax.home),
+                    icon: const Icon(Iconsax.home),
                     label: "Home",
                     isSelected: currentIndex == 0,
                   ),
                   _buildNavItem(
-                    icon: Icon(Iconsax.shopping_bag),
+                    icon: const Icon(Iconsax.shopping_bag),
                     label: "Order",
                     isSelected: currentIndex == 1,
                   ),
                   _buildNavItem(
-                    icon: Icon(Iconsax.group_1),
+                    icon: const Icon(Iconsax.group_1),
                     label: "Courier",
                     isSelected: currentIndex == 2,
                   ),
                   _buildNavItem(
-                    icon: Icon(Iconsax.profile_circle),
+                    icon: const Icon(Iconsax.profile_circle),
                     label: "Profile",
                     isSelected: currentIndex == 3,
                   ),
@@ -105,7 +106,8 @@ class DashboardView extends ConsumerWidget {
                 selectedItemColor: kcPrimary400,
                 unselectedItemColor: kcPrimaryNeutral500,
                 showUnselectedLabels: true,
-                selectedLabelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                selectedLabelStyle:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 unselectedLabelStyle: const TextStyle(fontSize: 14),
                 onTap: (index) {
                   ref.read(navigationProvider.notifier).state = index;

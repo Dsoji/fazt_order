@@ -149,31 +149,31 @@ class RegistrationScreen extends HookConsumerWidget {
                       .isLoading,
                   height: 48,
                   onPressed: () async {
-                    // final authService =
-                    //     ref.read(authenticationControllerProvider.notifier);
+                    final authService =
+                        ref.read(authenticationControllerProvider.notifier);
 
-                    // if (!formKey.currentState!.validate()) {
-                    //   return;
-                    // }
-                    // final result = await authService.signUp(
-                    //   email: emailController.text.trim(),
-                    //   password: createPasswordController.text.trim(),
-                    //   firstName: firstNameController.text.trim(),
-                    //   lastName: lastNameController.text.trim(),
-                    //   phone: numberController.text.trim(),
-                    // );
-                    // logger.d(result);
-                    // if (result == true) {
-                    //   logger.d('Navigating...');
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AccountVerificationScreen(
-                          email: emailController.text.trim(),
-                        ),
-                      ),
+                    if (!formKey.currentState!.validate()) {
+                      return;
+                    }
+                    final result = await authService.signUp(
+                      email: emailController.text.trim(),
+                      password: createPasswordController.text.trim(),
+                      firstName: firstNameController.text.trim(),
+                      lastName: lastNameController.text.trim(),
+                      phone: numberController.text.trim(),
                     );
-                    // }
+                    logger.d(result);
+                    if (result == true) {
+                      logger.d('Navigating...');
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AccountVerificationScreen(
+                            email: emailController.text.trim(),
+                          ),
+                        ),
+                      );
+                    }
                   },
                   color: AppColors.brand400,
                   textColor: Colors.white,
