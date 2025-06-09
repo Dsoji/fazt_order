@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
 import 'package:fazt_order/src/features/auth/data/controller/authentication_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 // import 'package:geocoding/geocoding.dart'; // Removed
@@ -37,7 +38,8 @@ class MapLocationScreen extends HookConsumerWidget {
     // For debouncing search input
     final debounceTimer = useRef<Timer?>(null);
 
-    const String apiKey = 'AIzaSyCZfDAROgHIb5FhQP863pKus-bJ3pKCgvo';
+    final String? apiKey = dotenv.env['MAP_KEY'];
+    print(apiKey);
 
     Future<void> searchPlaces(String query) async {
       if (query.isEmpty) {

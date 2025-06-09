@@ -1,19 +1,17 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../datamodels/menu_items.dart';
-import '../../../../datamodels/restaurant.dart';
-import '../../../../providers/restaurant_provider.dart';
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
 import '../../order/checkout_view.dart';
+import '../data/model/response/shops_model/result.dart';
 
 class RestaurantDetailsView extends ConsumerStatefulWidget {
-  final Restaurant restaurant;
+  final ShopResult restaurant;
 
   const RestaurantDetailsView({
     super.key,
@@ -32,7 +30,7 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
   @override
   Widget build(BuildContext context) {
     // Filter menu items based on the selected category (for simplicity, we'll show all items for now)
-    final menuItems = widget.restaurant.menuItems;
+    final restaurant = widget.restaurant;
 
     return Scaffold(
       appBar: AppBar(
@@ -64,8 +62,9 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
             top: 0,
             left: 0,
             right: 0,
-            child: Image.asset(
-              widget.restaurant.imageUrl,
+            child: Image.network(
+              restaurant.store?.storeDisplayImage ??
+                  'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRjzZwJLYpHj9aghuqOmOuLUjpqMT2yrfmQhw&s',
               width: double.infinity,
               height: 200,
               fit: BoxFit.cover,
@@ -111,7 +110,7 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                           children: [
                             Expanded(
                               child: Text(
-                                widget.restaurant.name,
+                                restaurant.store?.storeName ?? '',
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -119,25 +118,23 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                               ),
                             ),
                             IconButton(
-                              icon: Icon(
-                                widget.restaurant.isFavorite
-                                    ? Iconsax.heart
-                                    : Iconsax.heart5,
+                              icon: const Icon(
+                                Iconsax.heart5,
                                 color: Colors.grey,
                               ),
                               onPressed: () {
-                                final restaurants =
-                                    ref.read(restaurantProvider);
-                                final index = restaurants.indexWhere(
-                                  (r) =>
-                                      r.name == widget.restaurant.name &&
-                                      r.location == widget.restaurant.location,
-                                );
-                                if (index != -1) {
-                                  ref
-                                      .read(restaurantProvider.notifier)
-                                      .toggleFavorite(index);
-                                }
+                                // final restaurants =
+                                //     ref.read(restaurantProvider);
+                                // final index = restaurants.indexWhere(
+                                //   (r) =>
+                                //       r.name == widget.restaurant.name &&
+                                //       r.location == widget.restaurant.location,
+                                // );
+                                // if (index != -1) {
+                                //   ref
+                                //       .read(restaurantProvider.notifier)
+                                //       .toggleFavorite(index);
+                                // }
                               },
                             ),
                           ],
@@ -154,7 +151,7 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                                   color: kcPrimaryNeutral500,
                                 ),
                                 Text(
-                                  widget.restaurant.location,
+                                  restaurant.location?.address ?? '',
                                   style: ktBodyRegularSize12.copyWith(
                                       color: kcPrimaryNeutral500),
                                 ),
@@ -169,7 +166,7 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  "${widget.restaurant.rating} (${widget.restaurant.reviewCount})",
+                                  "${restaurant.rating} (${restaurant.numberOfFavorites})",
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: kcPrimaryNeutral500,
@@ -190,7 +187,7 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                                     'asset/svgs/delivery_icon.svg'),
                                 horizontalSpaceTiny,
                                 Text(
-                                  "From ₦${widget.restaurant.price}",
+                                  "From ₦${restaurant.deliveryFee}",
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey[600],
@@ -206,9 +203,9 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                                 color: kcPrimaryOrange500,
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: Text(
-                                widget.restaurant.deliveryTime,
-                                style: const TextStyle(
+                              child: const Text(
+                                '5 minutes',
+                                style: TextStyle(
                                   fontSize: 14,
                                   color: kcWhite,
                                 ),
@@ -231,9 +228,9 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                                   size: 16,
                                 ),
                                 const SizedBox(width: 4),
-                                Text(
-                                  "OPENING UNTIL ${widget.restaurant.openingHours}",
-                                  style: const TextStyle(
+                                const Text(
+                                  "OPENING UNTIL 2PM", //TODO: get opening time
+                                  style: TextStyle(
                                     fontSize: 14,
                                     color: kcPrimaryNeutral400,
                                   ),
@@ -246,9 +243,9 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                                 SvgPicture.asset(
                                     'asset/svgs/delivery_icon.svg'),
                                 const SizedBox(width: 4),
-                                Text(
-                                  widget.restaurant.deliveryType.toUpperCase(),
-                                  style: const TextStyle(
+                                const Text(
+                                  "Instant Delivery", //TODO: get delivery type
+                                  style: TextStyle(
                                     fontSize: 14,
                                     color: kcPrimaryNeutral400,
                                   ),
@@ -296,15 +293,16 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                         ),
                         const SizedBox(height: 16),
                         // Menu Items List
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: menuItems.length,
-                          itemBuilder: (context, index) {
-                            final menuItem = menuItems[index];
-                            return _buildMenuItem(menuItem);
-                          },
-                        ),
+                        // ListView.builder(
+                        //   shrinkWrap: true,
+                        //   physics: const NeverScrollableScrollPhysics(),
+                        //   itemCount: menuItems.length,
+                        //   itemBuilder: (context, index) {
+                        //     final menuItem = menuItems[index];
+                        //     return _buildMenuItem(menuItem);
+                        //   },
+                        // ),
+
                         verticalSpaceMassive,
                         SizedBox(
                           width: double.infinity,

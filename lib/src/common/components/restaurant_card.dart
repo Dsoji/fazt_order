@@ -1,4 +1,5 @@
 import 'package:fazt_order/src/common/app_colors.dart';
+import 'package:fazt_order/src/features/home/presentation/restaurant_details.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
@@ -17,12 +18,12 @@ class RestaurantCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () {
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(
-        //     builder: (context) => RestaurantDetailsView(restaurant: restaurant),
-        //   ),
-        // );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RestaurantDetailsView(restaurant: restaurant),
+          ),
+        );
       },
       child: Card(
         margin: const EdgeInsets.only(bottom: 16.0),

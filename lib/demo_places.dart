@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:http/http.dart' as http;
 
@@ -23,7 +24,7 @@ class PlaceSearchPage extends HookWidget {
     // For debouncing search input
     final debounceTimer = useRef<Timer?>(null);
 
-    const String apiKey = 'AIzaSyCZfDAROgHIb5FhQP863pKus-bJ3pKCgvo';
+    final String? apiKey = dotenv.env['MAP_KEY'];
 
     Future<void> searchPlaces(String query) async {
       if (query.isEmpty) {

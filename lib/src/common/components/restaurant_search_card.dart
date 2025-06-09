@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax/iconsax.dart';
+
 import '../../../datamodels/restaurant.dart';
 import '../../../providers/restaurant_provider.dart';
-import '../../features/home/presentation/restaurant_details.dart';
 import '../../features/home/presentation/search_restaurant_view.dart';
 import '../app_colors.dart';
 import '../ui_helpers.dart';
@@ -187,16 +187,16 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                   if (selectedFilter == "Menu" || selectedFilter == "ALL") ...[
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => RestaurantDetailsView(
-                              // Updated to RestaurantDetailsView
-                              restaurant: widget.restaurant,
-                              // index: widget.index, // Commented out as per your previous code
-                            ),
-                          ),
-                        );
+                        // Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (context) => RestaurantDetailsView(
+                        //       // Updated to RestaurantDetailsView
+                        //       restaurant: widget.restaurant,
+                        //       // index: widget.index, // Commented out as per your previous code
+                        //     ),
+                        //   ),
+                        // );
                       },
                       behavior: HitTestBehavior.translucent,
                       child: Padding(
