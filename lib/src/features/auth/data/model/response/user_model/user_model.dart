@@ -1,26 +1,31 @@
 import 'dart:convert';
 
-import 'data.dart';
+import 'user.dart';
 
 class UserModel {
-  Data? data;
-  String? token;
+  User? user;
+  String? accessToken;
+  String? refreshToken;
 
-  UserModel({this.data, this.token});
+  UserModel({this.user, this.accessToken, this.refreshToken});
 
   @override
-  String toString() => 'UserModel(data: $data, token: $token)';
+  String toString() {
+    return 'UserModel(user: $user, accessToken: $accessToken, refreshToken: $refreshToken)';
+  }
 
   factory UserModel.fromMap(Map<String, dynamic> data) => UserModel(
-        data: data['data'] == null
+        user: data['user'] == null
             ? null
-            : Data.fromMap(data['data'] as Map<String, dynamic>),
-        token: data['token'] as String?,
+            : User.fromMap(data['user'] as Map<String, dynamic>),
+        accessToken: data['accessToken'] as String?,
+        refreshToken: data['refreshToken'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
-        'data': data?.toMap(),
-        'token': token,
+        'user': user?.toMap(),
+        'accessToken': accessToken,
+        'refreshToken': refreshToken,
       };
 
   /// `dart:convert`
@@ -36,12 +41,14 @@ class UserModel {
   String toJson() => json.encode(toMap());
 
   UserModel copyWith({
-    Data? data,
-    String? token,
+    User? user,
+    String? accessToken,
+    String? refreshToken,
   }) {
     return UserModel(
-      data: data ?? this.data,
-      token: token ?? this.token,
+      user: user ?? this.user,
+      accessToken: accessToken ?? this.accessToken,
+      refreshToken: refreshToken ?? this.refreshToken,
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'package:fazt_order/src/features/auth/data/controller/authentication_controller.dart';
+import 'package:fazt_order/src/features/dashboard_view.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -18,8 +20,9 @@ class LoginScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Using hooks for controllers and state
-    final emailController = useTextEditingController();
-    final passwordController = useTextEditingController();
+    final emailController =
+        useTextEditingController(text: 'map@mailinator.com');
+    final passwordController = useTextEditingController(text: 'Test123.');
 
     // State hooks for password visibility
     final isPasswordVisible = useState(false);
@@ -108,7 +111,11 @@ class LoginScreen extends HookConsumerWidget {
                       text: "Continue",
                       width: double.infinity,
                       height: 48,
-                      onPressed: () {
+                      isLoading: ref
+                          .watch(authenticationControllerProvider)
+                          .login
+                          .isLoading,
+                      onPressed: () async {
                         final email = emailController.text.trim();
                         final password = passwordController.text.trim();
 
@@ -119,13 +126,18 @@ class LoginScreen extends HookConsumerWidget {
                             ),
                           );
                           return;
-                        } else {
-                          // Navigator.pushReplacement(
-                          //   context,
-                          //   MaterialPageRoute(
-                          //     builder: (contex) => const NaviBar(),
-                          //   ),
-                          // );
+                        }
+
+                        final result = await ref
+                            .read(authenticationControllerProvider.notifier)
+                            .signIn(email, password);
+                        if (result == true) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DashboardView(),
+                            ),
+                          );
                         }
 
                         // Handle login logic

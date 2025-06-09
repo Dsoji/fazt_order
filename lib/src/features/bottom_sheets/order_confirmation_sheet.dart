@@ -29,7 +29,6 @@ class OrderConfirmationBottomSheet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           // Ask Oluwadamilola to provide the Json for the lottie animation
           const Center(
             child: Icon(
@@ -54,7 +53,8 @@ class OrderConfirmationBottomSheet extends StatelessWidget {
           // Delivery Address
           Row(
             children: [
-              const Icon(Iconsax.location, color: kcPrimaryNeutral200, size: 20),
+              const Icon(Iconsax.location,
+                  color: kcPrimaryNeutral200, size: 20),
               horizontalSpaceSmall,
               Expanded(
                 child: Column(
@@ -62,11 +62,13 @@ class OrderConfirmationBottomSheet extends StatelessWidget {
                   children: [
                     Text(
                       "Computer Village",
-                      style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral100),
+                      style: ktBodyRegularSize16.copyWith(
+                          color: kcPrimaryNeutral100),
                     ),
                     Text(
                       deliveryAddress,
-                      style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral500),
+                      style: ktBodyRegularSize12.copyWith(
+                          color: kcPrimaryNeutral500),
                     ),
                   ],
                 ),
@@ -89,11 +91,13 @@ class OrderConfirmationBottomSheet extends StatelessWidget {
                   children: [
                     Text(
                       "Standard",
-                      style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral100),
+                      style: ktBodyRegularSize16.copyWith(
+                          color: kcPrimaryNeutral100),
                     ),
                     Text(
                       "30-40 Mins",
-                      style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral500),
+                      style: ktBodyRegularSize12.copyWith(
+                          color: kcPrimaryNeutral500),
                     ),
                   ],
                 ),
@@ -107,7 +111,8 @@ class OrderConfirmationBottomSheet extends StatelessWidget {
           // Order Summary
           Row(
             children: [
-              const Icon(Iconsax.task_square, color: kcPrimaryNeutral200, size: 20),
+              const Icon(Iconsax.task_square,
+                  color: kcPrimaryNeutral200, size: 20),
               horizontalSpaceSmall,
               Expanded(
                 child: Column(
@@ -115,7 +120,8 @@ class OrderConfirmationBottomSheet extends StatelessWidget {
                   children: [
                     Text(
                       "Order Summary",
-                      style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral100),
+                      style: ktBodyRegularSize16.copyWith(
+                          color: kcPrimaryNeutral100),
                     ),
                   ],
                 ),

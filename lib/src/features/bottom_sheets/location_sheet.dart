@@ -43,7 +43,11 @@ class LocationBottomSheet extends StatelessWidget {
                   Align(
                     alignment: Alignment.topRight,
                     child: IconButton(
-                      icon: const Icon(Iconsax.close_circle, size: 24, color: kcPrimaryNeutral100,),
+                      icon: const Icon(
+                        Iconsax.close_circle,
+                        size: 24,
+                        color: kcPrimaryNeutral100,
+                      ),
                       onPressed: () {
                         Navigator.pop(context); // Close the bottom sheet
                       },
@@ -68,7 +72,8 @@ class LocationBottomSheet extends StatelessWidget {
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                   hintText: 'COMI',
-                  hintStyle: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral500),
+                  hintStyle:
+                      ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral500),
                   suffixIcon: const Icon(
                     Iconsax.search_normal_1,
                     color: kcPrimaryNeutral500,
@@ -88,7 +93,7 @@ class LocationBottomSheet extends StatelessWidget {
                       width: 1.0,
                     ),
                   ),
-                  disabledBorder:  OutlineInputBorder(
+                  disabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(50),
                     borderSide: const BorderSide(
                       color: kcPrimary400,
@@ -103,7 +108,8 @@ class LocationBottomSheet extends StatelessWidget {
               // List of locations
               ListView(
                 shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(), // Disable ListView scrolling
+                physics:
+                    const NeverScrollableScrollPhysics(), // Disable ListView scrolling
                 children: const [
                   LocationTile(
                     icon: Icons.gps_fixed,
@@ -118,7 +124,8 @@ class LocationBottomSheet extends StatelessWidget {
                   LocationTile(
                     icon: Iconsax.location,
                     title: "Community Secondary School",
-                    subtitle: "14, Ogbeni sare jeje street, Abeokuta, Ogun State",
+                    subtitle:
+                        "14, Ogbeni sare jeje street, Abeokuta, Ogun State",
                   ),
                   LocationTile(
                     icon: Iconsax.location,
@@ -166,12 +173,12 @@ class LocationTile extends StatelessWidget {
       ),
       subtitle: subtitle != null
           ? Text(
-        subtitle!,
-        style: TextStyle(
-          color: Colors.grey[600],
-          fontSize: 12,
-        ),
-      )
+              subtitle!,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+            )
           : null,
       onTap: () {
         Navigator.pop(context);

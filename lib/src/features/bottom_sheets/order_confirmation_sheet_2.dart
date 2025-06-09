@@ -32,12 +32,11 @@ class OrderConfirmationBottomSheet2 extends StatelessWidget {
             "Order Placed.",
             style: ktBodySemiBoldSize20.copyWith(color: kcPrimaryNeutral100),
           ),
-
           verticalSpaceMedium,
-
           Row(
             children: [
-              const Icon(Iconsax.receipt2, color: kcPrimaryNeutral200, size: 20),
+              const Icon(Iconsax.receipt2,
+                  color: kcPrimaryNeutral200, size: 20),
               horizontalSpaceSmall,
               Expanded(
                 child: Column(
@@ -45,24 +44,30 @@ class OrderConfirmationBottomSheet2 extends StatelessWidget {
                   children: [
                     Text(
                       "Order ID",
-                      style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral100),
+                      style: ktBodyRegularSize16.copyWith(
+                          color: kcPrimaryNeutral100),
                     ),
                     Text(
                       "#1234567890asdf",
-                      style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral500),
+                      style: ktBodyRegularSize12.copyWith(
+                          color: kcPrimaryNeutral500),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-
           verticalSpaceMedium,
-
           Row(
             children: [
-              Text("Share this digit with your rider", style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral200),),
-              Text("2345", style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral200),),
+              Text(
+                "Share this digit with your rider",
+                style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral200),
+              ),
+              Text(
+                "2345",
+                style: ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral200),
+              ),
             ],
           )
         ],

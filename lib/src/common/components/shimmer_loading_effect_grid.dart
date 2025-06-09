@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-
 class ShimmerLoadingEffectGrid extends StatelessWidget {
   const ShimmerLoadingEffectGrid({
     Key? key,

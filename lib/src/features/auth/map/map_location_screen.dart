@@ -15,7 +15,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import '../../../common/res/app_assets.dart';
 import '../../../common/res/app_colors.dart';
 import '../../../common/widgets/custom_textfield.dart';
-import '../../home/dashboard_view.dart';
+import '../../dashboard_view.dart';
 import '../data/model/payload/address_payload.dart';
 
 class MapLocationScreen extends HookConsumerWidget {

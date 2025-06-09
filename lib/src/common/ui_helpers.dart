@@ -41,11 +41,11 @@ double screenWidth(BuildContext context) => MediaQuery.of(context).size.width;
 double screenHeight(BuildContext context) => MediaQuery.of(context).size.height;
 
 double screenHeightFraction(BuildContext context,
-    {int dividedBy = 1, double offsetBy = 0, double max = 3000}) =>
+        {int dividedBy = 1, double offsetBy = 0, double max = 3000}) =>
     min((screenHeight(context) - offsetBy) / dividedBy, max);
 
 double screenWidthFraction(BuildContext context,
-    {int dividedBy = 1, double offsetBy = 0, double max = 3000}) =>
+        {int dividedBy = 1, double offsetBy = 0, double max = 3000}) =>
     min((screenWidth(context) - offsetBy) / dividedBy, max);
 
 double halfScreenWidth(BuildContext context) =>

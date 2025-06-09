@@ -35,8 +35,7 @@ class TriangleCirclePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.fill;
+    final paint = Paint()..style = PaintingStyle.fill;
 
     // Draw the downward-facing triangle
     final path = Path();

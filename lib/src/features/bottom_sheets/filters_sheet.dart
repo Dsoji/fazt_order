@@ -106,12 +106,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               SvgPicture.asset('asset/svgs/dotted_line.svg'),
               verticalSpaceSmall,
               // Delivery Time Section
-              Text(
-                "Delivery Time",
-                style: ktBodyRegularSize16.copyWith(
-                  color: kcPrimaryNeutral100
-                )
-              ),
+              Text("Delivery Time",
+                  style:
+                      ktBodyRegularSize16.copyWith(color: kcPrimaryNeutral100)),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text("Less than 30 mins"),
@@ -123,7 +120,6 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 },
                 controlAffinity: ListTileControlAffinity.trailing,
                 activeColor: kcPrimary300,
-
               ),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
@@ -168,9 +164,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'From', style: ktBodyRegularSize12.copyWith(
-                          color: kcPrimaryNeutral200,
-                        ),),
+                          'From',
+                          style: ktBodyRegularSize12.copyWith(
+                            color: kcPrimaryNeutral200,
+                          ),
+                        ),
                         verticalSpaceTiny,
                         TextField(
                           decoration: InputDecoration(
@@ -198,9 +196,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'To', style: ktBodyRegularSize12.copyWith(
-                          color: kcPrimaryNeutral200,
-                        ),),
+                          'To',
+                          style: ktBodyRegularSize12.copyWith(
+                            color: kcPrimaryNeutral200,
+                          ),
+                        ),
                         verticalSpaceTiny,
                         TextField(
                           decoration: InputDecoration(
@@ -229,7 +229,8 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {Navigator.pop(context);
+                  onPressed: () {
+                    Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kcPrimary400,
@@ -238,7 +239,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                   child: const Text(
+                  child: const Text(
                     "Apply",
                     style: TextStyle(
                       fontSize: 16,
@@ -266,10 +267,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selectedRating == rating ?kcPrimary300 : kcTransparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: kcPrimary700)
-        ),
+            color: selectedRating == rating ? kcPrimary300 : kcTransparent,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: kcPrimary700)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -277,7 +277,6 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               Icons.star,
               size: 16,
               color: selectedRating == rating ? kcWhite : kcPrimary400,
-
             ),
             horizontalSpaceTiny,
             Text(
@@ -287,7 +286,6 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
           ],
         ),
       ),

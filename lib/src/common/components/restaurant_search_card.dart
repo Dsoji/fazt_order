@@ -4,8 +4,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../../datamodels/restaurant.dart';
 import '../../../providers/restaurant_provider.dart';
-import '../../features/home/restaurant_details.dart';
-import '../../features/home/search_restaurant_view.dart';
+import '../../features/home/presentation/restaurant_details.dart';
+import '../../features/home/presentation/search_restaurant_view.dart';
 import '../app_colors.dart';
 import '../ui_helpers.dart';
 import '../widgets/text_styles.dart';
@@ -95,12 +95,16 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
                                   icon: Icon(
-                                    widget.restaurant.isFavorite ? Iconsax.heart5 : Iconsax.heart,
+                                    widget.restaurant.isFavorite
+                                        ? Iconsax.heart5
+                                        : Iconsax.heart,
                                     color: kcPrimaryNeutral200,
                                     size: 24,
                                   ),
                                   onPressed: () {
-                                    ref.read(restaurantProvider.notifier).toggleFavorite(widget.index);
+                                    ref
+                                        .read(restaurantProvider.notifier)
+                                        .toggleFavorite(widget.index);
                                   },
                                 ),
                               ],
@@ -110,15 +114,18 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                               children: [
                                 Row(
                                   children: [
-                                    SvgPicture.asset('asset/svgs/delivery_icon.svg'),
+                                    SvgPicture.asset(
+                                        'asset/svgs/delivery_icon.svg'),
                                     horizontalSpace(4),
                                     Text(
                                       "From ₦${widget.restaurant.price}",
-                                      style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral200),
+                                      style: ktBodyRegularSize12.copyWith(
+                                          color: kcPrimaryNeutral200),
                                     ),
                                     horizontalSpace(4),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(20),
                                         color: kcPrimaryOrange500,
@@ -127,13 +134,15 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                                         widget.restaurant.isAvailable
                                             ? widget.restaurant.deliveryTime
                                             : "Closed",
-                                        style: ktBodyRegularSize12.copyWith(color: kcWhite),
+                                        style: ktBodyRegularSize12.copyWith(
+                                            color: kcWhite),
                                       ),
                                     ),
                                   ],
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 4.0, right: 6),
+                                  padding:
+                                      const EdgeInsets.only(top: 4.0, right: 6),
                                   child: Row(
                                     children: [
                                       const Icon(
@@ -144,7 +153,8 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                                       const SizedBox(width: 4),
                                       Text(
                                         "${widget.restaurant.rating} (${widget.restaurant.reviewCount})",
-                                        style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral200),
+                                        style: ktBodyRegularSize14.copyWith(
+                                            color: kcPrimaryNeutral200),
                                       ),
                                     ],
                                   ),
@@ -160,7 +170,6 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                   ),
                 ),
                 SvgPicture.asset("asset/svgs/dotted_line.svg"),
-
               ],
             ),
           ),
@@ -181,7 +190,8 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => RestaurantDetailsView( // Updated to RestaurantDetailsView
+                            builder: (context) => RestaurantDetailsView(
+                              // Updated to RestaurantDetailsView
                               restaurant: widget.restaurant,
                               // index: widget.index, // Commented out as per your previous code
                             ),
@@ -190,7 +200,8 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                       },
                       behavior: HitTestBehavior.translucent,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8.0, vertical: 8.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -199,7 +210,8 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                               children: [
                                 Text(
                                   "${widget.restaurant.name} ",
-                                  style: ktBodySemiBoldSize16.copyWith(color: kcPrimaryNeutral200),
+                                  style: ktBodySemiBoldSize16.copyWith(
+                                      color: kcPrimaryNeutral200),
                                 ),
                                 const Icon(Iconsax.heart),
                               ],
@@ -209,7 +221,8 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                               children: [
                                 Text(
                                   "${widget.restaurant.location} ",
-                                  style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral500),
+                                  style: ktBodyRegularSize12.copyWith(
+                                      color: kcPrimaryNeutral500),
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4.0),
@@ -223,7 +236,8 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                                       const SizedBox(width: 4),
                                       Text(
                                         "${widget.restaurant.rating} (${widget.restaurant.reviewCount})",
-                                        style: ktBodyRegularSize14.copyWith(color: kcPrimaryNeutral200),
+                                        style: ktBodyRegularSize14.copyWith(
+                                            color: kcPrimaryNeutral200),
                                       ),
                                     ],
                                   ),
@@ -236,16 +250,19 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                               children: [
                                 Row(
                                   children: [
-                                    SvgPicture.asset('asset/svgs/delivery_icon.svg'),
+                                    SvgPicture.asset(
+                                        'asset/svgs/delivery_icon.svg'),
                                     horizontalSpace(4),
                                     Text(
                                       "From ₦${widget.restaurant.price}",
-                                      style: ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral200),
+                                      style: ktBodyRegularSize12.copyWith(
+                                          color: kcPrimaryNeutral200),
                                     ),
                                   ],
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(20),
                                     color: kcPrimaryOrange500,
@@ -254,7 +271,8 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                                     widget.restaurant.isAvailable
                                         ? widget.restaurant.deliveryTime
                                         : "Closed",
-                                    style: ktBodyRegularSize12.copyWith(color: kcWhite),
+                                    style: ktBodyRegularSize12.copyWith(
+                                        color: kcWhite),
                                   ),
                                 ),
                               ],
@@ -269,25 +287,25 @@ class _RestaurantSearchCardState extends ConsumerState<RestaurantSearchCard> {
                       height: _isExpanded ? screenHeight(context) * 0.188 : 0,
                       child: _isExpanded
                           ? Column(
-                        children: [
-                          verticalSpaceTiny,
-                          SizedBox(
-                            height: screenHeight(context) * 0.173,
-                            child: ListView(
-                              scrollDirection: Axis.horizontal,
                               children: [
-                                _buildMenuItem("Amala", "₦400"),
-                                const SizedBox(width: 8),
-                                _buildMenuItem("Eba", "₦400"),
-                                const SizedBox(width: 8),
-                                _buildMenuItem("Jollof Rice", "₦400"),
+                                verticalSpaceTiny,
+                                SizedBox(
+                                  height: screenHeight(context) * 0.173,
+                                  child: ListView(
+                                    scrollDirection: Axis.horizontal,
+                                    children: [
+                                      _buildMenuItem("Amala", "₦400"),
+                                      const SizedBox(width: 8),
+                                      _buildMenuItem("Eba", "₦400"),
+                                      const SizedBox(width: 8),
+                                      _buildMenuItem("Jollof Rice", "₦400"),
+                                    ],
+                                  ),
+                                ),
+                                verticalSpaceTiny,
+                                SvgPicture.asset("asset/svgs/dotted_line.svg"),
                               ],
-                            ),
-                          ),
-                          verticalSpaceTiny,
-                          SvgPicture.asset("asset/svgs/dotted_line.svg"),
-                        ],
-                      )
+                            )
                           : null,
                     ),
                   ],

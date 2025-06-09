@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "948796465884",
+    "project_id": "faztorder-81d4e",
+    "storage_bucket": "faztorder-81d4e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:948796465884:android:6886c2ed059594fa338a19",
+        "android_client_info": {
+          "package_name": "com.example.fazt_order"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPraEX4GOoH6JLdD4yh9pZDZd4cEgV1XQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

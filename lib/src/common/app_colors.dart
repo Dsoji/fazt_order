@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
-
 const kcWhite = Color(0xffFFFFFF);
 const kcBlack = Color(0xff000000);
 const kcTransparent = Colors.transparent;
-
 
 //  Primary Color Blue and it's variation
 const kcPrimaryBlue100 = Color(0xff00006E);
@@ -17,7 +15,6 @@ const kcPrimaryBlue700 = Color(0xff9DA3FF);
 const kcPrimaryBlue800 = Color(0xffBEC2FF);
 const kcPrimaryBlue900 = Color(0xffE0E0FF);
 
-
 //  Primary Color Red and it's variation
 const kcPrimaryRed100 = Color(0xff410000);
 const kcPrimaryRed200 = Color(0xff690100);
@@ -28,7 +25,6 @@ const kcPrimaryRed600 = Color(0xffFF5540);
 const kcPrimaryRed700 = Color(0xffFF8A78);
 const kcPrimaryRed800 = Color(0xffFFB4A8);
 const kcPrimaryRed900 = Color(0xffFFDAD4);
-
 
 //  Primary Brand Color and it's variation
 const kcPrimary100 = Color(0xff272C0C);
@@ -44,9 +40,6 @@ const kcPrimary950 = Color(0xffE0ED9E);
 const kcPrimary980 = Color(0xffF3F8D8);
 const kcPrimary990 = Color(0xffFFFBFF);
 
-
-
-
 //  Primary Color Yellow and it's variation
 const kcPrimaryYellow100 = Color(0xff1D1D00);
 const kcPrimaryYellow200 = Color(0xff323200);
@@ -61,8 +54,6 @@ const kcPrimaryYellow950 = Color(0xffF9F900);
 const kcPrimaryYellow980 = Color(0xffFFFEAC);
 const kcPrimaryYellow990 = Color(0xffFFFBFF);
 
-
-
 //  Primary Color Green and it's variation
 const kcPrimaryGreen100 = Color(0xff002200);
 const kcPrimaryGreen200 = Color(0xff003A00);
@@ -75,8 +66,6 @@ const kcPrimaryGreen800 = Color(0xff72DE5E);
 const kcPrimaryGreen900 = Color(0xff8DFB77);
 const kcPrimaryGreen950 = Color(0xffCAFFB8);
 const kcPrimaryGreen990 = Color(0xffF7FFEE);
-
-
 
 //  Primary Color Orange and it's variation
 const kcPrimaryOrange100 = Color(0xff2A1700);
@@ -91,8 +80,6 @@ const kcPrimaryOrange900 = Color(0xffFFDDB7);
 const kcPrimaryOrange950 = Color(0xffFFEEDE);
 const kcPrimaryOrange990 = Color(0xffFFFBFF);
 
-
-
 //  Primary Color Purple and it's variation
 const kcPrimaryPurple100 = Color(0xff380038);
 const kcPrimaryPurple200 = Color(0xff5B005B);
@@ -105,8 +92,6 @@ const kcPrimaryPurple800 = Color(0xffFFAAF3);
 const kcPrimaryPurple900 = Color(0xffFFD7F5);
 const kcPrimaryPurple950 = Color(0xffFFD7F5);
 const kcPrimaryPurple990 = Color(0xffFFFBFF);
-
-
 
 //  Primary Color Neutral and it's variation
 const kcPrimaryNeutral100 = Color(0xff1E1A1D);

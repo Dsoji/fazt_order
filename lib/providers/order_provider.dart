@@ -30,77 +30,82 @@ class OrderNotifier extends StateNotifier<OrderState> {
 
   OrderNotifier(this.ref)
       : super(OrderState(
-    items: [
-      // Sample cart items
-      OrderItem(name: "Jollof Rice", quantity: 2, price: 3000, tab: 'cart'),
-      OrderItem(name: "Chicken Soup", quantity: 1, price: 2500, tab: 'cart'),
-      // Sample ongoing items
-      OrderItem(name: "Abacha", quantity: 3, price: 5000, tab: 'ongoing'),
-      OrderItem(name: "Abacha", quantity: 3, price: 5000, tab: 'ongoing'),
-      OrderItem(name: "Abacha", quantity: 3, price: 5000, tab: 'ongoing'),
-      OrderItem(name: "Abacha", quantity: 3, price: 5000, tab: 'ongoing'),
-      // Sample completed items
-      OrderItem(
-        name: "Abacha",
-        quantity: 3,
-        price: 5000,
-        tab: 'completed',
-        orderId: "1234567890asdf",
-        dateTime: "6, Aug 2024, 1:00 pm",
-        deliveryAddress: "Iya Alamala - Ajayi Estate",
-      ),
-      OrderItem(
-        name: "Abacha",
-        quantity: 3,
-        price: 5000,
-        tab: 'completed',
-        orderId: "1234567890asdf",
-        dateTime: "6, Aug 2024, 1:00 pm",
-        deliveryAddress: "Delivery to Computer Village",
-      ),
-      OrderItem(
-        name: "Abacha",
-        quantity: 3,
-        price: 5000,
-        tab: 'completed',
-        orderId: "1234567890asdf",
-        dateTime: "6, Aug 2024, 1:00 pm",
-        deliveryAddress: "Iya Alamala - Ajayi Estate",
-      ),
-      OrderItem(
-        name: "Abacha",
-        quantity: 3,
-        price: 5000,
-        tab: 'completed',
-        orderId: "1234567890asdf",
-        dateTime: "6, Aug 2024, 1:00 pm",
-        deliveryAddress: "Delivery to Computer Village",
-      ),
-    ],
-    deliveryFee: 1000,
-    taxAndFees: 1000,
-    deliveryAddress: "12, Oritshe street, Ikeja, Lagos State",
-    restaurantName: "Unknown Restaurant",
-  ));
+          items: [
+            // Sample cart items
+            OrderItem(
+                name: "Jollof Rice", quantity: 2, price: 3000, tab: 'cart'),
+            OrderItem(
+                name: "Chicken Soup", quantity: 1, price: 2500, tab: 'cart'),
+            // Sample ongoing items
+            OrderItem(name: "Abacha", quantity: 3, price: 5000, tab: 'ongoing'),
+            OrderItem(name: "Abacha", quantity: 3, price: 5000, tab: 'ongoing'),
+            OrderItem(name: "Abacha", quantity: 3, price: 5000, tab: 'ongoing'),
+            OrderItem(name: "Abacha", quantity: 3, price: 5000, tab: 'ongoing'),
+            // Sample completed items
+            OrderItem(
+              name: "Abacha",
+              quantity: 3,
+              price: 5000,
+              tab: 'completed',
+              orderId: "1234567890asdf",
+              dateTime: "6, Aug 2024, 1:00 pm",
+              deliveryAddress: "Iya Alamala - Ajayi Estate",
+            ),
+            OrderItem(
+              name: "Abacha",
+              quantity: 3,
+              price: 5000,
+              tab: 'completed',
+              orderId: "1234567890asdf",
+              dateTime: "6, Aug 2024, 1:00 pm",
+              deliveryAddress: "Delivery to Computer Village",
+            ),
+            OrderItem(
+              name: "Abacha",
+              quantity: 3,
+              price: 5000,
+              tab: 'completed',
+              orderId: "1234567890asdf",
+              dateTime: "6, Aug 2024, 1:00 pm",
+              deliveryAddress: "Iya Alamala - Ajayi Estate",
+            ),
+            OrderItem(
+              name: "Abacha",
+              quantity: 3,
+              price: 5000,
+              tab: 'completed',
+              orderId: "1234567890asdf",
+              dateTime: "6, Aug 2024, 1:00 pm",
+              deliveryAddress: "Delivery to Computer Village",
+            ),
+          ],
+          deliveryFee: 1000,
+          taxAndFees: 1000,
+          deliveryAddress: "12, Oritshe street, Ikeja, Lagos State",
+          restaurantName: "Unknown Restaurant",
+        ));
 
   void addToCart(MenuItem item) {
-    final restaurantName = ref.read(restaurantProvider).firstWhere(
+    final restaurantName = ref
+        .read(restaurantProvider)
+        .firstWhere(
           (restaurant) => restaurant.menuItems.contains(item),
-      orElse: () => Restaurant(
-        name: "Unknown Restaurant",
-        location: "",
-        imageUrl: "",
-        menuItems: [],
-        price: 0,
-        rating: 0,
-        reviewCount: 0,
-        deliveryTime: "",
-        openingHours: "",
-        deliveryType: "",
-        isFavorite: false,
-        isAvailable: true,
-      ),
-    ).name;
+          orElse: () => Restaurant(
+            name: "Unknown Restaurant",
+            location: "",
+            imageUrl: "",
+            menuItems: [],
+            price: 0,
+            rating: 0,
+            reviewCount: 0,
+            deliveryTime: "",
+            openingHours: "",
+            deliveryType: "",
+            isFavorite: false,
+            isAvailable: true,
+          ),
+        )
+        .name;
     state = OrderState(
       items: [
         ...state.items,
@@ -120,12 +125,13 @@ class OrderNotifier extends StateNotifier<OrderState> {
 
   void updateQuantity(int index, int newQuantity, {required String tab}) {
     if (newQuantity >= 0) {
-      final filteredItems = state.items.where((item) => item.tab == tab).toList();
+      final filteredItems =
+          state.items.where((item) => item.tab == tab).toList();
       if (index < filteredItems.length) {
         final allItems = [...state.items];
         final targetItem = filteredItems[index];
         final targetIndex = allItems.indexWhere((item) =>
-        item.name == targetItem.name &&
+            item.name == targetItem.name &&
             item.quantity == targetItem.quantity &&
             item.price == targetItem.price &&
             item.tab == targetItem.tab);
@@ -165,7 +171,7 @@ class OrderNotifier extends StateNotifier<OrderState> {
       final allItems = [...state.items];
       final targetItem = filteredItems[index];
       final targetIndex = allItems.indexWhere((item) =>
-      item.name == targetItem.name &&
+          item.name == targetItem.name &&
           item.quantity == targetItem.quantity &&
           item.price == targetItem.price &&
           item.tab == targetItem.tab);

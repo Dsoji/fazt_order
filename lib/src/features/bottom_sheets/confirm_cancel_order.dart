@@ -23,18 +23,22 @@ class ConfirmCancelOrderBottomSheet extends StatelessWidget {
         children: [
           verticalSpaceLarge,
           Center(
-            child: SizedBox(height: screenHeight(context) * 0.3,
-                width: screenWidth(context) * 0.9,child: Lottie.asset('asset/lottie/cancel-order.json', alignment: Alignment.center,)),
+            child: SizedBox(
+                height: screenHeight(context) * 0.3,
+                width: screenWidth(context) * 0.9,
+                child: Lottie.asset(
+                  'asset/lottie/cancel-order.json',
+                  alignment: Alignment.center,
+                )),
           ),
           const Center(
             child: Text(
-                'Your Order have been Cancelled.',
+              'Your Order have been Cancelled.',
               style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 20,
                   color: kcPrimaryNeutral100,
-                  letterSpacing: 1
-              ),
+                  letterSpacing: 1),
             ),
           ),
           GestureDetector(

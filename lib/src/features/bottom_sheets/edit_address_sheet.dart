@@ -45,9 +45,7 @@ class _EditAddressBottomSheetState extends State<EditAddressBottomSheet> {
         // height: MediaQuery.of(context).size.height * 0.4,
         decoration: const BoxDecoration(
           color: kcWhite,
-          borderRadius: BorderRadius.vertical(
-              top: Radius.circular(20)
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -55,13 +53,19 @@ class _EditAddressBottomSheetState extends State<EditAddressBottomSheet> {
           children: [
             const Text(
               "Edit Information",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kcPrimaryNeutral100),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: kcPrimaryNeutral100),
             ),
             verticalSpaceMedium,
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Phone Number ", style: TextStyle(color: kcPrimaryNeutral200, fontSize: 12),),
+                const Text(
+                  "Phone Number ",
+                  style: TextStyle(color: kcPrimaryNeutral200, fontSize: 12),
+                ),
                 verticalSpaceSmall,
                 TextField(
                   controller: _phoneController,
@@ -90,7 +94,10 @@ class _EditAddressBottomSheetState extends State<EditAddressBottomSheet> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Delivery Address ", style: TextStyle(color: kcPrimaryNeutral200, fontSize: 12),),
+                const Text(
+                  "Delivery Address ",
+                  style: TextStyle(color: kcPrimaryNeutral200, fontSize: 12),
+                ),
                 verticalSpaceSmall,
                 TextField(
                   controller: _addressController,
@@ -114,9 +121,7 @@ class _EditAddressBottomSheetState extends State<EditAddressBottomSheet> {
                 ),
               ],
             ),
-
             verticalSpaceMedium,
-
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

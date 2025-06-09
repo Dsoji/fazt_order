@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 class DashProgressBar extends StatelessWidget {
   final int totalSteps;
   final int currentStep;
@@ -39,7 +38,8 @@ class DashProgressBar extends StatelessWidget {
                 width: dashWidth,
                 height: dashHeight,
                 decoration: BoxDecoration(
-                  color: isActive ? activeColor : inactiveColor.withOpacity(0.3),
+                  color:
+                      isActive ? activeColor : inactiveColor.withOpacity(0.3),
                   borderRadius: BorderRadius.circular(dashHeight / 2),
                 ),
               );

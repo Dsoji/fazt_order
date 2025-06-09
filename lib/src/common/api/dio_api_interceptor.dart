@@ -5,12 +5,15 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:logger/logger.dart';
 
 import '../../features/onboarding/presentation/onboarding_screen.dart';
-import '../toast/toast.dart';
+import '../res/base.dart';
 
+final logger = Logger();
 final navigatorKeyProvider = Provider<GlobalKey<NavigatorState>>((ref) {
   return GlobalKey<NavigatorState>();
 });
@@ -85,13 +88,17 @@ class DioApiInterceptor extends Interceptor {
     // final refreshToken = await authLocalService.geRefreshToken();
 
     if (statusCode == 401) {
+      var box = Hive.box('data');
+      String? refreshToken = box.get('refreshToken');
+      logger.d(refreshToken);
+
       /// get the previous user from the local storage
       // UserModel previousUser = await authLocalService.getUser();
-      ref.read(navigatorKeyProvider).currentState?.pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const OnboardingScreen(),
-            ),
-          );
+      // ref.read(navigatorKeyProvider).currentState?.pushReplacement(
+      //       MaterialPageRoute(
+      //         builder: (context) => const OnboardingScreen(),
+      //       ),
+      //     );
 
       final dio = Dio()
         ..interceptors.add(LogInterceptor(
@@ -106,14 +113,38 @@ class DioApiInterceptor extends Interceptor {
 
       /// make a request to the refresh token endpoint
       try {
-        // final response = await dio.post(
-        //   EnvironmentConfig.instance.baseUrl + ApiEndpoints.refreshToken,
-        //   data: {
-        //     'refreshToken': refreshToken,
-        //   },
-        // );
+        log('Over here we are trying to refresh the token');
+        final response = await dio.post(
+          '${BasePaths.baseProdUrl}auth/refresh-token',
+          data: {
+            'refreshToken': refreshToken,
+          },
+        );
 
-        // if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          log('Over here refreshing the token was successful');
+          final data = response.data;
+          final token = data['data']['accessToken'];
+          final newrefreshToken = data['data']['refreshToken'];
+
+          box.put('accessToken', token);
+          box.put('refreshToken', newrefreshToken);
+
+          /// hit the previous request with the new token retrieved
+          final origin = err.response?.requestOptions;
+          log('Over here rwe try the request again');
+          final previousReqResponse = await dio.request(
+            BasePaths.baseProdUrl + origin!.path,
+            data: origin.data,
+            options: Options(
+              headers: {
+                HttpHeaders.authorizationHeader: 'Bearer $token',
+              },
+            ),
+          );
+
+          return handler.resolve(previousReqResponse);
+        }
         //   final data = response.data;
 
         //   /// update the user by copying the new tokens to the previous user model
@@ -144,11 +175,17 @@ class DioApiInterceptor extends Interceptor {
         // }
       } on DioException catch (dioError) {
         if (dioError.response != null) {
-          ToastService().showToast(
-            NotificationType.error,
-            message:
-                'Oops! There was a problem. A quick log in should get things back on track.',
+          Fluttertoast.showToast(
+            msg:
+                "Oops! There was a problem. A quick log in should get things back on track.",
+            toastLength: Toast.LENGTH_LONG,
+            gravity: ToastGravity.TOP,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+            fontSize: 14.0,
           );
+          final box = Hive.box('data');
+          await box.clear();
           Navigator.of(ref.read(navigatorKeyProvider).currentContext!)
               .pushReplacement(
             MaterialPageRoute(builder: (context) => const OnboardingScreen()),
