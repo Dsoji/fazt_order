@@ -5,26 +5,31 @@ import '../model/response/shops_model/shops_model.dart';
 class ShopState {
   final AsyncValue<ShopsModel> shops;
   final AsyncValue<ShopsModel> shopFoodCategory;
+  final AsyncValue<String> searchQuery;
 
   const ShopState({
     required this.shops,
     required this.shopFoodCategory,
+    required this.searchQuery,
   });
 
   factory ShopState.initial() {
     return ShopState(
       shops: AsyncValue.data(ShopsModel()),
       shopFoodCategory: AsyncValue.data(ShopsModel()),
+      searchQuery: AsyncValue.data(''),
     );
   }
 
   ShopState copyWith({
     AsyncValue<ShopsModel>? shops,
     AsyncValue<ShopsModel>? shopFoodCategory,
+    AsyncValue<String>? searchQuery,
   }) {
     return ShopState(
       shops: shops ?? this.shops,
       shopFoodCategory: shopFoodCategory ?? this.shopFoodCategory,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 

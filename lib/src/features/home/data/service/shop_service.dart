@@ -43,6 +43,38 @@ class ShopService {
     );
   }
 
+  Future<ResultValue<ShopsModel>> fetchShopFoodCategory(String shopId) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.get(
+        'categories?store=$shopId',
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+        },
+      ),
+      parser: (data) => ShopsModel.fromMap(data),
+    );
+  }
+
+  Future<ResultValue<String>> globalSearch(
+      String searchQuery, String latitude, String longitude) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.get(
+        'meals/search?',
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+        },
+        queryParameters: {
+          'keyword': searchQuery,
+          'latitude': latitude,
+          'longitude': longitude,
+          'limit': 50,
+          'radius': 10000,
+        },
+      ),
+      parser: (data) => data,
+    );
+  }
+
   // Future<ResultValue<UserModel>> signInUser({
   //   required String email,
   //   required String password,

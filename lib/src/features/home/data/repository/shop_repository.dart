@@ -53,6 +53,51 @@ class ShopRepository {
     }
   }
 
+  Future<Result<FailureHandler, ShopsModel>> fetchShopFoodCategory(
+      String shopId) async {
+    try {
+      final data = await authService.fetchShopFoodCategory(shopId);
+
+      if (data.isSuccess) {
+        return Success(data.value ?? ShopsModel());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to fetch shop food category',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to fetch shop food category'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, String>> globalSearch(
+      String searchQuery, String latitude, String longitude) async {
+    try {
+      final data =
+          await authService.globalSearch(searchQuery, latitude, longitude);
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to perform global search',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to perform global search'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
   // Future<Result<FailureHandler, UserModel>> authSignIn({
   //   required String email,
   //   required String pswrd,
