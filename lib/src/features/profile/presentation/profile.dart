@@ -1,50 +1,52 @@
+import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
 import 'package:fazt_order/src/features/profile/presentation/settings_view.dart';
 import 'package:fazt_order/src/features/profile/presentation/wallet_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:gap/gap.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
+import '../../auth/login/presentation/login_screen.dart';
+import '../data/controller/profile_controller.dart';
 import 'customer_support_view.dart';
 import '../../home/presentation/edit_address.dart';
 import 'edit_profile.dart';
 import '../../home/presentation/favorites_view.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'profile_provider.dart';
 
-class ProfileView extends StatefulWidget {
+class ProfileView extends HookConsumerWidget {
   const ProfileView({super.key});
 
   @override
-  _ProfileViewState createState() => _ProfileViewState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userDetails =
+        ref.watch(profileControllerProvider).userDetails.valueOrNull;
 
-class _ProfileViewState extends State<ProfileView> {
-  String name = "Agbejero Solomon";
-  String phone = "08012345678";
-  String email = "namedaebreath4here@gmail.com";
-
-  void _navigateToEditProfile() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditProfileView(
-          name: name,
-          phone: phone,
-          email: email,
+    Future<void> _navigateToEditProfile() async {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EditProfileView(
+            firstName: userDetails?.user?.firstName ?? '',
+            lastName: userDetails?.user?.lastName ?? '',
+            phone: userDetails?.user?.phone ?? '',
+            email: userDetails?.user?.email ?? '',
+          ),
         ),
-      ),
-    );
-    if (result != null) {
-      setState(() {
-        name = result['name'];
-        phone = result['phone'];
-        email = result['email'];
-      });
+      );
+      // if (result != null) {
+      //   profileNotifier.updateProfile(
+      //     name: result['name'],
+      //     phone: result['phone'],
+      //     email: result['email'],
+      //   );
+      // }
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kcPrimaryNeutral950,
       body: SafeArea(
@@ -66,7 +68,8 @@ class _ProfileViewState extends State<ProfileView> {
                     verticalSpaceSmall,
                     // User Name
                     Text(
-                      name,
+                      '${userDetails?.user?.firstName ?? ''} ${userDetails?.user?.lastName ?? ''}'
+                          .trim(),
                       style: ktBodySemiBoldSize20.copyWith(
                         fontSize: 16,
                         color: Colors.black,
@@ -86,7 +89,7 @@ class _ProfileViewState extends State<ProfileView> {
                             ),
                           ),
                           TextSpan(
-                            text: phone,
+                            text: userDetails?.user?.phone ?? '',
                             style: const TextStyle(
                               fontSize: 12,
                               color: kcPrimaryNeutral200,
@@ -107,7 +110,7 @@ class _ProfileViewState extends State<ProfileView> {
                             ),
                           ),
                           TextSpan(
-                            text: email,
+                            text: userDetails?.user?.email ?? '',
                             style: const TextStyle(
                               fontSize: 12,
                               color: kcPrimaryNeutral200,
@@ -246,6 +249,21 @@ class _ProfileViewState extends State<ProfileView> {
                     ),
                   ],
                 ),
+              ),
+              Gap(100),
+              FullButton(
+                text: 'Log Out',
+                width: 150,
+                height: 48,
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const LoginScreen()),
+                  );
+                },
+                color: Colors.red,
+                textColor: Colors.white,
               ),
             ],
           ),

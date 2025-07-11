@@ -51,6 +51,12 @@ class DashboardView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(navigationProvider);
+    final navItems = [
+      {'icon': Iconsax.home, 'label': 'Home'},
+      {'icon': Iconsax.shopping_bag, 'label': 'Order'},
+      {'icon': Iconsax.group_1, 'label': 'Courier'},
+      {'icon': Iconsax.profile_circle, 'label': 'Profile'},
+    ];
 
     return Scaffold(
       body: Stack(
@@ -64,54 +70,94 @@ class DashboardView extends HookConsumerWidget {
             right: 16.0,
             bottom: 16.0,
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(32),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withOpacity(0.12),
+                    blurRadius: 18,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
-              child: BottomNavigationBar(
-                type: BottomNavigationBarType.fixed,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                items: [
-                  _buildNavItem(
-                    icon: const Icon(Iconsax.home),
-                    label: "Home",
-                    isSelected: currentIndex == 0,
-                  ),
-                  _buildNavItem(
-                    icon: const Icon(Iconsax.shopping_bag),
-                    label: "Order",
-                    isSelected: currentIndex == 1,
-                  ),
-                  _buildNavItem(
-                    icon: const Icon(Iconsax.group_1),
-                    label: "Courier",
-                    isSelected: currentIndex == 2,
-                  ),
-                  _buildNavItem(
-                    icon: const Icon(Iconsax.profile_circle),
-                    label: "Profile",
-                    isSelected: currentIndex == 3,
-                  ),
-                ],
-                currentIndex: currentIndex,
-                selectedItemColor: kcPrimary400,
-                unselectedItemColor: kcPrimaryNeutral500,
-                showUnselectedLabels: true,
-                selectedLabelStyle:
-                    const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                unselectedLabelStyle: const TextStyle(fontSize: 14),
-                onTap: (index) {
-                  ref.read(navigationProvider.notifier).state = index;
-                },
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(navItems.length, (index) {
+                  final isSelected = currentIndex == index;
+                  return Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () async {
+                        if (currentIndex != index) {
+                          HapticFeedback.lightImpact();
+                          ref.read(navigationProvider.notifier).state = index;
+                        }
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOutCubic,
+                                  height: isSelected ? 36 : 0,
+                                  width: isSelected ? 48 : 0,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? kcPrimary400.withOpacity(0.15)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                ),
+                                Icon(
+                                  navItems[index]['icon'] as IconData,
+                                  size: isSelected ? 28 : 24,
+                                  color: isSelected
+                                      ? kcPrimary400
+                                      : kcPrimaryNeutral500,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                              style: TextStyle(
+                                fontSize: isSelected ? 14 : 13,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? kcPrimary400
+                                    : kcPrimaryNeutral500,
+                              ),
+                              child: Text(navItems[index]['label'] as String),
+                            ),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeOutCubic,
+                              margin: const EdgeInsets.only(top: 4),
+                              height: 4,
+                              width: isSelected ? 16 : 0,
+                              decoration: BoxDecoration(
+                                color: kcPrimary400,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               ),
             ),
           ),
@@ -119,24 +165,4 @@ class DashboardView extends HookConsumerWidget {
       ),
     );
   }
-}
-
-BottomNavigationBarItem _buildNavItem({
-  required Widget icon,
-  required String label,
-  required bool isSelected,
-}) {
-  return BottomNavigationBarItem(
-    icon: Stack(
-      alignment: Alignment.center,
-      children: [
-        SizedBox(
-          height: 24,
-          width: 24,
-          child: icon,
-        ),
-      ],
-    ),
-    label: label,
-  );
 }

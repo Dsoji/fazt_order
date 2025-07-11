@@ -38,7 +38,7 @@ class RestaurantCard extends ConsumerWidget {
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.all(Radius.circular(15)),
-                    child: Image.asset(
+                    child: Image.network(
                       restaurant.store?.storeDisplayImage ?? '',
                       height: 150,
                       width: double.infinity,
@@ -62,7 +62,7 @@ class RestaurantCard extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        restaurant.shopName ?? '',
+                        "${restaurant.store?.storeName ?? ''} (${restaurant.shopName ?? ''})",
                         style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
@@ -83,7 +83,7 @@ class RestaurantCard extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        restaurant.location?.address ?? '',
+                        "${restaurant.location?.address ?? ''}, ${restaurant.location?.city ?? ''}, ${restaurant.location?.state ?? ''} state.",
                         style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                       Row(

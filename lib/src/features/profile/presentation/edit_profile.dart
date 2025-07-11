@@ -1,57 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
+import '../data/controller/profile_controller.dart';
 
-class EditProfileView extends StatefulWidget {
-  final String name;
+class EditProfileView extends HookConsumerWidget {
+  final String firstName;
+  final String lastName;
   final String phone;
   final String email;
 
   const EditProfileView({
     super.key,
-    required this.name,
+    required this.firstName,
+    required this.lastName,
     required this.phone,
     required this.email,
   });
 
   @override
-  _EditProfileViewState createState() => _EditProfileViewState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Using hooks for text controllers
+    final firstNameController = useTextEditingController(text: firstName);
+    final lastNameController = useTextEditingController(text: lastName);
+    final phoneController = useTextEditingController(text: phone);
+    final emailController = useTextEditingController(text: email);
 
-class _EditProfileViewState extends State<EditProfileView> {
-  late TextEditingController _nameController;
-  late TextEditingController _phoneController;
-  late TextEditingController _emailController;
+    // Watch the profile controller state
+    final profileState = ref.watch(profileControllerProvider);
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.name);
-    _phoneController = TextEditingController(text: widget.phone);
-    _emailController = TextEditingController(text: widget.email);
-  }
+    void _saveProfile() async {
+      // Extract first and last name from the name field
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _emailController.dispose();
-    super.dispose();
-  }
+      // Call the update profile method
+      final success =
+          await ref.read(profileControllerProvider.notifier).updateNewProfile(
+                firstName: firstNameController.text.trim(),
+                lastName: lastNameController.text.trim(),
+                phone: phoneController.text.trim(),
+              );
 
-  void _saveProfile() {
-    // TODO: Save the updated profile data (e.g., using a provider or API)
-    Navigator.pop(context, {
-      'name': _nameController.text,
-      'phone': _phoneController.text,
-      'email': _emailController.text,
-    });
-  }
+      if (success) {
+        // Refresh the profile data
+        await ref.read(profileControllerProvider.notifier).fetchProfile();
 
-  @override
-  Widget build(BuildContext context) {
+        // Navigate back with updated data
+        Navigator.pop(context, {
+          'firstName': firstNameController.text,
+          'lastName': lastNameController.text,
+          'phone': phoneController.text,
+          'email': emailController.text,
+        });
+      }
+    }
+
     return Scaffold(
       backgroundColor: kcPrimaryNeutral950,
       appBar: AppBar(
@@ -116,23 +121,43 @@ class _EditProfileViewState extends State<EditProfileView> {
                       verticalSpaceMedium,
                       // Form Fields
                       _buildTextField(
-                        label: "Name",
-                        controller: _nameController,
-                        hintText: "e.g John Doe",
+                        label: "First Name",
+                        controller: firstNameController,
+                        hintText: "e.g John",
+                      ),
+                      verticalSpaceMedium,
+                      _buildTextField(
+                        label: "Last Name",
+                        controller: lastNameController,
+                        hintText: "e.g  Doe",
                       ),
                       verticalSpaceMedium,
                       _buildTextField(
                         label: "Phone Number",
-                        controller: _phoneController,
+                        controller: phoneController,
                         hintText: "e.g 0812234567890",
                         keyboardType: TextInputType.phone,
                       ),
                       verticalSpaceMedium,
-                      _buildTextField(
-                        label: "Email Address",
-                        controller: _phoneController,
-                        hintText: "e.g faztorder@gmail.com",
-                        keyboardType: TextInputType.emailAddress,
+                      GestureDetector(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Email cannot be edited"),
+                              backgroundColor:
+                                  Color.fromARGB(255, 169, 155, 26),
+                            ),
+                          );
+                        },
+                        child: AbsorbPointer(
+                          absorbing: true,
+                          child: _buildTextField(
+                            label: "Email Address",
+                            controller: emailController,
+                            hintText: "e.g faztorder@gmail.com",
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -144,7 +169,8 @@ class _EditProfileViewState extends State<EditProfileView> {
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _saveProfile,
+                    onPressed:
+                        profileState.loader.isLoading ? null : _saveProfile,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kcPrimary400,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -152,15 +178,25 @@ class _EditProfileViewState extends State<EditProfileView> {
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    child: const Text(
-                      "Save",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: kcWhite,
-                        letterSpacing: 1,
-                      ),
-                    ),
+                    child: profileState.loader.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(kcWhite),
+                            ),
+                          )
+                        : const Text(
+                            "Save",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: kcWhite,
+                              letterSpacing: 1,
+                            ),
+                          ),
                   ),
                 ),
               ),

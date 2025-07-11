@@ -110,7 +110,7 @@ class _RestaurantDetailsViewState extends ConsumerState<RestaurantDetailsView> {
                           children: [
                             Expanded(
                               child: Text(
-                                restaurant.store?.storeName ?? '',
+                                restaurant.shopName ?? '',
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
