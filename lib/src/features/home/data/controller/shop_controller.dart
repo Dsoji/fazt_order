@@ -88,15 +88,13 @@ class ShopController extends StateNotifier<ShopState> {
       final result = await _authenticationRepository.globalSearch(
           searchQuery, latitude, longitude);
 
-      return result.when(
+      result.when(
         (error) {
           state = state.copyWith(
               searchQuery: AsyncValue.error(error, StackTrace.current));
-          return false;
         },
         (success) {
           state = state.copyWith(searchQuery: AsyncValue.data(success));
-          return true;
         },
       );
     });
