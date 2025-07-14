@@ -12,10 +12,10 @@ class OrderConfirmationBottomSheet extends StatelessWidget {
   final List<OrderItem> orderItems;
 
   const OrderConfirmationBottomSheet({
-    Key? key,
+    super.key,
     required this.deliveryAddress,
     required this.orderItems,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +151,7 @@ class OrderConfirmationBottomSheet extends StatelessWidget {
                 ],
               ),
             );
-          }).toList(),
+          }),
 
           const Spacer(),
 

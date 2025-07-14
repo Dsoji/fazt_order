@@ -8,10 +8,10 @@ class EditAddressBottomSheet extends StatefulWidget {
   final Function(String) onUpdate;
 
   const EditAddressBottomSheet({
-    Key? key,
+    super.key,
     required this.currentAddress,
     required this.onUpdate,
-  }) : super(key: key);
+  });
 
   @override
   _EditAddressBottomSheetState createState() => _EditAddressBottomSheetState();

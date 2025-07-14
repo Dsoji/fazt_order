@@ -4,7 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:lottie/lottie.dart';
 import '../../../datamodels/menu_items.dart';
-import '../../../datamodels/order_items.dart';
 import '../../../providers/order_provider.dart';
 import '../../common/app_colors.dart';
 import '../../common/ui_helpers.dart';

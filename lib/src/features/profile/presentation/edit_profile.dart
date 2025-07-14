@@ -32,7 +32,7 @@ class EditProfileView extends HookConsumerWidget {
     // Watch the profile controller state
     final profileState = ref.watch(profileControllerProvider);
 
-    void _saveProfile() async {
+    void saveProfile() async {
       // Extract first and last name from the name field
 
       // Call the update profile method
@@ -170,7 +170,7 @@ class EditProfileView extends HookConsumerWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed:
-                        profileState.loader.isLoading ? null : _saveProfile,
+                        profileState.loader.isLoading ? null : saveProfile,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kcPrimary400,
                       padding: const EdgeInsets.symmetric(vertical: 16),

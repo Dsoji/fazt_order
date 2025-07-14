@@ -223,7 +223,7 @@ class HomeView extends HookConsumerWidget {
               ),
             ),
           ),
-          Gap(150),
+          const Gap(150),
         ],
       ),
     );

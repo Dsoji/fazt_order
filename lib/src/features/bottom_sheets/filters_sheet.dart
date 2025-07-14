@@ -9,7 +9,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:iconsax/iconsax.dart';
 
 class FilterBottomSheet extends StatefulWidget {
-  const FilterBottomSheet({Key? key}) : super(key: key);
+  const FilterBottomSheet({super.key});
 
   @override
   _FilterBottomSheetState createState() => _FilterBottomSheetState();

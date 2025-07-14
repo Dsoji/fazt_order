@@ -5,8 +5,8 @@ import '../ui_helpers.dart';
 
 class ShimmerLoadingEffectCard extends StatelessWidget {
   const ShimmerLoadingEffectCard({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

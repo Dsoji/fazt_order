@@ -1,58 +1,74 @@
 import 'package:fazt_order/src/common/widgets/text_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../../providers/restaurant_provider.dart';
 import '../../../common/app_colors.dart';
-import '../../../common/components/restaurant_search_card.dart';
 import '../../../common/ui_helpers.dart';
+import '../../profile/data/controller/profile_controller.dart';
+import '../data/controller/shop_controller.dart';
+import '../data/model/response/search_global/meal.dart';
+import '../data/model/response/search_global/search_global.dart';
+import '../data/model/response/search_global/shop.dart';
 
 // Providers for search query and filter state
 final searchQueryProvider = StateProvider<String>((ref) => "");
 final selectedFilterProvider = StateProvider<String>((ref) => "ALL");
 
-class SearchRestaurantView extends ConsumerStatefulWidget {
+class SearchRestaurantView extends HookConsumerWidget {
   final String initialQuery;
 
   const SearchRestaurantView({super.key, required this.initialQuery});
 
   @override
-  _SearchRestaurantViewState createState() => _SearchRestaurantViewState();
-}
-
-class _SearchRestaurantViewState extends ConsumerState<SearchRestaurantView> {
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize the search query with the initial query
-    _searchController.text = widget.initialQuery;
-    ref.read(searchQueryProvider.notifier).state = widget.initialQuery;
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final restaurants = ref.watch(restaurantProvider);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searchController = useTextEditingController();
     final query = ref.watch(searchQueryProvider);
     final selectedFilter = ref.watch(selectedFilterProvider);
+    final tabController = useTabController(initialLength: 3);
 
-    // Filter restaurants based on the query
-    final filteredRestaurants = restaurants
-        .asMap()
-        .entries
-        .where((entry) =>
-            entry.value.name.toLowerCase().contains(query.toLowerCase()))
-        .map((entry) => MapEntry(entry.key, entry.value))
-        .toList();
+    // Initialize the search query with the initial query
+    useEffect(() {
+      searchController.text = initialQuery;
+      ref.read(searchQueryProvider.notifier).state = initialQuery;
+      return null;
+    }, []);
+
+    // Watch the global search results
+    final searchResults = ref.watch(shopControllerProvider).searchQuery;
+
+    // Trigger global search when query changes
+    useEffect(() {
+      if (query.isNotEmpty) {
+        // You might want to get actual latitude and longitude from user location
+        const latitude = "6.5244"; // Default to Lagos coordinates
+        const longitude = "3.3792";
+        ref.read(shopControllerProvider.notifier).globalSearch(
+              query,
+              latitude,
+              longitude,
+            );
+      }
+      return null;
+    }, [query]);
+
+    // Listen to tab changes
+    useEffect(() {
+      void listener() {
+        final tabIndex = tabController.index;
+        final filterOptions = ["ALL", "Restaurant", "Menu"];
+        ref.read(selectedFilterProvider.notifier).state =
+            filterOptions[tabIndex];
+      }
+
+      tabController.addListener(listener);
+      return () => tabController.removeListener(listener);
+    }, [tabController]);
+
+    final userDetails =
+        ref.watch(profileControllerProvider).userDetails.valueOrNull;
 
     return Scaffold(
       appBar: AppBar(
@@ -66,9 +82,15 @@ class _SearchRestaurantViewState extends ConsumerState<SearchRestaurantView> {
             children: [
               const Icon(Iconsax.location, color: kcPrimary400),
               horizontalSpaceTiny,
-              const Text(
-                'Computer Village',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              Text(
+                (userDetails?.user?.location?.address ?? 'Location Unknown')
+                            .length >
+                        12
+                    ? '${(userDetails?.user?.location?.address ?? 'Location Unknown').substring(0, 12)}...'
+                    : (userDetails?.user?.location?.address ??
+                        'Location Unknown'),
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
               horizontalSpaceTiny,
               SvgPicture.asset(
@@ -109,10 +131,10 @@ class _SearchRestaurantViewState extends ConsumerState<SearchRestaurantView> {
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: TextField(
-              controller: _searchController,
+              controller: searchController,
               decoration: InputDecoration(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                hintText: "Search for restaurants",
+                hintText: "Search for restaurants and meals",
                 hintStyle: const TextStyle(color: Colors.grey),
                 suffixIcon: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -122,8 +144,16 @@ class _SearchRestaurantViewState extends ConsumerState<SearchRestaurantView> {
                         icon: const Icon(Iconsax.close_circle,
                             color: kcPrimaryRed200, size: 20),
                         onPressed: () {
-                          _searchController.clear();
-                          ref.read(searchQueryProvider.notifier).state = "";
+                          searchController.clear();
+                          ref
+                              .read(shopControllerProvider.notifier)
+                              .globalSearch(
+                                query,
+                                userDetails?.user?.location?.coordinates?[1] ??
+                                    '0',
+                                userDetails?.user?.location?.coordinates?[0] ??
+                                    '0',
+                              );
                         },
                       ),
                     const Padding(
@@ -153,106 +183,351 @@ class _SearchRestaurantViewState extends ConsumerState<SearchRestaurantView> {
               },
             ),
           ),
-          // Filter Tabs
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
-              children: [
-                FilterTab("ALL"),
-                horizontalSpace(8),
-                FilterTab("Restaurant"),
-                horizontalSpace(8),
-                FilterTab("Menu"),
+          // Tab Bar
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            decoration: BoxDecoration(
+              color: kcPrimaryNeutral900,
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: TabBar(
+              controller: tabController,
+              indicator: BoxDecoration(
+                color: kcPrimary300,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelColor: Colors.white,
+              unselectedLabelColor: kcPrimaryNeutral200,
+              labelStyle: ktBodyRegularSize12.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: ktBodyRegularSize12,
+              tabs: const [
+                Tab(text: "ALL"),
+                Tab(text: "Restaurant"),
+                Tab(text: "Menu"),
               ],
             ),
           ),
-          // Result Count or No Results Message
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            child: filteredRestaurants.isEmpty
-                ? Text(
-                    "0 result for $query",
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  )
-                : Text(
-                    "${filteredRestaurants.length} results for $query",
-                    style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-          ),
-          // Restaurant List
+          // Tab Bar View
           Expanded(
-            child: filteredRestaurants.isEmpty
-                ? Center(
-                    child: Column(
-                      children: [
-                        SvgPicture.asset("asset/svgs/no_result.svg"),
-                        verticalSpaceSmall,
-                        const Text(
-                          "No result found",
-                          style: TextStyle(
-                              fontSize: 16, color: kcPrimaryNeutral200),
-                        ),
-                        verticalSpaceTiny,
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.pop(context);
-                          },
-                          behavior: HitTestBehavior.translucent,
-                          child: RichText(
-                            text: const TextSpan(
-                              text: 'Explore other Options',
-                              style: TextStyle(
-                                decoration: TextDecoration.underline,
-                                color: kcPrimary400,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    // padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    itemCount: filteredRestaurants.length,
-                    itemBuilder: (context, index) {
-                      final entry = filteredRestaurants[index];
-                      final originalIndex =
-                          entry.key; // Original index in restaurantProvider
-                      final restaurant = entry.value;
-                      return RestaurantSearchCard(
-                        restaurant: restaurant,
-                        index: originalIndex, // Pass the original index
-                      );
-                    },
-                  ),
+            child: TabBarView(
+              controller: tabController,
+              children: [
+                // ALL Tab
+                _buildAllTab(searchResults, query, context),
+                // Restaurant Tab
+                _buildRestaurantTab(searchResults, query, context),
+                // Menu Tab
+                _buildMenuTab(searchResults, query, context),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget FilterTab(String title) {
-    final isSelected = ref.watch(selectedFilterProvider) == title;
-    return GestureDetector(
-      onTap: () {
-        ref.read(selectedFilterProvider.notifier).state = title;
+  Widget _buildAllTab(AsyncValue<SearchGlobal> searchResults, String query,
+      BuildContext context) {
+    return searchResults.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      error: (error, stackTrace) => _buildErrorWidget(error, query),
+      data: (searchGlobal) {
+        final shops = searchGlobal.shops ?? [];
+        final meals = searchGlobal.meals ?? [];
+
+        // Create a combined list with type information
+        final List<MapEntry<String, dynamic>> allResults = [];
+
+        // Add shops with type identifier
+        for (int i = 0; i < shops.length; i++) {
+          allResults.add(MapEntry('shop', shops[i]));
+        }
+
+        // Add meals with type identifier
+        for (int i = 0; i < meals.length; i++) {
+          allResults.add(MapEntry('meal', meals[i]));
+        }
+
+        if (allResults.isEmpty) {
+          return _buildEmptyState(context);
+        }
+
+        return Column(
+          children: [
+            _buildResultCount(allResults.length, query),
+            Expanded(
+              child: ListView.builder(
+                itemCount: allResults.length,
+                itemBuilder: (context, index) {
+                  final result = allResults[index];
+                  final item = result.value;
+                  final type = result.key;
+
+                  if (type == 'shop' && item is Shop) {
+                    return _buildShopResult(item, index);
+                  } else if (type == 'meal' && item is Meal) {
+                    return _buildMealResult(item, index);
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ],
+        );
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? kcPrimary300 : kcWhite,
-          borderRadius: BorderRadius.circular(20),
-          border: isSelected ? null : Border.all(color: kcPrimary700, width: 1),
-        ),
-        child: Text(
-          title,
-          style: ktBodyRegularSize12.copyWith(
-            color: isSelected ? Colors.white : kcPrimary400,
+    );
+  }
+
+  Widget _buildRestaurantTab(AsyncValue<SearchGlobal> searchResults,
+      String query, BuildContext context) {
+    return searchResults.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      error: (error, stackTrace) => _buildErrorWidget(error, query),
+      data: (searchGlobal) {
+        final shops = searchGlobal.shops ?? [];
+
+        if (shops.isEmpty) {
+          return _buildEmptyState(context);
+        }
+
+        return Column(
+          children: [
+            _buildResultCount(shops.length, query),
+            Expanded(
+              child: ListView.builder(
+                itemCount: shops.length,
+                itemBuilder: (context, index) {
+                  return _buildShopResult(shops[index], index);
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMenuTab(AsyncValue<SearchGlobal> searchResults, String query,
+      BuildContext context) {
+    return searchResults.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      error: (error, stackTrace) => _buildErrorWidget(error, query),
+      data: (searchGlobal) {
+        final meals = searchGlobal.meals ?? [];
+
+        if (meals.isEmpty) {
+          return _buildEmptyState(context);
+        }
+
+        return Column(
+          children: [
+            _buildResultCount(meals.length, query),
+            Expanded(
+              child: ListView.builder(
+                itemCount: meals.length,
+                itemBuilder: (context, index) {
+                  return _buildMealResult(meals[index], index);
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildResultCount(int count, String query) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+      child: Text(
+        "$count results for $query",
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildErrorWidget(Object error, String query) {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            color: Colors.red,
+            size: 48,
           ),
-        ),
+          SizedBox(height: 16),
+          Text(
+            'Error searching, please try again.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.red),
+          ),
+          SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        children: [
+          SvgPicture.asset("asset/svgs/no_result.svg"),
+          verticalSpaceSmall,
+          const Text(
+            "No result found",
+            style: TextStyle(fontSize: 16, color: kcPrimaryNeutral200),
+          ),
+          verticalSpaceTiny,
+          GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+            },
+            behavior: HitTestBehavior.translucent,
+            child: RichText(
+              text: const TextSpan(
+                text: 'Explore other Options',
+                style: TextStyle(
+                  decoration: TextDecoration.underline,
+                  color: kcPrimary400,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShopResult(Shop shop, int index) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              shop.store?.storeDisplayImage ?? 'asset/images/placeholder.png',
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 60,
+                height: 60,
+                color: Colors.grey[300],
+                child: const Icon(Icons.store, color: Colors.grey),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  shop.store?.storeName ?? 'Unknown Store',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  shop.location?.address ?? 'No address available',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMealResult(Meal meal, int index) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              meal.store?.storeDisplayImage ?? 'asset/images/placeholder.png',
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 60,
+                height: 60,
+                color: Colors.grey[300],
+                child: const Icon(Icons.restaurant, color: Colors.grey),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Meal from ${meal.shop?.store?.storeName ?? 'Unknown Store'}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  meal.shop?.location?.address ?? 'No address available',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

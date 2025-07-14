@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CourierView extends StatelessWidget {
-  const CourierView({Key? key}) : super(key: key);
+  const CourierView({super.key});
 
   @override
   Widget build(BuildContext context) {

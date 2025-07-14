@@ -26,7 +26,7 @@ class ProfileView extends HookConsumerWidget {
     final userDetails =
         ref.watch(profileControllerProvider).userDetails.valueOrNull;
 
-    Future<void> _navigateToEditProfile() async {
+    Future<void> navigateToEditProfile() async {
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
@@ -122,7 +122,7 @@ class ProfileView extends HookConsumerWidget {
                     verticalSpaceSmall,
                     // Edit Button
                     GestureDetector(
-                      onTap: _navigateToEditProfile,
+                      onTap: navigateToEditProfile,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 6),
@@ -250,7 +250,7 @@ class ProfileView extends HookConsumerWidget {
                   ],
                 ),
               ),
-              Gap(100),
+              const Gap(100),
               FullButton(
                 text: 'Log Out',
                 width: 150,

@@ -5,8 +5,8 @@ import '../../common/ui_helpers.dart';
 
 class ConfirmCancelOrderBottomSheet extends StatelessWidget {
   const ConfirmCancelOrderBottomSheet({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

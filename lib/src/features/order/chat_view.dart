@@ -8,7 +8,7 @@ import '../../common/ui_helpers.dart';
 import '../../common/widgets/text_styles.dart';
 
 class ChatView extends StatefulWidget {
-  const ChatView({Key? key}) : super(key: key);
+  const ChatView({super.key});
 
   @override
   _ChatViewState createState() => _ChatViewState();

@@ -6,11 +6,11 @@ class TriangleCircleIndicator extends StatelessWidget {
   final Color circleColor;
 
   const TriangleCircleIndicator({
-    Key? key,
+    super.key,
     this.size = 12.0,
     this.triangleColor = Colors.green,
     this.circleColor = Colors.white,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

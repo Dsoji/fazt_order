@@ -3,8 +3,8 @@ import 'package:shimmer/shimmer.dart';
 
 class ShimmerLoadingEffectGrid extends StatelessWidget {
   const ShimmerLoadingEffectGrid({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

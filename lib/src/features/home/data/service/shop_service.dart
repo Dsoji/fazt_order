@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import '../../../../common/api/api_client.dart';
 import '../../../../common/api/api_request_helper.dart';
 import '../../../../common/api/dio_api_client.dart';
+import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 
 final logger = Logger();
@@ -55,7 +56,7 @@ class ShopService {
     );
   }
 
-  Future<ResultValue<String>> globalSearch(
+  Future<ResultValue<SearchGlobal>> globalSearch(
       String searchQuery, String latitude, String longitude) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.get(
@@ -65,13 +66,16 @@ class ShopService {
         },
         queryParameters: {
           'keyword': searchQuery,
-          'latitude': latitude,
-          'longitude': longitude,
+          'long': longitude,
+          'lat': latitude,
           'limit': 50,
           'radius': 10000,
         },
       ),
-      parser: (data) => data,
+      parser: (data) {
+        logger.d(data);
+        return SearchGlobal.fromMap(data);
+      },
     );
   }
 

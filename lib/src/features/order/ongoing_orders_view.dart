@@ -2,9 +2,9 @@ import 'package:fazt_order/src/common/app_colors.dart';
 import 'package:fazt_order/src/common/ui_helpers.dart';
 import 'package:fazt_order/src/features/bottom_sheets/cancel_order.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../../datamodels/order_items.dart';
@@ -24,7 +24,7 @@ class OngoingOrderView extends ConsumerWidget {
   final int currentStep;
 
   const OngoingOrderView({
-    Key? key,
+    super.key,
     required this.orderItems,
     required this.orderTime,
     required this.estimatedTime,
@@ -35,7 +35,7 @@ class OngoingOrderView extends ConsumerWidget {
     required this.taxAndFees,
     required this.total,
     this.currentStep = 1,
-  }) : super(key: key);
+  });
 
   // Helper to select Lottie animation based on currentStep
   String _getLottieAsset(int step) {
@@ -209,13 +209,13 @@ class OngoingOrderView extends ConsumerWidget {
               ),
               Row(
                 children: [
-                  Icon(Iconsax.location, size: 20, color: Colors.grey),
-                  SizedBox(width: 8),
+                  const Icon(Iconsax.location, size: 20, color: Colors.grey),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           "Computer Village",
                           style: TextStyle(
                               fontSize: 16,
@@ -224,7 +224,7 @@ class OngoingOrderView extends ConsumerWidget {
                         ),
                         Text(
                           deliveryAddress,
-                          style: TextStyle(
+                          style: const TextStyle(
                               color: kcPrimaryNeutral500, fontSize: 11),
                         ),
                       ],
@@ -300,7 +300,7 @@ class OngoingOrderView extends ConsumerWidget {
                     ],
                   ),
                 );
-              }).toList(),
+              }),
 
               verticalSpaceSmall,
               SvgPicture.asset('asset/svgs/dotted_line.svg'), // Dashed divider
@@ -308,7 +308,7 @@ class OngoingOrderView extends ConsumerWidget {
 
               // Payment Details
               Container(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(10),
@@ -329,10 +329,10 @@ class OngoingOrderView extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text("Subtotal (${orderItems.length} items)",
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: kcPrimaryNeutral300, fontSize: 14)),
                         Text("₦${subtotal.toStringAsFixed(0)}",
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: kcPrimaryNeutral100, fontSize: 12)),
                       ],
                     ),
@@ -340,27 +340,27 @@ class OngoingOrderView extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("Delivery Fee",
+                        const Text("Delivery Fee",
                             style: TextStyle(
                                 color: kcPrimaryNeutral300, fontSize: 14)),
                         Text("₦${deliveryFee.toStringAsFixed(0)}",
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: kcPrimaryNeutral100, fontSize: 12)),
                       ],
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("Tax and other fees",
+                        const Text("Tax and other fees",
                             style: TextStyle(
                                 color: kcPrimaryNeutral300, fontSize: 14)),
                         Text("₦${taxAndFees.toStringAsFixed(0)}",
-                            style: TextStyle(
+                            style: const TextStyle(
                                 color: kcPrimaryNeutral100, fontSize: 12)),
                       ],
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

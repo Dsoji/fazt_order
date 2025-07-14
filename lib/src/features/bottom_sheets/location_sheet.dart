@@ -7,7 +7,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../common/widgets/text_styles.dart';
 
 class LocationBottomSheet extends StatelessWidget {
-  const LocationBottomSheet({Key? key}) : super(key: key);
+  const LocationBottomSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -150,12 +150,12 @@ class LocationTile extends StatelessWidget {
   final bool isSelected;
 
   const LocationTile({
-    Key? key,
+    super.key,
     required this.icon,
     required this.title,
     this.subtitle,
     this.isSelected = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

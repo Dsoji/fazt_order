@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../common/utils/failures.dart';
 import '../../../../common/utils/multiple_results.dart';
+import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 import '../service/shop_service.dart';
 
@@ -75,14 +76,14 @@ class ShopRepository {
     }
   }
 
-  Future<Result<FailureHandler, String>> globalSearch(
+  Future<Result<FailureHandler, SearchGlobal>> globalSearch(
       String searchQuery, String latitude, String longitude) async {
     try {
       final data =
           await authService.globalSearch(searchQuery, latitude, longitude);
 
       if (data.isSuccess) {
-        return Success(data.value ?? '');
+        return Success(data.value ?? SearchGlobal());
       } else {
         return Error(
           data.error ??
