@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.faztOrder</string>
+	<string>net.faztorder.order</string>
 	<key>PROJECT_ID</key>
 	<string>faztorder-81d4e</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:948796465884:ios:110af37a947b2417338a19</string>
+	<string>1:948796465884:ios:54e45eb88ad22342338a19</string>
 </dict>
 </plist>

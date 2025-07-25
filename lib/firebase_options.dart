@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAPraEX4GOoH6JLdD4yh9pZDZd4cEgV1XQ',
-    appId: '1:948796465884:android:6886c2ed059594fa338a19',
+    appId: '1:948796465884:android:04818c0e9e132705338a19',
     messagingSenderId: '948796465884',
     projectId: 'faztorder-81d4e',
     storageBucket: 'faztorder-81d4e.firebasestorage.app',
@@ -59,10 +59,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDTKVv_F8xU4wWrs5DYE0Ya_e61ij1fS8M',
-    appId: '1:948796465884:ios:110af37a947b2417338a19',
+    appId: '1:948796465884:ios:54e45eb88ad22342338a19',
     messagingSenderId: '948796465884',
     projectId: 'faztorder-81d4e',
     storageBucket: 'faztorder-81d4e.firebasestorage.app',
-    iosBundleId: 'com.example.faztOrder',
+    iosBundleId: 'net.faztorder.order',
   );
 }
