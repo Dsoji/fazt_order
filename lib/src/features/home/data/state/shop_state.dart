@@ -2,10 +2,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
+import '../model/response/store_categories/store_categories.dart';
 
 class ShopState {
   final AsyncValue<ShopsModel> shops;
-  final AsyncValue<ShopsModel> shopFoodCategory;
+  final AsyncValue<StoreCategories> shopFoodCategory;
   final AsyncValue<SearchGlobal> searchQuery;
 
   const ShopState({
@@ -17,14 +18,14 @@ class ShopState {
   factory ShopState.initial() {
     return ShopState(
       shops: AsyncValue.data(ShopsModel()),
-      shopFoodCategory: AsyncValue.data(ShopsModel()),
+      shopFoodCategory: AsyncValue.data(StoreCategories()),
       searchQuery: AsyncValue.data(SearchGlobal()),
     );
   }
 
   ShopState copyWith({
     AsyncValue<ShopsModel>? shops,
-    AsyncValue<ShopsModel>? shopFoodCategory,
+    AsyncValue<StoreCategories>? shopFoodCategory,
     AsyncValue<SearchGlobal>? searchQuery,
   }) {
     return ShopState(

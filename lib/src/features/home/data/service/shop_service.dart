@@ -7,6 +7,7 @@ import '../../../../common/api/api_request_helper.dart';
 import '../../../../common/api/dio_api_client.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
+import '../model/response/store_categories/store_categories.dart';
 
 final logger = Logger();
 final shopServiceProvider = Provider<ShopService>((ref) {
@@ -44,7 +45,8 @@ class ShopService {
     );
   }
 
-  Future<ResultValue<ShopsModel>> fetchShopFoodCategory(String shopId) async {
+  Future<ResultValue<StoreCategories>> fetchShopFoodCategory(
+      String shopId) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.get(
         'categories?store=$shopId',
@@ -52,7 +54,7 @@ class ShopService {
           'Authorization': 'Bearer $accessToken',
         },
       ),
-      parser: (data) => ShopsModel.fromMap(data),
+      parser: (data) => StoreCategories.fromMap(data),
     );
   }
 

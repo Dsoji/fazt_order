@@ -5,6 +5,7 @@ import '../../../../common/utils/failures.dart';
 import '../../../../common/utils/multiple_results.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
+import '../model/response/store_categories/store_categories.dart';
 import '../service/shop_service.dart';
 
 final shopRepositoryProvider = Provider((ref) {
@@ -54,13 +55,13 @@ class ShopRepository {
     }
   }
 
-  Future<Result<FailureHandler, ShopsModel>> fetchShopFoodCategory(
+  Future<Result<FailureHandler, StoreCategories>> fetchShopFoodCategory(
       String shopId) async {
     try {
       final data = await authService.fetchShopFoodCategory(shopId);
 
       if (data.isSuccess) {
-        return Success(data.value ?? ShopsModel());
+        return Success(data.value ?? StoreCategories());
       } else {
         return Error(
           data.error ??

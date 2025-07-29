@@ -84,8 +84,12 @@ class AuthenticationService {
       parser: (data) {
         print(data);
         final token = data['accessToken'];
+        final userId = data['user']['id'];
         var box = Hive.box('data');
+        final refreshToken = data['refreshToken'];
         box.put('accessToken', token);
+        box.put('refreshToken', refreshToken);
+        box.put('userId', userId);
         return UserModel.fromMap(data);
       },
       showErrorToast: true,
