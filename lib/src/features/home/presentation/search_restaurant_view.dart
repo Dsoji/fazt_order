@@ -32,7 +32,9 @@ class SearchRestaurantView extends HookConsumerWidget {
     // Initialize the search query with the initial query
     useEffect(() {
       searchController.text = initialQuery;
-      ref.read(searchQueryProvider.notifier).state = initialQuery;
+      Future.microtask(() {
+        ref.read(searchQueryProvider.notifier).state = initialQuery;
+      });
       return null;
     }, []);
 
@@ -45,11 +47,13 @@ class SearchRestaurantView extends HookConsumerWidget {
         // You might want to get actual latitude and longitude from user location
         const latitude = "6.5244"; // Default to Lagos coordinates
         const longitude = "3.3792";
-        ref.read(shopControllerProvider.notifier).globalSearch(
-              query,
-              latitude,
-              longitude,
-            );
+        Future.microtask(() {
+          ref.read(shopControllerProvider.notifier).globalSearch(
+                query,
+                latitude,
+                longitude,
+              );
+        });
       }
       return null;
     }, [query]);
@@ -59,8 +63,10 @@ class SearchRestaurantView extends HookConsumerWidget {
       void listener() {
         final tabIndex = tabController.index;
         final filterOptions = ["ALL", "Restaurant", "Menu"];
-        ref.read(selectedFilterProvider.notifier).state =
-            filterOptions[tabIndex];
+        Future.microtask(() {
+          ref.read(selectedFilterProvider.notifier).state =
+              filterOptions[tabIndex];
+        });
       }
 
       tabController.addListener(listener);

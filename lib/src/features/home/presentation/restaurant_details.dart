@@ -12,6 +12,7 @@ import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
 import '../data/controller/shop_controller.dart';
 import '../data/model/response/shops_model/result.dart';
+import '../data/model/response/store_meals/result.dart';
 
 final logger = Logger();
 
@@ -26,15 +27,57 @@ class RestaurantDetailsView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedCategory = useState("All");
+    final selectedMenuItems = useState<List<MenuItem>>([]);
+    final demoMenuItems = [
+      MenuItem(
+        name: "Jollof Rice",
+        description: "Spicy rice cooked with tomatoes and peppers",
+        price: 1500,
+        imageUrl: "asset/images/rice.jpg",
+        isAvailable: true,
+      ),
+      MenuItem(
+        name: "Chicken Suya",
+        description: "Grilled chicken with spicy peanut sauce",
+        price: 2000,
+        imageUrl: "asset/images/chicken.jpg",
+        isAvailable: true,
+      ),
+      // Add more menu items as needed
+    ];
     final shopId = restaurant.store?.id;
     logger.d('shopId: $shopId');
 
     useEffect(() {
-      ref.read(shopControllerProvider.notifier).fetchShopFoodCategory(shopId!);
+      Future.microtask(() {
+        ref
+            .read(shopControllerProvider.notifier)
+            .fetchShopFoodCategory(shopId!);
+      });
       return null;
     }, [shopId]);
+
     final selectedItems =
         ref.watch(shopControllerProvider).shopFoodCategory.valueOrNull?.results;
+
+    // Add this state for selected category ID
+    final selectedCategoryId = useState<String?>(null);
+
+    // Alternative: Fetch all meals when "All" is selected
+    Future<void> fetchShopFood() async {
+      if (selectedCategory.value == "All") {
+        // Fetch all meals (you might need a different API endpoint for this)
+        await ref
+            .read(shopControllerProvider.notifier)
+            .fetchShopFood(shopId!, ""); // or use a special parameter
+      } else if (selectedCategoryId.value != null) {
+        await ref
+            .read(shopControllerProvider.notifier)
+            .fetchShopFood(shopId!, selectedCategoryId.value!);
+      }
+    }
+
+    final meals = ref.watch(shopControllerProvider).storeMeals;
 
     return Scaffold(
       backgroundColor: kcWhite,
@@ -249,36 +292,97 @@ class RestaurantDetailsView extends HookConsumerWidget {
                 SvgPicture.asset("asset/svgs/dotted_line.svg"),
                 const Gap(20),
                 // Category Tabs
-                DefaultTabController(
-                  length: (selectedItems?.length ?? 0) + 1, // +1 for "All" tab
-                  child: TabBar(
-                    isScrollable: true,
-                    onTap: (index) {
-                      if (index == 0) {
-                        selectedCategory.value = "All";
-                      } else if (selectedItems != null &&
-                          index - 1 < selectedItems.length) {
-                        selectedCategory.value =
-                            selectedItems[index - 1].categoryName ?? "Unknown";
-                      }
+                SizedBox(
+                  height: 50,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: (selectedItems?.length ?? 0) + 1,
+                    itemBuilder: (context, index) {
+                      final isSelected = index == 0
+                          ? selectedCategory.value == "All"
+                          : selectedItems != null &&
+                              index - 1 < selectedItems.length &&
+                              selectedCategory.value ==
+                                  selectedItems[index - 1].categoryName;
+
+                      final tabText = index == 0
+                          ? "ALL"
+                          : (selectedItems?[index - 1].categoryName ??
+                                  "Unknown")
+                              .toUpperCase();
+
+                      return GestureDetector(
+                        onTap: () {
+                          if (index == 0) {
+                            selectedCategory.value = "All";
+                            selectedCategoryId.value = null;
+                          } else if (selectedItems != null &&
+                              index - 1 < selectedItems.length) {
+                            final category = selectedItems[index - 1];
+                            selectedCategory.value =
+                                category.categoryName ?? "Unknown";
+                            selectedCategoryId.value =
+                                category.id; // Get the category ID
+                          }
+
+                          // Call fetchShopFood when tab is selected
+                          fetchShopFood();
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color:
+                                isSelected ? kcPrimary300 : Colors.transparent,
+                            borderRadius: BorderRadius.circular(25),
+                            border: Border.all(
+                              color: isSelected
+                                  ? kcPrimary300
+                                  : kcPrimaryNeutral300,
+                              width: 1.5,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: kcPrimary300.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              tabText,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color:
+                                    isSelected ? kcWhite : kcPrimaryNeutral500,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
                     },
-                    tabs: [
-                      const Tab(text: "ALL"),
-                      ...(selectedItems?.map((category) => Tab(
-                              text: (category.categoryName ?? "Unknown")
-                                  .toUpperCase())) ??
-                          []),
-                    ],
-                    labelColor: kcPrimary300,
-                    unselectedLabelColor: kcPrimary400,
-                    indicator: BoxDecoration(
-                      color: kcPrimary700,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    indicatorSize: TabBarIndicatorSize.tab,
                   ),
                 ),
                 const SizedBox(height: 16),
+                meals.when(
+                  data: (data) => Column(
+                    children: data.results
+                            ?.map((item) => _buildMenuItem(context, item))
+                            .toList() ??
+                        [],
+                  ),
+                  error: (error, stackTrace) => Text('Error: $error'),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                ),
                 verticalSpaceMassive,
               ],
             ),
@@ -288,21 +392,42 @@ class RestaurantDetailsView extends HookConsumerWidget {
     );
   }
 
-  Widget _buildMenuItem(
-      MenuItem menuItem, ValueNotifier<List<MenuItem>> selectedItems) {
-    final isSelected = selectedItems.value.contains(menuItem);
+  Widget _buildMenuItem(BuildContext context, Result menuItem) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.asset(
-              menuItem.imageUrl,
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-            ),
+            child: menuItem.mealImage != null && menuItem.mealImage!.isNotEmpty
+                ? Image.network(
+                    menuItem.mealImage!,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[300],
+                        child: Icon(
+                          Icons.fastfood,
+                          color: Colors.grey[600],
+                          size: 30,
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey[300],
+                    child: Icon(
+                      Icons.fastfood,
+                      color: Colors.grey[600],
+                      size: 30,
+                    ),
+                  ),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -310,7 +435,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  menuItem.name,
+                  menuItem.mealName ?? '',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -318,7 +443,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  menuItem.description,
+                  menuItem.mealDescription ?? '',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -337,17 +462,11 @@ class RestaurantDetailsView extends HookConsumerWidget {
               ],
             ),
           ),
-          menuItem.isAvailable
+          menuItem.inStock == true
               ? GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: () {
-                    if (isSelected) {
-                      selectedItems.value = selectedItems.value
-                          .where((item) => item != menuItem)
-                          .toList();
-                    } else {
-                      selectedItems.value = [...selectedItems.value, menuItem];
-                    }
+                    _showAddToCartBottomSheet(context, menuItem);
                   },
                   child: Container(
                     padding:
@@ -356,41 +475,280 @@ class RestaurantDetailsView extends HookConsumerWidget {
                       color: kcPrimary300,
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    child: Row(
-                      children: [
-                        Text(
-                          isSelected ? "Added" : "+  Add",
-                          style: ktBodyRegularSize16.copyWith(color: kcWhite),
-                        ),
-                      ],
+                    child: Text(
+                      "+ Add",
+                      style: ktBodyRegularSize16.copyWith(color: kcWhite),
                     ),
                   ),
                 )
-              : Row(
+              : Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: kcPrimary800,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: Text(
+                    "Out of Stock",
+                    style: ktBodyRegularSize16.copyWith(color: kcPrimary300),
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+
+  // Add this method to show the bottom sheet
+  void _showAddToCartBottomSheet(BuildContext context, Result menuItem) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar and close button
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
                   children: [
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: kcPrimary800,
-                          borderRadius: BorderRadius.circular(30),
+                    // Handle bar
+                    Expanded(
+                      child: Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            Text(
-                              "Out of Stock",
-                              style: ktBodyRegularSize16.copyWith(
-                                  color: kcPrimary300),
-                            ),
-                          ],
+                      ),
+                    ),
+                    // Close button
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.black,
+                          size: 20,
                         ),
                       ),
                     ),
                   ],
                 ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Food image
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: menuItem.mealImage != null &&
+                                menuItem.mealImage!.isNotEmpty
+                            ? Image.network(
+                                menuItem.mealImage!,
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: double.infinity,
+                                    height: 200,
+                                    color: Colors.grey[300],
+                                    child: Icon(
+                                      Icons.fastfood,
+                                      color: Colors.grey[600],
+                                      size: 50,
+                                    ),
+                                  );
+                                },
+                              )
+                            : Container(
+                                width: double.infinity,
+                                height: 200,
+                                color: Colors.grey[300],
+                                child: Icon(
+                                  Icons.fastfood,
+                                  color: Colors.grey[600],
+                                  size: 50,
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Food name
+                      Text(
+                        menuItem.mealName ?? 'Food Item',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Description
+                      Text(
+                        menuItem.mealDescription ??
+                            'Delicious food description',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Price
+                      Text(
+                        'From ₦${menuItem.price}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: kcPrimary300,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Customization sections
+                      _buildCustomizationSection(
+                        'Abacha Type',
+                        ['Spicy', 'Bland', 'Normal'],
+                        isRequired: true,
+                        maxSelection: 1,
+                      ),
+                      const SizedBox(height: 16),
+
+                      _buildCustomizationSection(
+                        'Protein Options',
+                        ['2 Pieces of Beef', 'Fish', 'Snail'],
+                        isRequired: true,
+                        maxSelection: 1,
+                      ),
+                      const SizedBox(height: 16),
+
+                      _buildCustomizationSection(
+                        'Extra Abacha',
+                        ['Bland ₦1000', 'Spicy ₦1000', 'Normal ₦1000'],
+                        isRequired: false,
+                        maxSelection: 2,
+                      ),
+                      const SizedBox(height: 16),
+
+                      _buildCustomizationSection(
+                        'Extra Protein Option',
+                        ['Fish ₦1000', 'Kroaker ₦1000', 'Goat Meat ₦1000'],
+                        isRequired: false,
+                        maxSelection: 2,
+                      ),
+
+                      const SizedBox(height: 100), // Space for bottom bar
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build customization sections
+  Widget _buildCustomizationSection(
+    String title,
+    List<String> options, {
+    required bool isRequired,
+    required int maxSelection,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (isRequired) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.red[100],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'Required',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.red[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Select ${maxSelection == 1 ? '1' : 'up to $maxSelection'} from here',
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[600],
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...options.map((option) => _buildOptionTile(option, maxSelection)),
+      ],
+    );
+  }
+
+  // Helper method to build option tiles
+  Widget _buildOptionTile(String option, int maxSelection) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            maxSelection == 1
+                ? Icons.radio_button_unchecked
+                : Icons.check_box_outline_blank,
+            color: Colors.grey[600],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              option,
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
         ],
       ),
     );
