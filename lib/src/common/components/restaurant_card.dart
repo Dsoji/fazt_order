@@ -26,9 +26,10 @@ class RestaurantCard extends ConsumerWidget {
         );
       },
       child: Card(
+        color: Colors.white,
         margin: const EdgeInsets.only(bottom: 16.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        shadowColor: kcTransparent,
+        shadowColor: Colors.white.withOpacity(0.5),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -45,7 +46,7 @@ class RestaurantCard extends ConsumerWidget {
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
                         height: 150,
-                        color: Colors.grey[300],
+                        color: Colors.white,
                         child: const Center(child: Icon(Icons.error)),
                       ),
                     ),

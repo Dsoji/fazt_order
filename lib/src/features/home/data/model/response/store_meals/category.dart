@@ -1,18 +1,21 @@
 import 'dart:convert';
 
 class Category {
+  String? categoryName;
   String? id;
 
-  Category({this.id});
+  Category({this.categoryName, this.id});
 
   @override
-  String toString() => 'Category(id: $id)';
+  String toString() => 'Category(categoryName: $categoryName, id: $id)';
 
   factory Category.fromMap(Map<String, dynamic> data) => Category(
+        categoryName: data['categoryName'] as String?,
         id: data['id'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
+        'categoryName': categoryName,
         'id': id,
       };
 
@@ -29,9 +32,11 @@ class Category {
   String toJson() => json.encode(toMap());
 
   Category copyWith({
+    String? categoryName,
     String? id,
   }) {
     return Category(
+      categoryName: categoryName ?? this.categoryName,
       id: id ?? this.id,
     );
   }

@@ -119,4 +119,29 @@ class ShopController extends StateNotifier<ShopState> {
       },
     );
   }
+
+  Future<bool> addToCart(
+    String mealId,
+    String quantity,
+    List<String> optionItem,
+  ) async {
+    state = state.copyWith(addToCart: const AsyncValue.loading());
+    final result = await _authenticationRepository.addToCart(
+      mealId,
+      quantity,
+      optionItem,
+    );
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            addToCart: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(addToCart: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
 }

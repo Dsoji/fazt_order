@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import '../../../../common/api/api_client.dart';
 import '../../../../common/api/api_request_helper.dart';
 import '../../../../common/api/dio_api_client.dart';
+import '../../../../common/utils/utils.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 import '../model/response/store_categories/store_categories.dart';
@@ -98,6 +99,27 @@ class ShopService {
         },
       ),
       parser: (data) => StoreMeals.fromMap(data),
+    );
+  }
+
+  Future<ResultValue<String>> addToCart(
+    String mealId,
+    String quantity,
+    List<String> optionItem,
+  ) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'carts',
+        header: {
+          'Authorization': 'Bearer $accessToken',
+        },
+        data: {
+          "meal": mealId,
+          "mealQuantity": quantity,
+          "optionItem": optionItem,
+        },
+      ),
+      parser: (data) => BaseModel.toRawString(data),
     );
   }
 }

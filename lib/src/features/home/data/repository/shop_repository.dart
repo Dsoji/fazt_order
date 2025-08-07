@@ -124,4 +124,33 @@ class ShopRepository {
       return Error(failure);
     }
   }
+
+  Future<Result<FailureHandler, String>> addToCart(
+    String mealId,
+    String quantity,
+    List<String> optionItem,
+  ) async {
+    try {
+      final data = await authService.addToCart(
+        mealId,
+        quantity,
+        optionItem,
+      );
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to add item to cart',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to add item to cart'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
 }

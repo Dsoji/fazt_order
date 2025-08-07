@@ -10,12 +10,14 @@ class ShopState {
   final AsyncValue<StoreCategories> shopFoodCategory;
   final AsyncValue<SearchGlobal> searchQuery;
   final AsyncValue<StoreMeals> storeMeals;
+  final AsyncValue<String> addToCart;
 
   const ShopState({
     required this.shops,
     required this.shopFoodCategory,
     required this.searchQuery,
     required this.storeMeals,
+    required this.addToCart,
   });
 
   factory ShopState.initial() {
@@ -24,6 +26,7 @@ class ShopState {
       shopFoodCategory: AsyncValue.data(StoreCategories()),
       searchQuery: AsyncValue.data(SearchGlobal()),
       storeMeals: AsyncValue.data(StoreMeals()),
+      addToCart: const AsyncValue.data(''),
     );
   }
 
@@ -32,12 +35,14 @@ class ShopState {
     AsyncValue<StoreCategories>? shopFoodCategory,
     AsyncValue<SearchGlobal>? searchQuery,
     AsyncValue<StoreMeals>? storeMeals,
+    AsyncValue<String>? addToCart,
   }) {
     return ShopState(
       shops: shops ?? this.shops,
       shopFoodCategory: shopFoodCategory ?? this.shopFoodCategory,
       searchQuery: searchQuery ?? this.searchQuery,
       storeMeals: storeMeals ?? this.storeMeals,
+      addToCart: addToCart ?? this.addToCart,
     );
   }
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'category.dart';
+import 'option_group.dart';
 
 class Result {
   Category? category;
@@ -9,10 +10,9 @@ class Result {
   String? mealImage;
   int? price;
   String? priceDescription;
-  List<dynamic>? optionGroup;
+  List<OptionGroup>? optionGroup;
   String? store;
   String? shop;
-  String? pack;
   int? numberOfFavorites;
   bool? inStock;
   DateTime? createdAt;
@@ -29,7 +29,6 @@ class Result {
     this.optionGroup,
     this.store,
     this.shop,
-    this.pack,
     this.numberOfFavorites,
     this.inStock,
     this.createdAt,
@@ -39,7 +38,7 @@ class Result {
 
   @override
   String toString() {
-    return 'Result(category: $category, mealName: $mealName, mealDescription: $mealDescription, mealImage: $mealImage, price: $price, priceDescription: $priceDescription, optionGroup: $optionGroup, store: $store, shop: $shop, pack: $pack, numberOfFavorites: $numberOfFavorites, inStock: $inStock, createdAt: $createdAt, updatedAt: $updatedAt, id: $id)';
+    return 'Result(category: $category, mealName: $mealName, mealDescription: $mealDescription, mealImage: $mealImage, price: $price, priceDescription: $priceDescription, optionGroup: $optionGroup, store: $store, shop: $shop, numberOfFavorites: $numberOfFavorites, inStock: $inStock, createdAt: $createdAt, updatedAt: $updatedAt, id: $id)';
   }
 
   factory Result.fromMap(Map<String, dynamic> data) => Result(
@@ -51,10 +50,11 @@ class Result {
         mealImage: data['mealImage'] as String?,
         price: data['price'] as int?,
         priceDescription: data['priceDescription'] as String?,
-        optionGroup: data['optionGroup'] as List<dynamic>?,
+        optionGroup: (data['optionGroup'] as List<dynamic>?)
+            ?.map((e) => OptionGroup.fromMap(e as Map<String, dynamic>))
+            .toList(),
         store: data['store'] as String?,
         shop: data['shop'] as String?,
-        pack: data['pack'] as String?,
         numberOfFavorites: data['numberOfFavorites'] as int?,
         inStock: data['inStock'] as bool?,
         createdAt: data['createdAt'] == null
@@ -73,10 +73,9 @@ class Result {
         'mealImage': mealImage,
         'price': price,
         'priceDescription': priceDescription,
-        'optionGroup': optionGroup,
+        'optionGroup': optionGroup?.map((e) => e.toMap()).toList(),
         'store': store,
         'shop': shop,
-        'pack': pack,
         'numberOfFavorites': numberOfFavorites,
         'inStock': inStock,
         'createdAt': createdAt?.toIso8601String(),
@@ -103,10 +102,9 @@ class Result {
     String? mealImage,
     int? price,
     String? priceDescription,
-    List<dynamic>? optionGroup,
+    List<OptionGroup>? optionGroup,
     String? store,
     String? shop,
-    String? pack,
     int? numberOfFavorites,
     bool? inStock,
     DateTime? createdAt,
@@ -123,7 +121,6 @@ class Result {
       optionGroup: optionGroup ?? this.optionGroup,
       store: store ?? this.store,
       shop: shop ?? this.shop,
-      pack: pack ?? this.pack,
       numberOfFavorites: numberOfFavorites ?? this.numberOfFavorites,
       inStock: inStock ?? this.inStock,
       createdAt: createdAt ?? this.createdAt,
