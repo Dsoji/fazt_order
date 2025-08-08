@@ -1,63 +1,250 @@
+import 'package:fazt_order/src/features/order/checkout_view.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:lottie/lottie.dart';
-import '../../../datamodels/menu_items.dart';
+
 import '../../../providers/order_provider.dart';
 import '../../common/app_colors.dart';
 import '../../common/ui_helpers.dart';
-import 'checkout_view.dart';
+import '../home/data/controller/shop_controller.dart';
 import 'ongoing_orders_view.dart';
 
-class OrderView extends ConsumerStatefulWidget {
+class OrderView extends HookConsumerWidget {
   const OrderView({super.key});
 
   @override
-  _OrderViewState createState() => _OrderViewState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vsync = useSingleTickerProvider();
+    final tabController =
+        useMemoized(() => TabController(length: 3, vsync: vsync));
+    final selectedIndex = useState(0);
+    final cartItemAsync = ref.watch(shopControllerProvider).fetchCart;
 
-class _OrderViewState extends ConsumerState<OrderView>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        setState(() {});
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  void _clearItems() {
-    final notifier = ref.read(orderProvider.notifier);
-    if (_tabController.index == 0) {
-      notifier.clearCartItems();
-    } else if (_tabController.index == 1) {
-      notifier.clearOngoingItems();
-    } else if (_tabController.index == 2) {
-      notifier.clearCompletedItems();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
     final orderState = ref.watch(orderProvider);
-    final cartItems =
-        orderState.items.where((item) => item.tab == 'cart').toList();
     final ongoingItems =
         orderState.items.where((item) => item.tab == 'ongoing').toList();
     final completedItems =
         orderState.items.where((item) => item.tab == 'completed').toList();
+
+    // Listen to tab changes
+    useEffect(() {
+      void listener() {
+        selectedIndex.value = tabController.index;
+      }
+
+      tabController.addListener(listener);
+      return () => tabController.removeListener(listener);
+    }, [tabController]);
+
+    void clearItems() {
+      final notifier = ref.read(orderProvider.notifier);
+      if (selectedIndex.value == 0) {
+        notifier.clearCartItems();
+      } else if (selectedIndex.value == 1) {
+        notifier.clearOngoingItems();
+      } else if (selectedIndex.value == 2) {
+        notifier.clearCompletedItems();
+      }
+    }
+
+    // Handle cart data based on async state
+    Widget buildCartContent() {
+      return cartItemAsync.when(
+        data: (cartData) {
+          // Extract cart items from the async data
+          final cartItems = cartData.carts ?? [];
+
+          if (cartItems.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    height: 200,
+                    width: 200,
+                    child: Lottie.asset('asset/lottie/DBSkpgXyIT.json'),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to place order
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: kcPrimary400,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        "Place Order Now",
+                        style: TextStyle(fontSize: 14, color: kcWhite),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            itemCount: cartItems.length,
+            itemBuilder: (context, index) {
+              final item = cartItems[index];
+              return Column(
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 8),
+                        child: Row(
+                          children: [
+                            // Image
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(
+                                item.shop?.store?.storeDisplayImage ??
+                                    "asset/images/Frame 269.png",
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(width: 7),
+                            // Details
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        item.shop?.shopName ?? "Unknown Item",
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                          "asset/svgs/delivery_icon.svg"),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        orderState.deliveryAddress,
+                                        maxLines: 2,
+                                        softWrap: true,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            color: kcPrimaryNeutral300,
+                                            fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "${item.items?.length ?? 0} items",
+                                    style: const TextStyle(
+                                        color: kcPrimaryNeutral300,
+                                        fontSize: 12),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "₦${((item.totalPrice ?? 0) * (item.packCount ?? 0)).toStringAsFixed(0)}",
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                        color: kcPrimaryNeutral300),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: () {
+                            // Handle delete from cart using cartItemAsync data
+                            // ref
+                            //     .read(shopControllerProvider.notifier)
+                            //     .removeFromCart(item.id);
+                          },
+                          child: const CircleAvatar(
+                            backgroundColor: kcPrimaryRed900,
+                            radius: 12,
+                            child: Icon(Iconsax.trash,
+                                size: 15, color: kcPrimaryRed200),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 10,
+                        right: 10,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CheckoutScreen(
+                                  selectedItems: item,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: kcPrimary300,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: const Text('Checkout',
+                                style: TextStyle(color: kcWhite)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SvgPicture.asset("asset/svgs/dotted_line.svg"),
+                ],
+              );
+            },
+          );
+        },
+        loading: () => const Center(
+          child: CircularProgressIndicator(),
+        ),
+        error: (error, stackTrace) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Error loading cart: $error'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(shopControllerProvider.notifier).fetchCart();
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -65,11 +252,21 @@ class _OrderViewState extends ConsumerState<OrderView>
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
         actions: [
           GestureDetector(
-            onTap: (cartItems.isNotEmpty && _tabController.index == 0) ||
-                    (ongoingItems.isNotEmpty && _tabController.index == 1) ||
-                    (completedItems.isNotEmpty && _tabController.index == 2)
-                ? _clearItems
-                : null,
+            onTap: () {
+              // Check if cart has items using cartItemAsync
+              cartItemAsync.whenData((cartData) {
+                final hasCartItems = (cartData.carts ?? []).isNotEmpty;
+                if (hasCartItems && selectedIndex.value == 0) {
+                  clearItems();
+                } else if (ongoingItems.isNotEmpty &&
+                    selectedIndex.value == 1) {
+                  clearItems();
+                } else if (completedItems.isNotEmpty &&
+                    selectedIndex.value == 2) {
+                  clearItems();
+                }
+              });
+            },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
@@ -77,34 +274,36 @@ class _OrderViewState extends ConsumerState<OrderView>
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    _tabController.index == 0
+                    selectedIndex.value == 0
                         ? "Clear cart items"
-                        : _tabController.index == 1
+                        : selectedIndex.value == 1
                             ? "Clear ongoing items"
                             : "Clear completed items",
                     style: TextStyle(
-                      color:
-                          (cartItems.isNotEmpty && _tabController.index == 0) ||
-                                  (ongoingItems.isNotEmpty &&
-                                      _tabController.index == 1) ||
-                                  (completedItems.isNotEmpty &&
-                                      _tabController.index == 2)
-                              ? kcPrimary400
-                              : kcPrimaryNeutral700,
+                      color: selectedIndex.value == 0
+                          ? kcPrimary400
+                          : selectedIndex.value == 1
+                              ? (ongoingItems.isNotEmpty
+                                  ? kcPrimary400
+                                  : kcPrimaryNeutral700)
+                              : (completedItems.isNotEmpty
+                                  ? kcPrimary400
+                                  : kcPrimaryNeutral700),
                     ),
                   ),
                   const SizedBox(height: 1),
                   Container(
                     height: 1,
                     width: 100,
-                    color:
-                        (cartItems.isNotEmpty && _tabController.index == 0) ||
-                                (ongoingItems.isNotEmpty &&
-                                    _tabController.index == 1) ||
-                                (completedItems.isNotEmpty &&
-                                    _tabController.index == 2)
-                            ? kcPrimary400
-                            : kcPrimaryNeutral700,
+                    color: selectedIndex.value == 0
+                        ? kcPrimary400
+                        : selectedIndex.value == 1
+                            ? (ongoingItems.isNotEmpty
+                                ? kcPrimary400
+                                : kcPrimaryNeutral700)
+                            : (completedItems.isNotEmpty
+                                ? kcPrimary400
+                                : kcPrimaryNeutral700),
                   ),
                 ],
               ),
@@ -117,7 +316,7 @@ class _OrderViewState extends ConsumerState<OrderView>
           // TabBar
           TabBar(
             labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-            controller: _tabController,
+            controller: tabController,
             labelColor: Colors.white,
             unselectedLabelColor: Colors.white,
             indicatorPadding: EdgeInsets.zero,
@@ -133,18 +332,17 @@ class _OrderViewState extends ConsumerState<OrderView>
                       const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    border: _tabController.index == 0
+                    border: selectedIndex.value == 0
                         ? Border.all(color: kcTransparent)
                         : Border.all(color: kcPrimary700),
-                    color: _tabController.index == 0
-                        ? kcPrimary300
-                        : kcTransparent,
+                    color:
+                        selectedIndex.value == 0 ? kcPrimary300 : kcTransparent,
                   ),
                   child: Text(
                     "My Cart",
                     style: TextStyle(
                         color:
-                            _tabController.index == 0 ? kcWhite : kcPrimary400,
+                            selectedIndex.value == 0 ? kcWhite : kcPrimary400,
                         fontSize: 12),
                   ),
                 ),
@@ -155,18 +353,17 @@ class _OrderViewState extends ConsumerState<OrderView>
                       const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    border: _tabController.index == 1
+                    border: selectedIndex.value == 1
                         ? Border.all(color: kcTransparent)
                         : Border.all(color: kcPrimary700),
-                    color: _tabController.index == 1
-                        ? kcPrimary300
-                        : kcTransparent,
+                    color:
+                        selectedIndex.value == 1 ? kcPrimary300 : kcTransparent,
                   ),
                   child: Text(
                     "Ongoing",
                     style: TextStyle(
                         color:
-                            _tabController.index == 1 ? kcWhite : kcPrimary400,
+                            selectedIndex.value == 1 ? kcWhite : kcPrimary400,
                         fontSize: 12),
                   ),
                 ),
@@ -177,18 +374,17 @@ class _OrderViewState extends ConsumerState<OrderView>
                       const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    border: _tabController.index == 2
+                    border: selectedIndex.value == 2
                         ? Border.all(color: kcTransparent)
                         : Border.all(color: kcPrimary700),
-                    color: _tabController.index == 2
-                        ? kcPrimary300
-                        : kcTransparent,
+                    color:
+                        selectedIndex.value == 2 ? kcPrimary300 : kcTransparent,
                   ),
                   child: Text(
                     "Completed",
                     style: TextStyle(
                         color:
-                            _tabController.index == 2 ? kcWhite : kcPrimary400,
+                            selectedIndex.value == 2 ? kcWhite : kcPrimary400,
                         fontSize: 12),
                   ),
                 ),
@@ -198,194 +394,10 @@ class _OrderViewState extends ConsumerState<OrderView>
           // TabBarView
           Expanded(
             child: TabBarView(
-              controller: _tabController,
+              controller: tabController,
               children: [
                 /// My Cart Tab
-                cartItems.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              height: 200,
-                              width: 200,
-                              child:
-                                  Lottie.asset('asset/lottie/DBSkpgXyIT.json'),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                // Navigator.push(
-                                // context,
-                                // MaterialPageRoute(
-                                // builder: (context) => const OrderView(),
-                                // ),
-                                // );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 18, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: kcPrimary400,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text(
-                                  "Place Order Now",
-                                  style:
-                                      TextStyle(fontSize: 14, color: kcWhite),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: cartItems.length,
-                        itemBuilder: (context, index) {
-                          final item = cartItems[index];
-                          return Column(
-                            children: [
-                              Stack(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 8),
-                                    child: Row(
-                                      children: [
-                                        // Image
-                                        ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          child: Image.asset(
-                                            "asset/images/Frame 269.png",
-                                            width: 80,
-                                            height: 80,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 7),
-                                        // Details
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    item.name,
-                                                    style: const TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w500),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  SvgPicture.asset(
-                                                      "asset/svgs/delivery_icon.svg"),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    orderState.deliveryAddress,
-                                                    maxLines: 2,
-                                                    softWrap: true,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                        color:
-                                                            kcPrimaryNeutral300,
-                                                        fontSize: 12),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                "${item.quantity} items",
-                                                style: const TextStyle(
-                                                    color: kcPrimaryNeutral300,
-                                                    fontSize: 12),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                "₦${(item.price * item.quantity).toStringAsFixed(0)}",
-                                                style: const TextStyle(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.w400,
-                                                    color: kcPrimaryNeutral300),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Positioned(
-                                    top: 10,
-                                    right: 10,
-                                    child: GestureDetector(
-                                      behavior: HitTestBehavior.translucent,
-                                      onTap: () => ref
-                                          .read(orderProvider.notifier)
-                                          .deleteItem(index, tab: 'cart'),
-                                      child: const CircleAvatar(
-                                        backgroundColor: kcPrimaryRed900,
-                                        radius: 12,
-                                        child: Icon(Iconsax.trash,
-                                            size: 15, color: kcPrimaryRed200),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    bottom: 10,
-                                    right: 10,
-                                    child: GestureDetector(
-                                      behavior: HitTestBehavior.translucent,
-                                      onTap: () {
-                                        final selectedItems = [
-                                          MenuItem(
-                                            name: item.name,
-                                            description:
-                                                "Delicious ${item.name}",
-                                            price: item.price,
-                                            imageUrl:
-                                                "https://via.placeholder.com/80",
-                                            isAvailable: true,
-                                          ),
-                                        ];
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                CheckoutScreen(
-                                              selectedItems: selectedItems,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: kcPrimary300,
-                                          borderRadius:
-                                              BorderRadius.circular(30),
-                                        ),
-                                        child: const Text('Checkout',
-                                            style: TextStyle(color: kcWhite)),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SvgPicture.asset("asset/svgs/dotted_line.svg"),
-                            ],
-                          );
-                        },
-                      ),
+                buildCartContent(),
 
                 /// Ongoing Tab
                 ongoingItems.isEmpty

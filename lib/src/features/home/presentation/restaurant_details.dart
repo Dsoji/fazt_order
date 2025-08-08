@@ -14,6 +14,7 @@ import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
 import '../data/controller/shop_controller.dart';
 import '../data/model/response/shops_model/result.dart';
+import '../data/model/response/store_meals/item.dart';
 import '../data/model/response/store_meals/result.dart';
 
 final logger = Logger();
@@ -584,26 +585,30 @@ class AddToCartBottomSheet extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final quantity = useState(1);
     final options = menuItem.optionGroup;
-    final selectedItems =
-        useState<Map<String, List<String>>>({}); // Map<groupId, List<itemId>>
+    // Update the state management to track quantities for each option
+    final selectedItemsWithQuantity =
+        useState<Map<String, Map<String, int>>>({});
 
     // Calculate total price including selected options
     final totalPrice = useMemoized(() {
       int basePrice = menuItem.price ?? 0;
       int optionsPrice = 0;
 
-      // Calculate price from selected options
+      // Calculate price from selected options with quantities
       if (options != null) {
         for (final optionGroup in options) {
-          final selectedItemIds =
-              selectedItems.value[optionGroup.id ?? ''] ?? [];
+          final selectedItemsForGroup =
+              selectedItemsWithQuantity.value[optionGroup.id ?? ''] ?? {};
           final items = optionGroup.items ?? [];
 
-          for (final itemId in selectedItemIds) {
+          for (final entry in selectedItemsForGroup.entries) {
+            final itemId = entry.key;
+            final quantity = entry.value;
+
             // Find the corresponding item to get its price
             for (final item in items) {
               if (item.id == itemId) {
-                optionsPrice += item.price ?? 0;
+                optionsPrice += (item.price ?? 0) * quantity;
                 break;
               }
             }
@@ -612,7 +617,7 @@ class AddToCartBottomSheet extends HookConsumerWidget {
       }
 
       return (basePrice + optionsPrice) * quantity.value;
-    }, [selectedItems.value, quantity.value, options]);
+    }, [selectedItemsWithQuantity.value, quantity.value, options]);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
@@ -769,15 +774,18 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                 optionGroup.least! > 0,
                             maxSelection: optionGroup.most ?? 1,
                             groupId: optionGroup.id ?? '',
-                            selectedItemIds:
-                                selectedItems.value[optionGroup.id ?? ''] ?? [],
-                            onSelectionChanged: (selectedItemIds) {
+                            selectedItemIdsWithQuantity:
+                                selectedItemsWithQuantity
+                                        .value[optionGroup.id ?? ''] ??
+                                    {},
+                            onSelectionChanged: (selectedItemIdsWithQuantity) {
                               final newSelectedItems =
-                                  Map<String, List<String>>.from(
-                                      selectedItems.value);
+                                  Map<String, Map<String, int>>.from(
+                                      selectedItemsWithQuantity.value);
                               newSelectedItems[optionGroup.id ?? ''] =
-                                  selectedItemIds;
-                              selectedItems.value = newSelectedItems;
+                                  selectedItemIdsWithQuantity;
+                              selectedItemsWithQuantity.value =
+                                  newSelectedItems;
                             },
                           );
                         },
@@ -853,20 +861,38 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                 .addToCart
                                 .isLoading,
                             onPressed: () async {
-                              // Get all selected item IDs
-                              final selectedItemIds = selectedItems.value.values
-                                  .expand((itemIds) => itemIds)
-                                  .toList();
+                              // Prepare the options data for the API
+                              List<Map<String, dynamic>> optionsData = [];
 
+                              for (final optionGroup in options ?? []) {
+                                final selectedItemsForGroup =
+                                    selectedItemsWithQuantity
+                                            .value[optionGroup.id ?? ''] ??
+                                        {};
+
+                                for (final entry
+                                    in selectedItemsForGroup.entries) {
+                                  optionsData.add({
+                                    "optionItem": entry.key,
+                                    "quantity": entry.value,
+                                  });
+                                }
+                              }
+
+                              // Call your updated addToCart method
                               final result = await ref
                                   .read(shopControllerProvider.notifier)
                                   .addToCart(
                                     menuItem.id ?? '',
-                                    quantity.value.toString(),
-                                    selectedItemIds,
+                                    quantity.value,
+                                    optionsData,
+                                    // Add the missing parameter
                                   );
 
                               if (result == true) {
+                                await ref
+                                    .read(shopControllerProvider.notifier)
+                                    .fetchCart();
                                 Navigator.pop(context);
                               }
                             },
@@ -890,13 +916,14 @@ class AddToCartBottomSheet extends HookConsumerWidget {
   Widget buildCustomizationSection(
     String title,
     List<String> options,
-    List<dynamic> items, // Use dynamic to avoid import issues
+    List<Item> items, // Use dynamic to avoid import issues
     {
     required bool isRequired,
     required int maxSelection,
     required String groupId,
-    required List<String> selectedItemIds,
-    required Function(List<String>) onSelectionChanged,
+    required Map<String, int>
+        selectedItemIdsWithQuantity, // Changed to track quantities
+    required Function(Map<String, int>) onSelectionChanged, // Updated callback
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -944,29 +971,53 @@ class AddToCartBottomSheet extends HookConsumerWidget {
           final index = entry.key;
           final option = entry.value;
           final item = items[index];
-          final isSelected = selectedItemIds.contains(item.id);
+          final itemId = item.id ?? '';
+          final isSelected = selectedItemIdsWithQuantity.containsKey(itemId);
+          final quantity = selectedItemIdsWithQuantity[itemId] ?? 0;
 
-          return buildOptionTile(
+          // Add debug print
+          print('Item: $itemId, isSelected: $isSelected, quantity: $quantity');
+
+          return buildOptionTileWithQuantity(
             option,
             maxSelection,
             isSelected: isSelected,
+            quantity: quantity,
             onTap: () {
-              List<String> newSelection = List.from(selectedItemIds);
+              Map<String, int> newSelection =
+                  Map.from(selectedItemIdsWithQuantity);
 
               if (maxSelection == 1) {
                 // Single selection - replace current selection
-                newSelection = isSelected ? [] : [item.id ?? ''];
-              } else {
-                // Multiple selection
                 if (isSelected) {
-                  newSelection.remove(item.id ?? '');
+                  newSelection.clear();
+                } else {
+                  newSelection.clear();
+                  newSelection[itemId] = 1;
+                }
+              } else {
+                // Multiple selection with quantity
+                if (isSelected) {
+                  newSelection.remove(itemId);
                 } else {
                   if (newSelection.length < maxSelection) {
-                    newSelection.add(item.id ?? '');
+                    newSelection[itemId] = 1;
                   }
                 }
               }
 
+              print('New selection: $newSelection');
+              onSelectionChanged(newSelection);
+            },
+            onQuantityChanged: (newQuantity) {
+              Map<String, int> newSelection =
+                  Map.from(selectedItemIdsWithQuantity);
+              if (newQuantity > 0) {
+                newSelection[itemId] = newQuantity;
+              } else {
+                newSelection.remove(itemId);
+              }
+              print('Quantity changed: $newSelection');
               onSelectionChanged(newSelection);
             },
           );
@@ -1020,6 +1071,115 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Updated option tile with quantity controls
+  Widget buildOptionTileWithQuantity(
+    String option,
+    int maxSelection, {
+    required bool isSelected,
+    required int quantity,
+    required VoidCallback onTap,
+    required Function(int) onQuantityChanged,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? AppColors.brand300 : Colors.grey[300]!,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: isSelected
+              ? AppColors.brand300.withOpacity(0.1)
+              : Colors.transparent,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              maxSelection == 1
+                  ? (isSelected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_unchecked)
+                  : (isSelected
+                      ? Icons.check_box
+                      : Icons.check_box_outline_blank),
+              color: isSelected ? AppColors.brand300 : Colors.grey[600],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                option,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isSelected ? AppColors.brand300 : Colors.black,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ),
+            // Quantity controls (only show when selected)
+            if (isSelected && quantity > 0) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.brand300.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.brand300, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        if (quantity > 1) {
+                          onQuantityChanged(quantity - 1);
+                        } else {
+                          onQuantityChanged(0); // Remove item
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        child: const Icon(
+                          Icons.remove,
+                          size: 16,
+                          color: AppColors.brand300,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$quantity',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.brand300,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        onQuantityChanged(quantity + 1);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        child: const Icon(
+                          Icons.add,
+                          size: 16,
+                          color: AppColors.brand300,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -1,61 +1,31 @@
-import 'package:fazt_order/src/features/home/presentation/payment_view.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
-import '../../../datamodels/menu_items.dart';
-import '../../../datamodels/order_items.dart';
+
 import '../../../providers/order_provider.dart';
 import '../../common/app_colors.dart';
 import '../../common/ui_helpers.dart';
 import '../../common/widgets/text_styles.dart';
 import '../bottom_sheets/edit_address_sheet.dart';
+import '../home/data/controller/shop_controller.dart';
+import '../home/data/model/response/cart_lsit/cart.dart';
+import '../profile/data/controller/profile_controller.dart';
 
-// Placeholder EditAddressBottomSheet (replace with your actual implementation)
-// class EditAddressBottomSheet extends StatelessWidget {
-//   final String currentAddress;
-//   final Function(String) onUpdate;
-//
-//   const EditAddressBottomSheet({required this.currentAddress, required this.onUpdate, Key? key})
-//       : super(key: key);
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       padding: const EdgeInsets.all(16),
-//       child: Column(
-//         mainAxisSize: MainAxisSize.min,
-//         children: [
-//           TextField(
-//             decoration: const InputDecoration(labelText: "New Address"),
-//             onSubmitted: (value) {
-//               onUpdate(value);
-//               Navigator.pop(context);
-//             },
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
-class CheckoutScreen extends ConsumerStatefulWidget {
-  final List<MenuItem> selectedItems;
+class CheckoutScreen extends HookConsumerWidget {
+  final Cart selectedItems;
 
   const CheckoutScreen({required this.selectedItems, super.key});
 
   @override
-  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
-}
-
-class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  bool _isSelectionVisible = true;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isSelectionVisible = useState(true);
     final orderState = ref.watch(orderProvider);
-    final cartItems =
-        orderState.items.where((item) => item.tab == 'cart').toList();
+    final userDetails =
+        ref.watch(profileControllerProvider).userDetails.valueOrNull;
+    final messageController = useTextEditingController();
+    final noteController = useTextEditingController();
 
     return Scaffold(
       appBar: AppBar(
@@ -88,22 +58,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   children: [
                     const Icon(Iconsax.location,
                         color: kcPrimaryNeutral200, size: 18),
-                    horizontalSpace(8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Computer Village",
-                          style: ktBodyRegularSize16.copyWith(
-                              color: kcPrimaryNeutral200),
-                        ),
-                        verticalSpaceSmall,
-                        Text(
-                          orderState.deliveryAddress,
-                          style: ktBodyRegularSize12.copyWith(
-                              color: kcPrimaryNeutral500),
-                        ),
-                      ],
+                    Text(
+                      userDetails?.user?.location?.address ?? "No Address",
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: ktBodyRegularSize12.copyWith(
+                          color: kcPrimaryNeutral500),
                     ),
                   ],
                 ),
@@ -138,76 +98,76 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             ),
             verticalSpaceSmall,
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Container(
-                  height: screenHeight(context) * 0.067,
-                  width: screenHeight(context) * 0.2,
-                  decoration: BoxDecoration(
-                      color: kcPrimary980,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: kcPrimary400)),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 30.0, vertical: 8),
-                    child: Row(
-                      children: [
-                        const Icon(Iconsax.clock, color: kcPrimary200),
-                        horizontalSpaceTiny,
-                        Column(
-                          children: [
-                            Text(
-                              "Standard",
-                              style: ktBodyRegularSize14.copyWith(
-                                  color: kcPrimary200),
-                            ),
-                            Text(
-                              "30-40 Mins",
-                              style: ktBodyRegularSize14.copyWith(
-                                  color: kcPrimary500),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Container(
-                  height: screenHeight(context) * 0.067,
-                  width: screenHeight(context) * 0.2,
-                  decoration: BoxDecoration(
-                      color: kcTransparent,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: kcPrimaryNeutral800)),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 30.0, vertical: 8),
-                    child: Row(
-                      children: [
-                        const Icon(Iconsax.calendar_edit,
-                            color: kcPrimaryNeutral200),
-                        horizontalSpaceTiny,
-                        Column(
-                          children: [
-                            Text(
-                              "Schedule",
-                              style: ktBodyRegularSize14.copyWith(
-                                  color: kcPrimaryNeutral200),
-                            ),
-                            Text(
-                              "Select Time",
-                              style: ktBodyRegularSize14.copyWith(
-                                  color: kcPrimaryNeutral500),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+            //   children: [
+            //     Container(
+            //       height: screenHeight(context) * 0.067,
+            //       width: screenHeight(context) * 0.2,
+            //       decoration: BoxDecoration(
+            //           color: kcPrimary980,
+            //           borderRadius: BorderRadius.circular(20),
+            //           border: Border.all(color: kcPrimary400)),
+            //       child: Padding(
+            //         padding: const EdgeInsets.symmetric(
+            //             horizontal: 30.0, vertical: 8),
+            //         child: Row(
+            //           children: [
+            //             const Icon(Iconsax.clock, color: kcPrimary200),
+            //             horizontalSpaceTiny,
+            //             Column(
+            //               children: [
+            //                 Text(
+            //                   "Standard",
+            //                   style: ktBodyRegularSize14.copyWith(
+            //                       color: kcPrimary200),
+            //                 ),
+            //                 Text(
+            //                   "30-40 Mins",
+            //                   style: ktBodyRegularSize14.copyWith(
+            //                       color: kcPrimary500),
+            //                 ),
+            //               ],
+            //             ),
+            //           ],
+            //         ),
+            //       ),
+            //     ),
+            //     Container(
+            //       height: screenHeight(context) * 0.067,
+            //       width: screenHeight(context) * 0.2,
+            //       decoration: BoxDecoration(
+            //           color: kcTransparent,
+            //           borderRadius: BorderRadius.circular(20),
+            //           border: Border.all(color: kcPrimaryNeutral800)),
+            //       child: Padding(
+            //         padding: const EdgeInsets.symmetric(
+            //             horizontal: 30.0, vertical: 8),
+            //         child: Row(
+            //           children: [
+            //             const Icon(Iconsax.calendar_edit,
+            //                 color: kcPrimaryNeutral200),
+            //             horizontalSpaceTiny,
+            //             Column(
+            //               children: [
+            //                 Text(
+            //                   "Schedule",
+            //                   style: ktBodyRegularSize14.copyWith(
+            //                       color: kcPrimaryNeutral200),
+            //                 ),
+            //                 Text(
+            //                   "Select Time",
+            //                   style: ktBodyRegularSize14.copyWith(
+            //                       color: kcPrimaryNeutral500),
+            //                 ),
+            //               ],
+            //             ),
+            //           ],
+            //         ),
+            //       ),
+            //     ),
+            //   ],
+            // ),
 
             verticalSpaceSmall,
             SvgPicture.asset('asset/svgs/dotted_line.svg'),
@@ -226,11 +186,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        orderState.restaurantName,
+                        selectedItems.shop?.shopName ?? "Unknown Shop",
                         style: ktBodyRegularSize16,
                       ),
                       Text(
-                        "${cartItems.length} item",
+                        "${selectedItems.items?.length ?? 0} item",
                         style: ktBodyRegularSize14.copyWith(
                             color: kcPrimaryNeutral500),
                       ),
@@ -241,14 +201,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   children: [
                     GestureDetector(
                       onTap: () {
-                        setState(() {
-                          _isSelectionVisible = !_isSelectionVisible;
-                        });
+                        isSelectionVisible.value = !isSelectionVisible.value;
                       },
                       child: Row(
                         children: [
                           Text(
-                            _isSelectionVisible
+                            isSelectionVisible.value
                                 ? "Hide Selection"
                                 : "Show Selection",
                             style: ktBodyRegularSize12.copyWith(
@@ -256,7 +214,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ),
                           horizontalSpaceTiny,
                           Icon(
-                            _isSelectionVisible
+                            isSelectionVisible.value
                                 ? Iconsax.arrow_up_2
                                 : Iconsax.arrow_down_1,
                             size: 15,
@@ -271,10 +229,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             verticalSpace(16),
 
             // Order Items
-            if (_isSelectionVisible) ...[
-              ...cartItems.asMap().entries.map((entry) {
+            if (isSelectionVisible.value) ...[
+              ...(selectedItems.items ?? []).asMap().entries.map((entry) {
                 int index = entry.key;
-                OrderItem item = entry.value;
+                var item = entry.value;
                 return Column(
                   children: [
                     Container(
@@ -302,10 +260,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                         ],
                                       ),
                                       verticalSpaceSmall,
-                                      Text(item.name),
+                                      Text(item.meal?.mealName ??
+                                          "Unknown Item"),
                                       verticalSpaceTiny,
                                       Text(
-                                          "₦${(item.price * item.quantity).toStringAsFixed(0)}"),
+                                          "₦${(item.meal?.price ?? 0).toStringAsFixed(0)}"),
                                       verticalSpace(15),
                                       Row(
                                         children: [
@@ -352,28 +311,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                       GestureDetector(
                                         behavior: HitTestBehavior.translucent,
                                         onTap: () {
-                                          ref
-                                              .read(orderProvider.notifier)
-                                              .updateQuantity(
-                                                  index, item.quantity - 1,
-                                                  tab: 'cart');
+                                          // Handle quantity decrease
+                                          // ref.read(shopControllerProvider.notifier).updateCartItemQuantity(item.id, item.quantity - 1);
                                         },
                                         child: const Icon(Iconsax.minus,
                                             color: kcPrimary400),
                                       ),
                                       Text(
-                                        "${item.quantity}",
+                                        "${item.mealQuantity ?? 1}",
                                         style: ktBodyRegularSize16.copyWith(
                                             color: kcPrimary400),
                                       ),
                                       GestureDetector(
                                         behavior: HitTestBehavior.translucent,
                                         onTap: () {
-                                          ref
-                                              .read(orderProvider.notifier)
-                                              .updateQuantity(
-                                                  index, item.quantity + 1,
-                                                  tab: 'cart');
+                                          // Handle quantity increase
+                                          // ref.read(shopControllerProvider.notifier).updateCartItemQuantity(item.id, item.quantity + 1);
                                         },
                                         child: const Icon(Iconsax.add,
                                             color: kcPrimary400),
@@ -388,10 +341,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             top: 10,
                             right: 10,
                             child: GestureDetector(
-                              onTap: () {
-                                ref
-                                    .read(orderProvider.notifier)
-                                    .deleteItem(index, tab: 'cart');
+                              onTap: () async {
+                                final result = await ref
+                                    .read(shopControllerProvider.notifier)
+                                    .removePackFromCart(
+                                        selectedItems.id ?? '', index + 1);
+                                if (result == true) {
+                                  ref
+                                      .read(shopControllerProvider.notifier)
+                                      .fetchCart();
+                                }
                               },
                               child: const SizedBox(
                                 height: 25,
@@ -439,14 +398,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             verticalSpaceMedium,
 
             // Leave a Message Section
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Iconsax.message, size: 20),
-                horizontalSpaceSmall,
-                Text(
-                  'Leave a message for the restaurant',
-                  style:
-                      ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral200),
+                Row(
+                  children: [
+                    const Icon(Iconsax.message, size: 20),
+                    horizontalSpaceSmall,
+                    Text(
+                      'Leave a message for the restaurant',
+                      style: ktBodyRegularSize12.copyWith(
+                          color: kcPrimaryNeutral200),
+                    ),
+                  ],
+                ),
+                verticalSpaceSmall,
+                TextField(
+                  controller: messageController,
+                  decoration: InputDecoration(
+                    hintText: 'Type your message here...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  maxLines: 3,
                 ),
               ],
             ),
@@ -455,15 +432,32 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             SvgPicture.asset('asset/svgs/dotted_line.svg'),
             verticalSpaceMedium,
 
-            Row(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SvgPicture.asset('asset/svgs/delivery_icon.svg',
-                    width: 20, height: 20),
-                horizontalSpaceSmall,
-                Text(
-                  'Leave a note for the rider',
-                  style:
-                      ktBodyRegularSize12.copyWith(color: kcPrimaryNeutral200),
+                Row(
+                  children: [
+                    SvgPicture.asset('asset/svgs/delivery_icon.svg',
+                        width: 20, height: 20),
+                    horizontalSpaceSmall,
+                    Text(
+                      'Leave a note for the rider',
+                      style: ktBodyRegularSize12.copyWith(
+                          color: kcPrimaryNeutral200),
+                    ),
+                  ],
+                ),
+                verticalSpaceSmall,
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Type your note here...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  maxLines: 3,
                 ),
               ],
             ),
@@ -491,12 +485,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Subtotal (${cartItems.length} items)",
+                        "Subtotal (${selectedItems.items?.length ?? 0} items)",
                         style: ktBodyRegularSize14.copyWith(
                             color: kcPrimaryNeutral300),
                       ),
                       Text(
-                        "₦${orderState.subtotal.toStringAsFixed(0)}",
+                        "₦${selectedItems.totalPrice?.toStringAsFixed(0) ?? "0"}",
                         style: ktBodyRegularSize14.copyWith(
                             color: kcPrimaryNeutral300,
                             fontWeight: FontWeight.w400),
@@ -548,7 +542,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             fontWeight: FontWeight.w600),
                       ),
                       Text(
-                        "₦${orderState.total.toStringAsFixed(0)}",
+                        "₦${(selectedItems.totalPrice ?? 0) + orderState.deliveryFee + orderState.taxAndFees}",
                         style: ktBodyRegularSize16.copyWith(
                             color: kcPrimaryNeutral100,
                             fontWeight: FontWeight.w600),
@@ -565,18 +559,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PaymentScreen(
-                        subtotal: orderState.subtotal,
-                        deliveryFee: orderState.deliveryFee,
-                        taxAndFees: orderState.taxAndFees,
-                        total: orderState.total,
-                        orderItems: cartItems,
-                      ),
-                    ),
-                  );
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(
+                  //     builder: (context) => PaymentScreen(
+                  //       subtotal: selectedItems.totalPrice ?? 0,
+                  //       deliveryFee: orderState.deliveryFee,
+                  //       taxAndFees: orderState.taxAndFees,
+                  //       total: (selectedItems.totalPrice ?? 0) + orderState.deliveryFee + orderState.taxAndFees,
+                  //       orderItems: selectedItems.items ?? [],
+                  //     ),
+                  //   ),
+                  // );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kcPrimary400,

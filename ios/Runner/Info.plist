@@ -47,5 +47,16 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>We need your location to provide better services.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>We need access to your microphone for this feature.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>We need access to your photo library to upload photos.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>We need access to your camera to take photos for your profile picture.</string>
+		<key>NSFaceIDUsageDescription</key>
+		<string>This application is using face id to allow users login into the application without having to use the pin code entry form to get into the application</string>
+	
 	</dict>
 </plist>

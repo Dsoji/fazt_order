@@ -6,6 +6,7 @@ import '../../../../common/api/api_client.dart';
 import '../../../../common/api/api_request_helper.dart';
 import '../../../../common/api/dio_api_client.dart';
 import '../../../../common/utils/utils.dart';
+import '../model/response/cart_lsit/cart_lsit.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 import '../model/response/store_categories/store_categories.dart';
@@ -104,9 +105,12 @@ class ShopService {
 
   Future<ResultValue<String>> addToCart(
     String mealId,
-    String quantity,
-    List<String> optionItem,
-  ) async {
+    int quantity,
+    List<Map<String, dynamic>> options, // Changed to match the new structure
+    {
+    int? packNumber,
+  } // Optional parameter
+      ) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.post(
         'carts',
@@ -116,7 +120,33 @@ class ShopService {
         data: {
           "meal": mealId,
           "mealQuantity": quantity,
-          "optionItem": optionItem,
+          "options": options,
+          if (packNumber != null) "packNumber": packNumber,
+        },
+      ),
+      parser: (data) => BaseModel.toRawString(data),
+    );
+  }
+
+  Future<ResultValue<CartLsit>> fetchCart() async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.get(
+        'carts',
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+        },
+      ),
+      parser: (data) => CartLsit.fromMap(data),
+    );
+  }
+
+  Future<ResultValue<String>> removePackFromCart(
+      String cartId, int packNumber) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.patch(
+        'carts/$cartId/pack/$packNumber',
+        header: {
+          'Authorization': 'Bearer $accessToken',
         },
       ),
       parser: (data) => BaseModel.toRawString(data),

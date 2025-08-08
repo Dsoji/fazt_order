@@ -122,14 +122,16 @@ class ShopController extends StateNotifier<ShopState> {
 
   Future<bool> addToCart(
     String mealId,
-    String quantity,
-    List<String> optionItem,
-  ) async {
+    int quantity,
+    List<Map<String, dynamic>> options, {
+    int? packNumber,
+  }) async {
     state = state.copyWith(addToCart: const AsyncValue.loading());
     final result = await _authenticationRepository.addToCart(
       mealId,
       quantity,
-      optionItem,
+      options,
+      packNumber: packNumber,
     );
 
     return result.when(
@@ -140,6 +142,41 @@ class ShopController extends StateNotifier<ShopState> {
       },
       (success) {
         state = state.copyWith(addToCart: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
+
+  Future<bool> fetchCart() async {
+    state = state.copyWith(fetchCart: const AsyncValue.loading());
+    final result = await _authenticationRepository.fetchCart();
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            fetchCart: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(fetchCart: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
+
+  Future<bool> removePackFromCart(String cartId, int packNumber) async {
+    state = state.copyWith(removePackFromCart: const AsyncValue.loading());
+    final result =
+        await _authenticationRepository.removePackFromCart(cartId, packNumber);
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            removePackFromCart: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(removePackFromCart: AsyncValue.data(success));
         return true;
       },
     );

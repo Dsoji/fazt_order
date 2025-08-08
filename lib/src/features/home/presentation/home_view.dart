@@ -54,6 +54,7 @@ class HomeView extends HookConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(profileControllerProvider.notifier).fetchProfile();
         ref.read(shopControllerProvider.notifier).fetchShops();
+        ref.read(shopControllerProvider.notifier).fetchCart();
         // ref.read(profileControllerProvider.notifier).fetchStoreDetails();
         // ref.read(profileControllerProvider.notifier).listManager();
         // ref.read(mealControllerProvider.notifier).fetchMealCategory();

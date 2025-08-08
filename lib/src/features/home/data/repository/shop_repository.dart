@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../common/utils/failures.dart';
 import '../../../../common/utils/multiple_results.dart';
+import '../model/response/cart_lsit/cart_lsit.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 import '../model/response/store_categories/store_categories.dart';
@@ -127,14 +128,16 @@ class ShopRepository {
 
   Future<Result<FailureHandler, String>> addToCart(
     String mealId,
-    String quantity,
-    List<String> optionItem,
-  ) async {
+    int quantity,
+    List<Map<String, dynamic>> options, {
+    int? packNumber,
+  }) async {
     try {
       final data = await authService.addToCart(
         mealId,
         quantity,
-        optionItem,
+        options,
+        packNumber: packNumber,
       );
 
       if (data.isSuccess) {
@@ -146,6 +149,49 @@ class ShopRepository {
                 message: 'Failed to add item to cart',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to add item to cart'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, CartLsit>> fetchCart() async {
+    try {
+      final data = await authService.fetchCart();
+
+      if (data.isSuccess) {
+        return Success(data.value ?? CartLsit());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to fetch cart',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to fetch cart'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, String>> removePackFromCart(
+      String cartId, int packNumber) async {
+    try {
+      final data = await authService.removePackFromCart(cartId, packNumber);
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to remove pack from cart',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to remove pack from cart'),
               ),
         );
       }
