@@ -181,4 +181,58 @@ class ShopController extends StateNotifier<ShopState> {
       },
     );
   }
+
+  Future<bool> makeOrder(
+    String cartId,
+    String address,
+    String city,
+    String stateLocation,
+    String long,
+    String lat,
+    String storeMessage,
+    String riderMessage,
+    String paymentMethod,
+  ) async {
+    state = state.copyWith(makeOrders: const AsyncValue.loading());
+    final result = await _authenticationRepository.makeOrder(
+      cartId,
+      address,
+      city,
+      stateLocation,
+      long,
+      lat,
+      storeMessage,
+      riderMessage,
+      paymentMethod,
+    );
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            makeOrders: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(makeOrders: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
+
+  Future<bool> fetchMyOrdersList() async {
+    state = state.copyWith(myOrdersList: const AsyncValue.loading());
+    final result = await _authenticationRepository.fetchMyOrdersList();
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            myOrdersList: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(myOrdersList: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
 }

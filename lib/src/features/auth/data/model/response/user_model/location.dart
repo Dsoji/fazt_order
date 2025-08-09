@@ -4,7 +4,7 @@ class Location {
   String? address;
   String? city;
   String? state;
-  List<dynamic>? coordinates;
+  List<double>? coordinates;
   String? type;
 
   Location({
@@ -24,7 +24,9 @@ class Location {
         address: data['address'] as String?,
         city: data['city'] as String?,
         state: data['state'] as String?,
-        coordinates: data['coordinates'] as List<dynamic>?,
+        coordinates: (data['coordinates'] as List<dynamic>?)
+            ?.map((e) => (e as num).toDouble())
+            .toList(),
         type: data['type'] as String?,
       );
 
@@ -52,7 +54,7 @@ class Location {
     String? address,
     String? city,
     String? state,
-    List<dynamic>? coordinates,
+    List<double>? coordinates,
     String? type,
   }) {
     return Location(

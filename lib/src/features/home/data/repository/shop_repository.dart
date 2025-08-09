@@ -5,6 +5,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../../common/utils/failures.dart';
 import '../../../../common/utils/multiple_results.dart';
 import '../model/response/cart_lsit/cart_lsit.dart';
+import '../model/response/my_orders_list/my_orders_list.dart';
+import '../model/response/order_link/order_link.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 import '../model/response/store_categories/store_categories.dart';
@@ -192,6 +194,68 @@ class ShopRepository {
                 message: 'Failed to remove pack from cart',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to remove pack from cart'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, OrderLink>> makeOrder(
+    String cartId,
+    String address,
+    String city,
+    String state,
+    String long,
+    String lat,
+    String storeMessage,
+    String riderMessage,
+    String paymentMethod,
+  ) async {
+    try {
+      final data = await authService.makeOrder(
+        cartId,
+        address,
+        city,
+        state,
+        long,
+        lat,
+        storeMessage,
+        riderMessage,
+        paymentMethod,
+      );
+
+      if (data.isSuccess) {
+        return Success(data.value ?? OrderLink());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to make order',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to make order'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, MyOrdersList>> fetchMyOrdersList() async {
+    try {
+      final data = await authService.fetchMyOrdersList();
+
+      if (data.isSuccess) {
+        return Success(data.value ?? MyOrdersList());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to fetch orders list',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to fetch orders list'),
               ),
         );
       }

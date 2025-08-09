@@ -11,6 +11,7 @@ import '../../common/widgets/text_styles.dart';
 import '../bottom_sheets/edit_address_sheet.dart';
 import '../home/data/controller/shop_controller.dart';
 import '../home/data/model/response/cart_lsit/cart.dart';
+import '../payment/payment_screen.dart';
 import '../profile/data/controller/profile_controller.dart';
 
 class CheckoutScreen extends HookConsumerWidget {
@@ -449,6 +450,7 @@ class CheckoutScreen extends HookConsumerWidget {
                 ),
                 verticalSpaceSmall,
                 TextField(
+                  controller: noteController,
                   decoration: InputDecoration(
                     hintText: 'Type your note here...',
                     border: OutlineInputBorder(
@@ -490,7 +492,7 @@ class CheckoutScreen extends HookConsumerWidget {
                             color: kcPrimaryNeutral300),
                       ),
                       Text(
-                        "₦${selectedItems.totalPrice?.toStringAsFixed(0) ?? "0"}",
+                        "₦${selectedItems.subtotal?.toStringAsFixed(0) ?? "0"}",
                         style: ktBodyRegularSize14.copyWith(
                             color: kcPrimaryNeutral300,
                             fontWeight: FontWeight.w400),
@@ -507,7 +509,7 @@ class CheckoutScreen extends HookConsumerWidget {
                             color: kcPrimaryNeutral300),
                       ),
                       Text(
-                        "₦${orderState.deliveryFee.toStringAsFixed(0)}",
+                        "₦${selectedItems.deliveryFee?.toStringAsFixed(0) ?? "0"}",
                         style: ktBodyRegularSize14.copyWith(
                             color: kcPrimaryNeutral100,
                             fontWeight: FontWeight.w400),
@@ -524,7 +526,7 @@ class CheckoutScreen extends HookConsumerWidget {
                             color: kcPrimaryNeutral300),
                       ),
                       Text(
-                        "₦${orderState.taxAndFees.toStringAsFixed(0)}",
+                        "₦${selectedItems.serviceFee?.toStringAsFixed(0) ?? "0"}",
                         style: ktBodyRegularSize14.copyWith(
                             color: kcPrimaryNeutral100,
                             fontWeight: FontWeight.w400),
@@ -542,7 +544,7 @@ class CheckoutScreen extends HookConsumerWidget {
                             fontWeight: FontWeight.w600),
                       ),
                       Text(
-                        "₦${(selectedItems.totalPrice ?? 0) + orderState.deliveryFee + orderState.taxAndFees}",
+                        "₦${(selectedItems.totalPrice ?? 0)}",
                         style: ktBodyRegularSize16.copyWith(
                             color: kcPrimaryNeutral100,
                             fontWeight: FontWeight.w600),
@@ -559,18 +561,16 @@ class CheckoutScreen extends HookConsumerWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // Navigator.push(
-                  //   context,
-                  //   MaterialPageRoute(
-                  //     builder: (context) => PaymentScreen(
-                  //       subtotal: selectedItems.totalPrice ?? 0,
-                  //       deliveryFee: orderState.deliveryFee,
-                  //       taxAndFees: orderState.taxAndFees,
-                  //       total: (selectedItems.totalPrice ?? 0) + orderState.deliveryFee + orderState.taxAndFees,
-                  //       orderItems: selectedItems.items ?? [],
-                  //     ),
-                  //   ),
-                  // );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PaymentScreen(
+                        selectedItems: selectedItems,
+                        vendorMessage: messageController.text,
+                        riderMessage: noteController.text,
+                      ),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kcPrimary400,

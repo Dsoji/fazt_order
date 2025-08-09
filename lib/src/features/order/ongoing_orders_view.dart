@@ -2,39 +2,22 @@ import 'package:fazt_order/src/common/app_colors.dart';
 import 'package:fazt_order/src/common/ui_helpers.dart';
 import 'package:fazt_order/src/features/bottom_sheets/cancel_order.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../../datamodels/order_items.dart';
 import '../../common/components/vertical_stripe_pattern.dart';
+import '../../common/widgets/reusable_buttons.dart';
 import '../../common/widgets/text_styles.dart';
+import '../home/data/model/response/my_orders_list/result.dart';
 
-class OngoingOrderView extends ConsumerWidget {
-  final List<OrderItem> orderItems;
-  final String orderTime;
-  final String estimatedTime;
-  final String deliveryAddress;
-  final String otp;
-  final int subtotal;
-  final double deliveryFee;
-  final double taxAndFees;
-  final double total;
-  final int currentStep;
+class OngoingOrderView extends HookConsumerWidget {
+  final OrderResult orderItems;
 
   const OngoingOrderView({
     super.key,
     required this.orderItems,
-    required this.orderTime,
-    required this.estimatedTime,
-    required this.deliveryAddress,
-    required this.otp,
-    required this.subtotal,
-    required this.deliveryFee,
-    required this.taxAndFees,
-    required this.total,
-    this.currentStep = 1,
   });
 
   // Helper to select Lottie animation based on currentStep
@@ -66,11 +49,11 @@ class OngoingOrderView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final canCancel = currentStep <= 2;
+    final canCancel = orderItems.status == 'pending';
     final cancelText = canCancel
         ? "Waiting for vendor to confirm your order. You can still cancel this order at the moment."
         : "You can not cancel this order at this moment.";
-    final isCompleted = currentStep == 8;
+    final isCompleted = orderItems.status == 'completed';
 
     return Scaffold(
       appBar: AppBar(
@@ -103,7 +86,14 @@ class OngoingOrderView extends ConsumerWidget {
                     SizedBox(
                         height: 150,
                         width: 150,
-                        child: Lottie.asset(_getLottieAsset(currentStep))),
+                        child: Lottie.asset(
+                            _getLottieAsset(orderItems.status == 'pending'
+                                ? 1
+                                : orderItems.status == 'ongoing'
+                                    ? 2
+                                    : orderItems.status == 'preparing'
+                                        ? 3
+                                        : 4))),
                     verticalSpaceSmall,
                     Text.rich(
                       TextSpan(
@@ -114,7 +104,7 @@ class OngoingOrderView extends ConsumerWidget {
                               color: kcPrimaryNeutral200, letterSpacing: 1),
                           children: [
                             TextSpan(
-                              text: " at $orderTime",
+                              text: " at ${orderItems.createdAt}",
                               style: ktBodyRegularSize12.copyWith(
                                   color: kcPrimaryNeutral200, letterSpacing: 1),
                             )
@@ -131,16 +121,22 @@ class OngoingOrderView extends ConsumerWidget {
                           letterSpacing: 1),
                     ),
                     verticalSpaceSmall,
-                    Text(
-                      estimatedTime,
-                      style: const TextStyle(
+                    const Text(
+                      '00:00 ',
+                      style: TextStyle(
                           fontSize: 16,
                           color: kcPrimaryNeutral200,
                           fontWeight: FontWeight.w600),
                     ),
                     verticalSpaceSmall,
                     DashProgressBar(
-                        currentStep: currentStep,
+                        currentStep: orderItems.status == 'pending'
+                            ? 1
+                            : orderItems.status == 'ongoing'
+                                ? 2
+                                : orderItems.status == 'preparing'
+                                    ? 3
+                                    : 4,
                         totalSteps: 8,
                         activeColor: kcPrimary200,
                         inactiveColor: kcPrimary800),
@@ -154,32 +150,15 @@ class OngoingOrderView extends ConsumerWidget {
                             color: Colors.grey, letterSpacing: 1),
                       ),
                       verticalSpaceMedium,
-                      GestureDetector(
-                        behavior: HitTestBehavior.translucent,
-                        onTap: canCancel
-                            ? () {
-                                _showCancelOrderBottomSheet(context);
-                                print('Cancel');
-                              }
-                            : null,
-                        child: Container(
-                          width: 100,
-                          height: 35,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 25, vertical: 8),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            color: canCancel ? kcPrimary400 : kcPrimary950,
-                          ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(
-                                color: kcWhite,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                letterSpacing: 1),
-                          ),
-                        ),
+                      FullButton(
+                        text: 'Cancel',
+                        width: 150,
+                        height: 48,
+                        onPressed: () {
+                          _showCancelOrderBottomSheet(context);
+                        },
+                        color: kcPrimary400,
+                        textColor: kcWhite,
                       ),
                     ],
                     // if (isCompleted) verticalSpaceSmall,
@@ -223,7 +202,7 @@ class OngoingOrderView extends ConsumerWidget {
                               color: kcPrimaryNeutral200),
                         ),
                         Text(
-                          deliveryAddress,
+                          orderItems.deliveryLocation?.address ?? '',
                           style: const TextStyle(
                               color: kcPrimaryNeutral500, fontSize: 11),
                         ),
@@ -237,10 +216,10 @@ class OngoingOrderView extends ConsumerWidget {
               verticalSpaceSmall,
 
               // OTP Section
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(Iconsax.message, size: 20, color: Colors.grey),
                       SizedBox(width: 8),
@@ -254,8 +233,9 @@ class OngoingOrderView extends ConsumerWidget {
                     ],
                   ),
                   Text(
-                    otp,
-                    style: const TextStyle(
+                    // orderItems.otp,
+                    '0000',
+                    style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: kcPrimaryNeutral200),
@@ -283,18 +263,18 @@ class OngoingOrderView extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              ...orderItems.map((item) {
+              ...(orderItems.items ?? []).map((item) {
                 return Padding(
                   padding: const EdgeInsets.only(left: 25.0, bottom: 4, top: 5),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        item.name,
+                        item.meal?.mealName ?? '',
                         style: const TextStyle(color: kcPrimaryNeutral500),
                       ),
                       Text(
-                        "x${item.quantity}",
+                        "x${item.mealQuantity ?? 0}",
                         style: const TextStyle(color: kcPrimaryNeutral500),
                       ),
                     ],
@@ -328,10 +308,11 @@ class OngoingOrderView extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text("Subtotal (${orderItems.length} items)",
+                        Text("Subtotal (${orderItems.items?.length} items)",
                             style: const TextStyle(
                                 color: kcPrimaryNeutral300, fontSize: 14)),
-                        Text("₦${subtotal.toStringAsFixed(0)}",
+                        Text(
+                            "₦${orderItems.payment?.subtotal?.toStringAsFixed(0) ?? '0'}",
                             style: const TextStyle(
                                 color: kcPrimaryNeutral100, fontSize: 12)),
                       ],
@@ -343,7 +324,7 @@ class OngoingOrderView extends ConsumerWidget {
                         const Text("Delivery Fee",
                             style: TextStyle(
                                 color: kcPrimaryNeutral300, fontSize: 14)),
-                        Text("₦${deliveryFee.toStringAsFixed(0)}",
+                        Text("₦${orderItems.payment?.deliveryFee}",
                             style: const TextStyle(
                                 color: kcPrimaryNeutral100, fontSize: 12)),
                       ],
@@ -355,7 +336,7 @@ class OngoingOrderView extends ConsumerWidget {
                         const Text("Tax and other fees",
                             style: TextStyle(
                                 color: kcPrimaryNeutral300, fontSize: 14)),
-                        Text("₦${taxAndFees.toStringAsFixed(0)}",
+                        Text("₦${orderItems.payment?.serviceFee}",
                             style: const TextStyle(
                                 color: kcPrimaryNeutral100, fontSize: 12)),
                       ],
@@ -369,7 +350,7 @@ class OngoingOrderView extends ConsumerWidget {
                                 color: kcPrimaryNeutral100,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600)),
-                        Text("₦${total.toStringAsFixed(0)}",
+                        Text("₦${orderItems.payment?.total}",
                             style: const TextStyle(
                                 color: kcPrimaryNeutral100,
                                 fontSize: 14,

@@ -10,7 +10,7 @@ import '../../../providers/order_provider.dart';
 import '../../common/app_colors.dart';
 import '../../common/ui_helpers.dart';
 import '../home/data/controller/shop_controller.dart';
-import 'ongoing_orders_view.dart';
+import 'my_orders.dart';
 
 class OrderView extends HookConsumerWidget {
   const OrderView({super.key});
@@ -39,6 +39,14 @@ class OrderView extends HookConsumerWidget {
       return () => tabController.removeListener(listener);
     }, [tabController]);
 
+    // Fetch orders when the widget is first built
+    useEffect(() {
+      Future.microtask(() {
+        ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+      });
+      return null;
+    }, []);
+
     void clearItems() {
       final notifier = ref.read(orderProvider.notifier);
       if (selectedIndex.value == 0) {
@@ -49,6 +57,8 @@ class OrderView extends HookConsumerWidget {
         notifier.clearCompletedItems();
       }
     }
+
+    final myOrdersList = ref.watch(shopControllerProvider).myOrdersList;
 
     // Handle cart data based on async state
     Widget buildCartContent() {
@@ -400,185 +410,7 @@ class OrderView extends HookConsumerWidget {
                 buildCartContent(),
 
                 /// Ongoing Tab
-                ongoingItems.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              height: 200,
-                              width: 200,
-                              child:
-                                  Lottie.asset('asset/lottie/DBSkpgXyIT.json'),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                // Navigator.push(
-                                //   context,
-                                //   MaterialPageRoute(
-                                //     builder: (context) => const OrderView(),
-                                //   ),
-                                // );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 18, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: kcPrimary400,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text(
-                                  "Place Order Now",
-                                  style:
-                                      TextStyle(fontSize: 14, color: kcWhite),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount:
-                            ongoingItems.length + (ongoingItems.length ~/ 2),
-                        itemBuilder: (context, index) {
-                          if (index % 3 == 2) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16.0),
-                              child: Row(
-                                children: [
-                                  Image.asset(
-                                    'asset/images/Frame 2693.png',
-                                    width: 80,
-                                    height: 80,
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        "Delivery to Computer Villa...",
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          const Icon(Iconsax.location,
-                                              size: 16, color: Colors.grey),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            orderState.deliveryAddress,
-                                            style: const TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 12),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          final itemIndex = index - (index ~/ 3);
-                          final item = ongoingItems[itemIndex];
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => OngoingOrderView(
-                                    orderItems: [item],
-                                    orderTime: "2:00 pm",
-                                    estimatedTime: "20-25 Minute",
-                                    deliveryAddress: orderState.deliveryAddress,
-                                    otp: "0987",
-                                    subtotal: (item.price * item.quantity),
-                                    deliveryFee: 1000,
-                                    taxAndFees: 1000,
-                                    total: (item.price * item.quantity +
-                                            1000 +
-                                            1000)
-                                        .toDouble(),
-                                    currentStep: 2,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 16.0),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(10),
-                                        child: Image.asset(
-                                          "asset/images/Frame 269.png",
-                                          width: 80,
-                                          height: 80,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              item.name,
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                const Icon(Iconsax.location,
-                                                    size: 16,
-                                                    color: Colors.grey),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  orderState.deliveryAddress,
-                                                  style: const TextStyle(
-                                                      color: Colors.grey,
-                                                      fontSize: 12),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              "${item.quantity} items",
-                                              style: const TextStyle(
-                                                  color: Colors.grey,
-                                                  fontSize: 12),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              "₦${(item.price * item.quantity).toStringAsFixed(0)}",
-                                              style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  SvgPicture.asset(
-                                      "asset/svgs/dotted_line.svg"),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                const MyOrders(),
 
                 /// Completed Tab
                 completedItems.isEmpty
@@ -672,32 +504,32 @@ class OrderView extends HookConsumerWidget {
                                               ),
                                               GestureDetector(
                                                 onTap: () {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          OngoingOrderView(
-                                                        orderItems: [item],
-                                                        orderTime: "2:00 pm",
-                                                        estimatedTime:
-                                                            "20-25 Minute",
-                                                        deliveryAddress:
-                                                            orderState
-                                                                .deliveryAddress,
-                                                        otp: "0987",
-                                                        subtotal: (item.price *
-                                                            item.quantity),
-                                                        deliveryFee: 1000,
-                                                        taxAndFees: 1000,
-                                                        total: (item.price *
-                                                                    item.quantity +
-                                                                1000 +
-                                                                1000)
-                                                            .toDouble(),
-                                                        currentStep: 8,
-                                                      ),
-                                                    ),
-                                                  );
+                                                  // Navigator.push(
+                                                  //   context,
+                                                  //   MaterialPageRoute(
+                                                  //     builder: (context) =>
+                                                  //         OngoingOrderView(
+                                                  //       orderItems: [item],
+                                                  //       orderTime: "2:00 pm",
+                                                  //       estimatedTime:
+                                                  //           "20-25 Minute",
+                                                  //       deliveryAddress:
+                                                  //           orderState
+                                                  //               .deliveryAddress,
+                                                  //       otp: "0987",
+                                                  //       subtotal: (item.price *
+                                                  //           item.quantity),
+                                                  //       deliveryFee: 1000,
+                                                  //       taxAndFees: 1000,
+                                                  //       total: (item.price *
+                                                  //                   item.quantity +
+                                                  //               1000 +
+                                                  //               1000)
+                                                  //           .toDouble(),
+                                                  //       currentStep: 8,
+                                                  //     ),
+                                                  //   ),
+                                                  // );
                                                 },
                                                 child: const Text(
                                                   "VIEW",

@@ -55,6 +55,7 @@ class HomeView extends HookConsumerWidget {
         ref.read(profileControllerProvider.notifier).fetchProfile();
         ref.read(shopControllerProvider.notifier).fetchShops();
         ref.read(shopControllerProvider.notifier).fetchCart();
+        ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
         // ref.read(profileControllerProvider.notifier).fetchStoreDetails();
         // ref.read(profileControllerProvider.notifier).listManager();
         // ref.read(mealControllerProvider.notifier).fetchMealCategory();

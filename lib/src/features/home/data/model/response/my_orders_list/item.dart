@@ -8,6 +8,7 @@ class Item {
   int? mealQuantity;
   List<Option>? options;
   int? packNumber;
+  int? itemPrice;
   String? id;
 
   Item({
@@ -15,12 +16,13 @@ class Item {
     this.mealQuantity,
     this.options,
     this.packNumber,
+    this.itemPrice,
     this.id,
   });
 
   @override
   String toString() {
-    return 'Item(meal: $meal, mealQuantity: $mealQuantity, options: $options, packNumber: $packNumber, id: $id)';
+    return 'Item(meal: $meal, mealQuantity: $mealQuantity, options: $options, packNumber: $packNumber, itemPrice: $itemPrice, id: $id)';
   }
 
   factory Item.fromMap(Map<String, dynamic> data) => Item(
@@ -32,6 +34,7 @@ class Item {
             ?.map((e) => Option.fromMap(e as Map<String, dynamic>))
             .toList(),
         packNumber: data['packNumber'] as int?,
+        itemPrice: data['itemPrice'] as int?,
         id: data['_id'] as String?,
       );
 
@@ -40,6 +43,7 @@ class Item {
         'mealQuantity': mealQuantity,
         'options': options?.map((e) => e.toMap()).toList(),
         'packNumber': packNumber,
+        'itemPrice': itemPrice,
         '_id': id,
       };
 
@@ -60,6 +64,7 @@ class Item {
     int? mealQuantity,
     List<Option>? options,
     int? packNumber,
+    int? itemPrice,
     String? id,
   }) {
     return Item(
@@ -67,6 +72,7 @@ class Item {
       mealQuantity: mealQuantity ?? this.mealQuantity,
       options: options ?? this.options,
       packNumber: packNumber ?? this.packNumber,
+      itemPrice: itemPrice ?? this.itemPrice,
       id: id ?? this.id,
     );
   }

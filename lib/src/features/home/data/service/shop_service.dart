@@ -7,6 +7,8 @@ import '../../../../common/api/api_request_helper.dart';
 import '../../../../common/api/dio_api_client.dart';
 import '../../../../common/utils/utils.dart';
 import '../model/response/cart_lsit/cart_lsit.dart';
+import '../model/response/my_orders_list/my_orders_list.dart';
+import '../model/response/order_link/order_link.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 import '../model/response/store_categories/store_categories.dart';
@@ -150,6 +152,49 @@ class ShopService {
         },
       ),
       parser: (data) => BaseModel.toRawString(data),
+    );
+  }
+
+  Future<ResultValue<OrderLink>> makeOrder(
+    String cartId,
+    String address,
+    String city,
+    String state,
+    String long,
+    String lat,
+    String storeMessage,
+    String riderMessage,
+    String paymentMethod,
+  ) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'orders',
+        header: {
+          'Authorization': 'Bearer $accessToken',
+        },
+        data: {
+          "cartId": cartId,
+          "storeMessage": storeMessage,
+          "riderMessage": riderMessage,
+          "paymentMethod": paymentMethod, // card, paystack, wallet
+          "location": {
+            "address": address,
+            "city": city,
+            "state": state,
+            "long": long,
+            "lat": lat
+          }
+        },
+      ),
+      parser: (data) => OrderLink.fromJson(data),
+    );
+  }
+
+  Future<ResultValue<MyOrdersList>> fetchMyOrdersList() async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient
+          .get('orders', headers: {'Authorization': 'Bearer $accessToken'}),
+      parser: (data) => MyOrdersList.fromMap(data),
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../model/response/cart_lsit/cart_lsit.dart';
+import '../model/response/my_orders_list/my_orders_list.dart';
+import '../model/response/order_link/order_link.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 import '../model/response/store_categories/store_categories.dart';
@@ -14,6 +16,8 @@ class ShopState {
   final AsyncValue<String> addToCart;
   final AsyncValue<CartLsit> fetchCart;
   final AsyncValue<String> removePackFromCart;
+  final AsyncValue<OrderLink> makeOrders;
+  final AsyncValue<MyOrdersList> myOrdersList;
   const ShopState({
     required this.shops,
     required this.shopFoodCategory,
@@ -22,6 +26,8 @@ class ShopState {
     required this.addToCart,
     required this.fetchCart,
     required this.removePackFromCart,
+    required this.makeOrders,
+    required this.myOrdersList,
   });
 
   factory ShopState.initial() {
@@ -33,6 +39,8 @@ class ShopState {
       addToCart: const AsyncValue.data(''),
       fetchCart: AsyncValue.data(CartLsit()),
       removePackFromCart: const AsyncValue.data(''),
+      makeOrders: AsyncValue.data(OrderLink()),
+      myOrdersList: AsyncValue.data(MyOrdersList()),
     );
   }
 
@@ -44,6 +52,8 @@ class ShopState {
     AsyncValue<String>? addToCart,
     AsyncValue<CartLsit>? fetchCart,
     AsyncValue<String>? removePackFromCart,
+    AsyncValue<OrderLink>? makeOrders,
+    AsyncValue<MyOrdersList>? myOrdersList,
   }) {
     return ShopState(
       shops: shops ?? this.shops,
@@ -53,6 +63,8 @@ class ShopState {
       addToCart: addToCart ?? this.addToCart,
       fetchCart: fetchCart ?? this.fetchCart,
       removePackFromCart: removePackFromCart ?? this.removePackFromCart,
+      makeOrders: makeOrders ?? this.makeOrders,
+      myOrdersList: myOrdersList ?? this.myOrdersList,
     );
   }
 

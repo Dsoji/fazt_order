@@ -4,12 +4,12 @@ import 'item.dart';
 import 'shop.dart';
 
 class Cart {
-  int? subtotal;
-  int? deliveryFee;
-  int? serviceFee;
   String? user;
   Shop? shop;
   List<Item>? items;
+  int? subtotal;
+  int? deliveryFee;
+  int? serviceFee;
   int? totalPrice;
   int? packCount;
   DateTime? lastUpdated;
@@ -18,12 +18,12 @@ class Cart {
   String? id;
 
   Cart({
-    this.subtotal,
-    this.deliveryFee,
-    this.serviceFee,
     this.user,
     this.shop,
     this.items,
+    this.subtotal,
+    this.deliveryFee,
+    this.serviceFee,
     this.totalPrice,
     this.packCount,
     this.lastUpdated,
@@ -34,13 +34,10 @@ class Cart {
 
   @override
   String toString() {
-    return 'Cart(subtotal: $subtotal, deliveryFee: $deliveryFee, serviceFee: $serviceFee, user: $user, shop: $shop, items: $items, totalPrice: $totalPrice, packCount: $packCount, lastUpdated: $lastUpdated, createdAt: $createdAt, updatedAt: $updatedAt, id: $id)';
+    return 'Cart(user: $user, shop: $shop, items: $items, subtotal: $subtotal, deliveryFee: $deliveryFee, serviceFee: $serviceFee, totalPrice: $totalPrice, packCount: $packCount, lastUpdated: $lastUpdated, createdAt: $createdAt, updatedAt: $updatedAt, id: $id)';
   }
 
   factory Cart.fromMap(Map<String, dynamic> data) => Cart(
-        subtotal: data['subtotal'] as int?,
-        deliveryFee: data['deliveryFee'] as int?,
-        serviceFee: data['serviceFee'] as int?,
         user: data['user'] as String?,
         shop: data['shop'] == null
             ? null
@@ -48,6 +45,9 @@ class Cart {
         items: (data['items'] as List<dynamic>?)
             ?.map((e) => Item.fromMap(e as Map<String, dynamic>))
             .toList(),
+        subtotal: data['subtotal'] as int?,
+        deliveryFee: data['deliveryFee'] as int?,
+        serviceFee: data['serviceFee'] as int?,
         totalPrice: data['totalPrice'] as int?,
         packCount: data['packCount'] as int?,
         lastUpdated: data['lastUpdated'] == null
@@ -63,12 +63,12 @@ class Cart {
       );
 
   Map<String, dynamic> toMap() => {
-        'subtotal': subtotal,
-        'deliveryFee': deliveryFee,
-        'serviceFee': serviceFee,
         'user': user,
         'shop': shop?.toMap(),
         'items': items?.map((e) => e.toMap()).toList(),
+        'subtotal': subtotal,
+        'deliveryFee': deliveryFee,
+        'serviceFee': serviceFee,
         'totalPrice': totalPrice,
         'packCount': packCount,
         'lastUpdated': lastUpdated?.toIso8601String(),
@@ -90,12 +90,12 @@ class Cart {
   String toJson() => json.encode(toMap());
 
   Cart copyWith({
-    int? subtotal,
-    int? deliveryFee,
-    int? serviceFee,
     String? user,
     Shop? shop,
     List<Item>? items,
+    int? subtotal,
+    int? deliveryFee,
+    int? serviceFee,
     int? totalPrice,
     int? packCount,
     DateTime? lastUpdated,
@@ -104,12 +104,12 @@ class Cart {
     String? id,
   }) {
     return Cart(
-      subtotal: subtotal ?? this.subtotal,
-      deliveryFee: deliveryFee ?? this.deliveryFee,
-      serviceFee: serviceFee ?? this.serviceFee,
       user: user ?? this.user,
       shop: shop ?? this.shop,
       items: items ?? this.items,
+      subtotal: subtotal ?? this.subtotal,
+      deliveryFee: deliveryFee ?? this.deliveryFee,
+      serviceFee: serviceFee ?? this.serviceFee,
       totalPrice: totalPrice ?? this.totalPrice,
       packCount: packCount ?? this.packCount,
       lastUpdated: lastUpdated ?? this.lastUpdated,

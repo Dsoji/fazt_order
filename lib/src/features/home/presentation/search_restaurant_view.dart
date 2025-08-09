@@ -155,9 +155,11 @@ class SearchRestaurantView extends HookConsumerWidget {
                               .read(shopControllerProvider.notifier)
                               .globalSearch(
                                 query,
-                                userDetails?.user?.location?.coordinates?[1] ??
+                                userDetails?.user?.location?.coordinates?[1]
+                                        .toString() ??
                                     '0',
-                                userDetails?.user?.location?.coordinates?[0] ??
+                                userDetails?.user?.location?.coordinates?[0]
+                                        .toString() ??
                                     '0',
                               );
                         },
