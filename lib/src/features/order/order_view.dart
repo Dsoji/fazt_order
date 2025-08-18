@@ -1,4 +1,5 @@
 import 'package:fazt_order/src/features/order/checkout_view.dart';
+import 'package:fazt_order/src/features/order/completed_orders.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,7 +9,6 @@ import 'package:lottie/lottie.dart';
 
 import '../../../providers/order_provider.dart';
 import '../../common/app_colors.dart';
-import '../../common/ui_helpers.dart';
 import '../home/data/controller/shop_controller.dart';
 import 'my_orders.dart';
 
@@ -99,138 +99,146 @@ class OrderView extends HookConsumerWidget {
             );
           }
 
-          return ListView.builder(
-            itemCount: cartItems.length,
-            itemBuilder: (context, index) {
-              final item = cartItems[index];
-              return Column(
-                children: [
-                  Stack(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 8),
-                        child: Row(
-                          children: [
-                            // Image
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                item.shop?.store?.storeDisplayImage ??
-                                    "asset/images/Frame 269.png",
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            const SizedBox(width: 7),
-                            // Details
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        item.shop?.shopName ?? "Unknown Item",
-                                        style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      SvgPicture.asset(
-                                          "asset/svgs/delivery_icon.svg"),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        orderState.deliveryAddress,
-                                        maxLines: 2,
-                                        softWrap: true,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                            color: kcPrimaryNeutral300,
-                                            fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "${item.items?.length ?? 0} items",
-                                    style: const TextStyle(
-                                        color: kcPrimaryNeutral300,
-                                        fontSize: 12),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "₦${((item.totalPrice ?? 0) * (item.packCount ?? 0)).toStringAsFixed(0)}",
-                                    style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w400,
-                                        color: kcPrimaryNeutral300),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Positioned(
-                        top: 10,
-                        right: 10,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                          onTap: () {
-                            // Handle delete from cart using cartItemAsync data
-                            // ref
-                            //     .read(shopControllerProvider.notifier)
-                            //     .removeFromCart(item.id);
-                          },
-                          child: const CircleAvatar(
-                            backgroundColor: kcPrimaryRed900,
-                            radius: 12,
-                            child: Icon(Iconsax.trash,
-                                size: 15, color: kcPrimaryRed200),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 10,
-                        right: 10,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CheckoutScreen(
-                                  selectedItems: item,
+          return RefreshIndicator(
+            onRefresh: () async {
+              await ref.read(shopControllerProvider.notifier).fetchCart();
+              await ref
+                  .read(shopControllerProvider.notifier)
+                  .fetchMyOrdersList();
+            },
+            child: ListView.builder(
+              itemCount: cartItems.length,
+              itemBuilder: (context, index) {
+                final item = cartItems[index];
+                return Column(
+                  children: [
+                    Stack(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 8),
+                          child: Row(
+                            children: [
+                              // Image
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.network(
+                                  // item.shop?.store ??
+                                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzeuH3XltMkc-nh4I-2mYGRK5WvvqqILiEJA&s",
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
                                 ),
                               ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: kcPrimary300,
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: const Text('Checkout',
-                                style: TextStyle(color: kcWhite)),
+                              const SizedBox(width: 7),
+                              // Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          item.shop?.shopName ?? "Unknown Item",
+                                          style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        SvgPicture.asset(
+                                            "asset/svgs/delivery_icon.svg"),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          orderState.deliveryAddress,
+                                          maxLines: 2,
+                                          softWrap: true,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                              color: kcPrimaryNeutral300,
+                                              fontSize: 12),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "${item.items?.length ?? 0} items",
+                                      style: const TextStyle(
+                                          color: kcPrimaryNeutral300,
+                                          fontSize: 12),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "₦${((item.totalPrice ?? 0) * (item.packCount ?? 0)).toStringAsFixed(0)}",
+                                      style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          color: kcPrimaryNeutral300),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  SvgPicture.asset("asset/svgs/dotted_line.svg"),
-                ],
-              );
-            },
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onTap: () {
+                              // Handle delete from cart using cartItemAsync data
+                              // ref
+                              //     .read(shopControllerProvider.notifier)
+                              //     .removeFromCart(item.id);
+                            },
+                            child: const CircleAvatar(
+                              backgroundColor: kcPrimaryRed900,
+                              radius: 12,
+                              child: Icon(Iconsax.trash,
+                                  size: 15, color: kcPrimaryRed200),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 10,
+                          right: 10,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.translucent,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CheckoutScreen(
+                                    selectedItems: item,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: kcPrimary300,
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: const Text('Checkout',
+                                  style: TextStyle(color: kcWhite)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SvgPicture.asset("asset/svgs/dotted_line.svg"),
+                  ],
+                );
+              },
+            ),
           );
         },
         loading: () => const Center(
@@ -287,8 +295,8 @@ class OrderView extends HookConsumerWidget {
                     selectedIndex.value == 0
                         ? "Clear cart items"
                         : selectedIndex.value == 1
-                            ? "Clear ongoing items"
-                            : "Clear completed items",
+                            ? ""
+                            : "",
                     style: TextStyle(
                       color: selectedIndex.value == 0
                           ? kcPrimary400
@@ -413,148 +421,7 @@ class OrderView extends HookConsumerWidget {
                 const MyOrders(),
 
                 /// Completed Tab
-                completedItems.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              height: 200,
-                              width: 200,
-                              child:
-                                  Lottie.asset('asset/lottie/DBSkpgXyIT.json'),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                // Navigator.push(
-                                //   context,
-                                //   MaterialPageRoute(
-                                //     builder: (context) => const OrderView(),
-                                //   ),
-                                // );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 18, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: kcPrimary400,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text(
-                                  "Place Order Now",
-                                  style:
-                                      TextStyle(fontSize: 14, color: kcWhite),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: completedItems.length,
-                        itemBuilder: (context, index) {
-                          final item = completedItems[index];
-                          return Column(
-                            children: [
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8.0),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                item.deliveryAddress ??
-                                                    "Unknown Address",
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.black,
-                                                ),
-                                              ),
-                                              Text(
-                                                item.dateTime ?? "Unknown Date",
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          verticalSpaceTiny,
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                "Order ID #${item.orderId ?? 'Unknown'}",
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                              GestureDetector(
-                                                onTap: () {
-                                                  // Navigator.push(
-                                                  //   context,
-                                                  //   MaterialPageRoute(
-                                                  //     builder: (context) =>
-                                                  //         OngoingOrderView(
-                                                  //       orderItems: [item],
-                                                  //       orderTime: "2:00 pm",
-                                                  //       estimatedTime:
-                                                  //           "20-25 Minute",
-                                                  //       deliveryAddress:
-                                                  //           orderState
-                                                  //               .deliveryAddress,
-                                                  //       otp: "0987",
-                                                  //       subtotal: (item.price *
-                                                  //           item.quantity),
-                                                  //       deliveryFee: 1000,
-                                                  //       taxAndFees: 1000,
-                                                  //       total: (item.price *
-                                                  //                   item.quantity +
-                                                  //               1000 +
-                                                  //               1000)
-                                                  //           .toDouble(),
-                                                  //       currentStep: 8,
-                                                  //     ),
-                                                  //   ),
-                                                  // );
-                                                },
-                                                child: const Text(
-                                                  "VIEW",
-                                                  style: TextStyle(
-                                                    color: kcPrimary400,
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              verticalSpaceSmall,
-                              SvgPicture.asset('asset/svgs/dotted_line.svg'),
-                              verticalSpaceSmall,
-                            ],
-                          );
-                        },
-                      ),
+                const CompletedOrders(),
               ],
             ),
           ),

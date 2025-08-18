@@ -6,12 +6,14 @@ import '../../../../common/api/api_client.dart';
 import '../../../../common/api/api_request_helper.dart';
 import '../../../../common/api/dio_api_client.dart';
 import '../../../../common/utils/utils.dart';
-import '../model/response/cart_lsit/cart_lsit.dart';
+import '../model/response/cartlsit/cartlsit.dart';
+import '../model/response/meal_variant_menu/meal_variant_menu.dart';
 import '../model/response/my_orders_list/my_orders_list.dart';
 import '../model/response/order_link/order_link.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 import '../model/response/store_categories/store_categories.dart';
+import '../model/response/store_meal_variant/store_meal_variant.dart';
 import '../model/response/store_meals/store_meals.dart';
 
 final logger = Logger();
@@ -120,7 +122,7 @@ class ShopService {
           'Authorization': 'Bearer $accessToken',
         },
         data: {
-          "meal": mealId,
+          "mealVariant": mealId,
           "mealQuantity": quantity,
           "options": options,
           if (packNumber != null) "packNumber": packNumber,
@@ -195,6 +197,61 @@ class ShopService {
       () => apiClient
           .get('orders', headers: {'Authorization': 'Bearer $accessToken'}),
       parser: (data) => MyOrdersList.fromMap(data),
+    );
+  }
+
+  Future<ResultValue<StoreMealVariant>> fetchStoreMealVariant(
+      String shopId) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.get(
+        'meal-variants?shop=$shopId',
+        headers: {'Authorization': 'Bearer $accessToken'},
+      ),
+      parser: (data) => StoreMealVariant.fromMap(data),
+    );
+  }
+
+  Future<ResultValue<MealVariantMenu>> fetchMealVariantMenu({
+    String? categoryId,
+    String? shopId,
+  }) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.get(
+        'meal-variants/menu',
+        headers: {'Authorization': 'Bearer $accessToken'},
+        queryParameters: {
+          'category': categoryId,
+          'shop': shopId,
+        },
+      ),
+      parser: (data) => MealVariantMenu.fromMap(data),
+    );
+  }
+
+  Future<ResultValue<String>> addAddress(
+    String address,
+    String city,
+    String state,
+    String long,
+    String lat,
+  ) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'addresses',
+        header: {
+          'Authorization': 'Bearer $accessToken',
+        },
+        data: {
+          "location": {
+            "address": address,
+            "city": city,
+            "state": state,
+            "long": long,
+            "lat": lat,
+          }
+        },
+      ),
+      parser: (data) => BaseModel.toRawString(data),
     );
   }
 }

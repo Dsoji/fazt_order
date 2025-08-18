@@ -1,11 +1,13 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../model/response/cart_lsit/cart_lsit.dart';
+import '../model/response/cartlsit/cartlsit.dart';
+import '../model/response/meal_variant_menu/meal_variant_menu.dart';
 import '../model/response/my_orders_list/my_orders_list.dart';
 import '../model/response/order_link/order_link.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 import '../model/response/store_categories/store_categories.dart';
+import '../model/response/store_meal_variant/store_meal_variant.dart';
 import '../model/response/store_meals/store_meals.dart';
 
 class ShopState {
@@ -18,6 +20,9 @@ class ShopState {
   final AsyncValue<String> removePackFromCart;
   final AsyncValue<OrderLink> makeOrders;
   final AsyncValue<MyOrdersList> myOrdersList;
+  final AsyncValue<StoreMealVariant> storeMealVariant;
+  final AsyncValue<MealVariantMenu> mealVariantMenu;
+  final AsyncValue<String> addAddress;
   const ShopState({
     required this.shops,
     required this.shopFoodCategory,
@@ -28,6 +33,9 @@ class ShopState {
     required this.removePackFromCart,
     required this.makeOrders,
     required this.myOrdersList,
+    required this.storeMealVariant,
+    required this.mealVariantMenu,
+    required this.addAddress,
   });
 
   factory ShopState.initial() {
@@ -41,6 +49,9 @@ class ShopState {
       removePackFromCart: const AsyncValue.data(''),
       makeOrders: AsyncValue.data(OrderLink()),
       myOrdersList: AsyncValue.data(MyOrdersList()),
+      storeMealVariant: AsyncValue.data(StoreMealVariant()),
+      mealVariantMenu: AsyncValue.data(MealVariantMenu()),
+      addAddress: const AsyncValue.data(''),
     );
   }
 
@@ -54,6 +65,9 @@ class ShopState {
     AsyncValue<String>? removePackFromCart,
     AsyncValue<OrderLink>? makeOrders,
     AsyncValue<MyOrdersList>? myOrdersList,
+    AsyncValue<StoreMealVariant>? storeMealVariant,
+    AsyncValue<MealVariantMenu>? mealVariantMenu,
+    AsyncValue<String>? addAddress,
   }) {
     return ShopState(
       shops: shops ?? this.shops,
@@ -65,6 +79,9 @@ class ShopState {
       removePackFromCart: removePackFromCart ?? this.removePackFromCart,
       makeOrders: makeOrders ?? this.makeOrders,
       myOrdersList: myOrdersList ?? this.myOrdersList,
+      storeMealVariant: storeMealVariant ?? this.storeMealVariant,
+      mealVariantMenu: mealVariantMenu ?? this.mealVariantMenu,
+      addAddress: addAddress ?? this.addAddress,
     );
   }
 

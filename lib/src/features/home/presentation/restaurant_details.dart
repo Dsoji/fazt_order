@@ -13,9 +13,9 @@ import '../../../common/res/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
 import '../data/controller/shop_controller.dart';
+import '../data/model/response/meal_variant_menu/result.dart';
 import '../data/model/response/shops_model/result.dart';
 import '../data/model/response/store_meals/item.dart';
-import '../data/model/response/store_meals/result.dart';
 
 final logger = Logger();
 
@@ -30,14 +30,19 @@ class RestaurantDetailsView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedCategory = useState("All");
-    final shopId = restaurant.store?.id;
+    final storeId = restaurant.store?.id;
+    final shopId = restaurant.id;
     logger.d('shopId: $shopId');
+    logger.d('storeId: $storeId');
 
     useEffect(() {
       Future.microtask(() {
         ref
             .read(shopControllerProvider.notifier)
-            .fetchShopFoodCategory(shopId!);
+            .fetchShopFoodCategory(storeId!);
+        ref.read(shopControllerProvider.notifier).fetchMealVariantMenu(
+              shopId: shopId,
+            );
       });
       return null;
     }, [shopId]);
@@ -51,18 +56,19 @@ class RestaurantDetailsView extends HookConsumerWidget {
     // Alternative: Fetch all meals when "All" is selected
     Future<void> fetchShopFood() async {
       if (selectedCategory.value == "All") {
-        // Fetch all meals (you might need a different API endpoint for this)
-        await ref
-            .read(shopControllerProvider.notifier)
-            .fetchShopFood(shopId!, ""); // or use a special parameter
+        await ref.read(shopControllerProvider.notifier).fetchMealVariantMenu(
+              shopId: shopId,
+            );
       } else if (selectedCategoryId.value != null) {
-        await ref
-            .read(shopControllerProvider.notifier)
-            .fetchShopFood(shopId!, selectedCategoryId.value!);
+        await ref.read(shopControllerProvider.notifier).fetchMealVariantMenu(
+              categoryId: selectedCategoryId.value,
+              shopId: shopId,
+            );
       }
     }
 
     final meals = ref.watch(shopControllerProvider).storeMeals;
+    final mealVariants = ref.watch(shopControllerProvider).mealVariantMenu;
 
     return Scaffold(
       backgroundColor: kcWhite,
@@ -357,7 +363,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                meals.when(
+                mealVariants.when(
                   data: (data) => Column(
                     children: data.results
                             ?.map((item) => _buildMenuItem(context, item))
@@ -377,16 +383,17 @@ class RestaurantDetailsView extends HookConsumerWidget {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, Result menuItem) {
+  Widget _buildMenuItem(BuildContext context, MealVariantMenuResult menuItem) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: menuItem.mealImage != null && menuItem.mealImage!.isNotEmpty
+            child: (menuItem.meal?.mealImage != null &&
+                    menuItem.meal!.mealImage!.isNotEmpty)
                 ? Image.network(
-                    menuItem.mealImage!,
+                    menuItem.meal!.mealImage!,
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
@@ -420,7 +427,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  menuItem.mealName ?? '',
+                  menuItem.meal?.mealName ?? '',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -428,7 +435,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  menuItem.mealDescription ?? '',
+                  menuItem.meal?.mealDescription ?? '',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -438,7 +445,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "From ₦${menuItem.price}",
+                  "From ₦${menuItem.meal?.price ?? 0}",
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -447,45 +454,46 @@ class RestaurantDetailsView extends HookConsumerWidget {
               ],
             ),
           ),
-          menuItem.inStock == true
-              ? GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () {
-                    _showAddToCartBottomSheet(context, menuItem);
-                  },
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: kcPrimary300,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Text(
-                      "+ Add",
-                      style: ktBodyRegularSize16.copyWith(color: kcWhite),
-                    ),
-                  ),
-                )
-              : Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: kcPrimary800,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Text(
-                    "Out of Stock",
-                    style: ktBodyRegularSize16.copyWith(color: kcPrimary300),
-                  ),
-                ),
+          // menuItem.inStock == true
+          //     ?
+          GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () {
+              _showAddToCartBottomSheet(context, menuItem as dynamic);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: kcPrimary300,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Text(
+                "+ Add",
+                style: ktBodyRegularSize16.copyWith(color: kcWhite),
+              ),
+            ),
+          )
+          // : Container(
+          //     padding:
+          //         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          //     decoration: BoxDecoration(
+          //       color: kcPrimary800,
+          //       borderRadius: BorderRadius.circular(30),
+          //     ),
+          //     child: Text(
+          //       "Out of Stock",
+          //       style: ktBodyRegularSize16.copyWith(color: kcPrimary300),
+          //     ),
+          // ),
         ],
       ),
     );
   }
 
   // Add this method to show the bottom sheet
-  void _showAddToCartBottomSheet(BuildContext context, Result menuItem) {
-    final options = menuItem.optionGroup;
+  void _showAddToCartBottomSheet(
+      BuildContext context, MealVariantMenuResult menuItem) {
+    final options = menuItem.meal?.optionGroup;
 
     showModalBottomSheet(
       context: context,
@@ -577,22 +585,22 @@ class RestaurantDetailsView extends HookConsumerWidget {
 
 // Create a separate HookConsumerWidget for the bottom sheet content
 class AddToCartBottomSheet extends HookConsumerWidget {
-  final Result menuItem;
+  final MealVariantMenuResult menuItem;
 
   const AddToCartBottomSheet({super.key, required this.menuItem});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final quantity = useState(1);
-    final options = menuItem.optionGroup;
+    final options = menuItem.meal?.optionGroup;
     // Update the state management to track quantities for each option
     final selectedItemsWithQuantity =
         useState<Map<String, Map<String, int>>>({});
 
     // Calculate total price including selected options
     final totalPrice = useMemoized(() {
-      int basePrice = menuItem.price ?? 0;
-      int optionsPrice = 0;
+      int basePrice = menuItem.meal?.price ?? 0;
+      num optionsPrice = 0;
 
       // Calculate price from selected options with quantities
       if (options != null) {
@@ -608,7 +616,7 @@ class AddToCartBottomSheet extends HookConsumerWidget {
             // Find the corresponding item to get its price
             for (final item in items) {
               if (item.id == itemId) {
-                optionsPrice += (item.price ?? 0) * quantity;
+                optionsPrice += ((item.price ?? 0) * quantity).toInt();
                 break;
               }
             }
@@ -618,6 +626,9 @@ class AddToCartBottomSheet extends HookConsumerWidget {
 
       return (basePrice + optionsPrice) * quantity.value;
     }, [selectedItemsWithQuantity.value, quantity.value, options]);
+
+    final mealVariant =
+        ref.watch(shopControllerProvider).storeMealVariant.valueOrNull?.results;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
@@ -677,10 +688,10 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                     // Food image
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: menuItem.mealImage != null &&
-                              menuItem.mealImage!.isNotEmpty
+                      child: menuItem.meal?.mealImage != null &&
+                              menuItem.meal!.mealImage!.isNotEmpty
                           ? Image.network(
-                              menuItem.mealImage!,
+                              menuItem.meal!.mealImage!,
                               width: double.infinity,
                               height: 200,
                               fit: BoxFit.cover,
@@ -712,7 +723,7 @@ class AddToCartBottomSheet extends HookConsumerWidget {
 
                     // Food name
                     Text(
-                      menuItem.mealName ?? 'Food Item',
+                      menuItem.meal?.mealName ?? 'Food Item',
                       style: const TextStyle(
                         fontSize: 16,
                         color: Colors.black,
@@ -722,7 +733,8 @@ class AddToCartBottomSheet extends HookConsumerWidget {
 
                     // Description
                     Text(
-                      menuItem.mealDescription ?? 'Delicious food description',
+                      menuItem.meal?.mealDescription ??
+                          'Delicious food description',
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.neutral500,
@@ -732,7 +744,7 @@ class AddToCartBottomSheet extends HookConsumerWidget {
 
                     // Price
                     Text(
-                      'From ₦${menuItem.price}',
+                      'From ₦${menuItem.meal?.price ?? 0}',
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.neutral200,

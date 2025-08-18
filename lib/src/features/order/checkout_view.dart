@@ -10,7 +10,7 @@ import '../../common/ui_helpers.dart';
 import '../../common/widgets/text_styles.dart';
 import '../bottom_sheets/edit_address_sheet.dart';
 import '../home/data/controller/shop_controller.dart';
-import '../home/data/model/response/cart_lsit/cart.dart';
+import '../home/data/model/response/cartlsit/cart.dart';
 import '../payment/payment_screen.dart';
 import '../profile/data/controller/profile_controller.dart';
 
@@ -261,11 +261,11 @@ class CheckoutScreen extends HookConsumerWidget {
                                         ],
                                       ),
                                       verticalSpaceSmall,
-                                      Text(item.meal?.mealName ??
+                                      Text(item.mealVariant?.meal?.mealName ??
                                           "Unknown Item"),
                                       verticalSpaceTiny,
                                       Text(
-                                          "₦${(item.meal?.price ?? 0).toStringAsFixed(0)}"),
+                                          "₦${(item.mealVariant?.meal?.price ?? 0).toStringAsFixed(0)}"),
                                       verticalSpace(15),
                                       Row(
                                         children: [

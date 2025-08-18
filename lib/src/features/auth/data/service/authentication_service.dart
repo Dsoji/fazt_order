@@ -20,11 +20,6 @@ final authenticationServiceProvider = Provider<AuthenticationService>((ref) {
   );
 });
 
-var box = Hive.box('data');
-String? deviceId = box.get('device_id');
-String storedToken = box.get('fcm_token');
-String? accessToken = box.get('accessToken');
-
 class AuthenticationService {
   final IApiClient apiClient;
   final ApiRequestHelper apiRequestHelper;
@@ -33,6 +28,15 @@ class AuthenticationService {
     required this.apiClient,
     required this.apiRequestHelper,
   });
+
+  // Add getter methods to access Hive data safely
+  Box get _box => Hive.box('data');
+  String? get deviceId =>
+      Hive.isBoxOpen('data') ? Hive.box('data').get('device_id') : null;
+  String get storedToken =>
+      Hive.isBoxOpen('data') ? Hive.box('data').get('fcm_token') ?? '' : '';
+  String? get accessToken =>
+      Hive.isBoxOpen('data') ? Hive.box('data').get('accessToken') : null;
 
   Future<ResultValue<UserModel>> signInUser({
     required String email,
@@ -84,12 +88,12 @@ class AuthenticationService {
       parser: (data) {
         print(data);
         final token = data['accessToken'];
-        final userId = data['user']['id'];
+
         var box = Hive.box('data');
         final refreshToken = data['refreshToken'];
         box.put('accessToken', token);
         box.put('refreshToken', refreshToken);
-        box.put('userId', userId);
+
         return UserModel.fromMap(data);
       },
       showErrorToast: true,
@@ -166,7 +170,7 @@ class AuthenticationService {
   Future<ResultValue<String>> updateProfile({
     ProfilePayload? payload,
   }) async {
-    final String accessToken = await box.get('accessToken');
+    final String accessToken = await _box.get('accessToken');
 
     return apiRequestHelper.handleApiRequest(
       () => apiClient.post(
@@ -188,7 +192,7 @@ class AuthenticationService {
   Future<ResultValue<String>> updateAddress({
     AddressPayload? payload,
   }) async {
-    final String accessToken = await box.get('accessToken');
+    final String accessToken = await _box.get('accessToken');
 
     return apiRequestHelper.handleApiRequest(
       () => apiClient.patch(

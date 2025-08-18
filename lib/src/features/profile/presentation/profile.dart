@@ -4,19 +4,19 @@ import 'package:fazt_order/src/features/profile/presentation/wallet_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gap/gap.dart';
+import 'package:hive/hive.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
+
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
 import '../../auth/login/presentation/login_screen.dart';
+import '../../home/presentation/edit_address.dart';
+import '../../home/presentation/favorites_view.dart';
 import '../data/controller/profile_controller.dart';
 import 'customer_support_view.dart';
-import '../../home/presentation/edit_address.dart';
 import 'edit_profile.dart';
-import '../../home/presentation/favorites_view.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
-import 'profile_provider.dart';
 
 class ProfileView extends HookConsumerWidget {
   const ProfileView({super.key});
@@ -256,6 +256,8 @@ class ProfileView extends HookConsumerWidget {
                 width: 150,
                 height: 48,
                 onPressed: () {
+                  var box = Hive.box('data');
+                  box.clear();
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(

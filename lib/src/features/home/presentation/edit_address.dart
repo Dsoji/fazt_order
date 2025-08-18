@@ -1,90 +1,98 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:iconsax/iconsax.dart';
 
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
+import '../data/controller/shop_controller.dart';
 
-class AddressesView extends StatefulWidget {
+class AddressesView extends HookConsumerWidget {
   const AddressesView({super.key});
 
   @override
-  _AddressesViewState createState() => _AddressesViewState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Use useState hook for addresses
+    final addresses = useState<List<Map<String, String>>>([
+      {
+        'title': 'Computer Village',
+        'details': '12, Oritshe street, Ikeja, Lagos State',
+      },
+    ]);
 
-class _AddressesViewState extends State<AddressesView> {
-  // Sample list of addresses (replace with provider or API data)
-  final List<Map<String, String>> _addresses = [
-    {
-      'title': 'Computer Village',
-      'details': '12, Oritshe street, Ikeja, Lagos State',
-    },
-  ];
-
-  void _deleteAddress(int index) async {
-    bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Address'),
-        content: const Text('Are you sure you want to delete this address?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      setState(() {
-        _addresses.removeAt(index);
-      });
-    }
-  }
-
-  void _showAddAddressBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: kcPrimaryNeutral950,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => AddAddressBottomSheet(
-        onAddressSelected: (title, details) {
-          // Show the second bottom sheet for manual entry
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: kcPrimaryNeutral950,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    // Use useCallback for functions to prevent unnecessary rebuilds
+    final deleteAddress = useCallback((int index) async {
+      bool? confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Address'),
+          content: const Text('Are you sure you want to delete this address?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
             ),
-            builder: (context) => EnterAddressBottomSheet(
-              initialTitle: title,
-              initialDetails: details,
-              onSave: (newTitle, newDetails) {
-                setState(() {
-                  _addresses.add({
-                    'title': newTitle,
-                    'details': newDetails,
-                  });
-                });
-              },
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
-          );
-        },
-      ),
-    );
-  }
+          ],
+        ),
+      );
 
-  @override
-  Widget build(BuildContext context) {
+      if (confirm == true) {
+        addresses.value = List.from(addresses.value)..removeAt(index);
+      }
+    }, []);
+    final lat = useState('');
+    final long = useState('');
+    final city = useState('');
+    final state = useState('');
+    final formattedAddress = useState('');
+
+    final showAddAddressBottomSheet = useCallback(() {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: kcPrimaryNeutral950,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => AddAddressBottomSheet(
+          onAddressSelected: (title, details) {
+            // Show the second bottom sheet for manual entry
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: kcPrimaryNeutral950,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              builder: (context) => EnterAddressBottomSheet(
+                initialTitle: title,
+                initialDetails: details,
+                onSave: (newTitle, newDetails) {
+                  addresses.value = [
+                    ...addresses.value,
+                    {
+                      'title': newTitle,
+                      'details': newDetails,
+                    },
+                  ];
+                },
+              ),
+            );
+          },
+        ),
+      );
+    }, []);
+
     return Scaffold(
       backgroundColor: kcPrimaryNeutral950,
       appBar: AppBar(
@@ -111,7 +119,7 @@ class _AddressesViewState extends State<AddressesView> {
           children: [
             // Search Bar
             GestureDetector(
-              onTap: _showAddAddressBottomSheet,
+              onTap: showAddAddressBottomSheet,
               child: TextField(
                 enabled:
                     false, // Disable direct input, use tap to show bottom sheet
@@ -150,9 +158,9 @@ class _AddressesViewState extends State<AddressesView> {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _addresses.length,
+              itemCount: addresses.value.length,
               itemBuilder: (context, index) {
-                final address = _addresses[index];
+                final address = addresses.value[index];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
                   child: Row(
@@ -187,7 +195,7 @@ class _AddressesViewState extends State<AddressesView> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => _deleteAddress(index),
+                        onTap: () => deleteAddress(index),
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: const BoxDecoration(
@@ -213,59 +221,117 @@ class _AddressesViewState extends State<AddressesView> {
   }
 }
 
-class AddAddressBottomSheet extends StatefulWidget {
+class AddAddressBottomSheet extends HookConsumerWidget {
   final Function(String, String) onAddressSelected;
 
   const AddAddressBottomSheet({super.key, required this.onAddressSelected});
 
   @override
-  _AddAddressBottomSheetState createState() => _AddAddressBottomSheetState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searchController = useTextEditingController();
+    final places = useState<List<dynamic>>([]);
+    final isLoading = useState(false);
 
-class _AddAddressBottomSheetState extends State<AddAddressBottomSheet> {
-  final TextEditingController _searchController = TextEditingController();
-  final List<Map<String, String>> _suggestions = [
-    {
-      'title': 'Computer Village',
-      'details': '12, Oritshe street, Ikeja, Lagos State',
-    },
-    {
-      'title': 'Community Secondary School',
-      'details': '14, Ogbeni sare jeje street, Abeokuta, Ogun State',
-    },
-    {
-      'title': 'Comfort Estate',
-      'details': '12, okofor road, Akwa, Anambra State',
-    },
-  ];
-  List<Map<String, String>> _filteredSuggestions = [];
+    // Place Details
+    final lat = useState('');
+    final long = useState('');
+    final city = useState('');
+    final state = useState('');
 
-  @override
-  void initState() {
-    super.initState();
-    _filteredSuggestions = _suggestions;
-    _searchController.addListener(_filterSuggestions);
-  }
+    // For debouncing search input
+    final debounceTimer = useRef<Timer?>(null);
 
-  void _filterSuggestions() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredSuggestions = _suggestions
-          .where((address) =>
-              address['title']!.toLowerCase().contains(query) ||
-              address['details']!.toLowerCase().contains(query))
-          .toList();
-    });
-  }
+    final String? apiKey = dotenv.env['MAP_KEY'];
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+    Future<void> searchPlaces(String query) async {
+      if (query.isEmpty) {
+        places.value = [];
+        return;
+      }
 
-  @override
-  Widget build(BuildContext context) {
+      isLoading.value = true;
+
+      final url =
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=$apiKey&types=geocode';
+      try {
+        final response = await http.get(Uri.parse(url));
+        final json = jsonDecode(response.body);
+
+        if (json['status'] == 'OK') {
+          places.value = json['predictions'];
+        } else {
+          print('Error fetching places: ${json['status']}');
+        }
+      } catch (e) {
+        print('Error: $e');
+      } finally {
+        isLoading.value = false;
+      }
+    }
+
+    Future<void> getPlaceDetails(String placeId) async {
+      isLoading.value = true;
+
+      final url =
+          'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$apiKey';
+
+      try {
+        final response = await http.get(Uri.parse(url));
+        final json = jsonDecode(response.body);
+
+        if (json['status'] == 'OK') {
+          final result = json['result'];
+          final location = result['geometry']['location'];
+
+          String? foundCity;
+          String? foundState;
+
+          for (var component in result['address_components']) {
+            final List types = component['types'];
+            if (types.contains('locality')) {
+              foundCity = component['long_name'];
+            }
+            if (types.contains('administrative_area_level_1')) {
+              foundState = component['long_name'];
+            }
+          }
+
+          lat.value = location['lat'].toString();
+          long.value = location['lng'].toString();
+          city.value = foundCity ?? '';
+          state.value = foundState ?? '';
+
+          // Create a formatted address string
+          final formattedAddress = result['formatted_address'] ?? '';
+          final placeName = result['name'] ?? 'Selected Location';
+
+          // Pass the selected address to the callback
+          onAddressSelected(placeName, formattedAddress);
+
+          // Close the bottom sheet
+          Navigator.pop(context);
+
+          print('Latitude: ${lat.value}');
+          print('Longitude: ${long.value}');
+          print('City: ${city.value}');
+          print('State: ${state.value}');
+        } else {
+          print('Error fetching place details: ${json['status']}');
+        }
+      } catch (e) {
+        print('Error: $e');
+      } finally {
+        isLoading.value = false;
+      }
+    }
+
+    // Cleanup timer on dispose
+    useEffect(() {
+      return () {
+        debounceTimer.value?.cancel();
+      };
+    }, []);
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -273,135 +339,129 @@ class _AddAddressBottomSheetState extends State<AddAddressBottomSheet> {
         right: 16.0,
         top: 16.0,
       ),
-      child: SingleChildScrollView(
-        // Added SingleChildScrollView to prevent overflow
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Add new address",
-                  style: ktBodySemiBoldSize20.copyWith(
-                    fontSize: 20,
-                    color: Colors.black,
-                  ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Add new address",
+                style: ktBodySemiBoldSize20.copyWith(
+                  fontSize: 20,
+                  color: Colors.black,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.black),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.black),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          verticalSpaceTiny,
+          Text(
+            "This let us show nearby restaurants, stores you can order from and address to deliver to.",
+            style: ktBodyRegularSize12.copyWith(
+              color: kcPrimaryNeutral500,
+              fontSize: 12,
             ),
-            verticalSpaceTiny,
-            Text(
-              "This let us show nearby restaurants, stores you can order from and address to deliver to.",
-              style: ktBodyRegularSize12.copyWith(
-                color: kcPrimaryNeutral500,
+          ),
+          verticalSpaceMedium,
+          // Search Bar
+          TextField(
+            controller: searchController,
+            onChanged: (text) {
+              // Cancel the previous timer
+              debounceTimer.value?.cancel();
+              // Start a new timer
+              debounceTimer.value =
+                  Timer(const Duration(milliseconds: 400), () {
+                searchPlaces(text);
+              });
+            },
+            decoration: InputDecoration(
+              hintText: "Search address",
+              hintStyle: const TextStyle(
+                color: kcPrimaryNeutral800,
                 fontSize: 12,
               ),
-            ),
-            verticalSpaceMedium,
-            // Search Bar
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: "Search address",
-                hintStyle: const TextStyle(
-                  color: kcPrimaryNeutral800,
-                  fontSize: 12,
-                ),
-                filled: true,
-                fillColor: kcPrimaryNeutral900,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: const BorderSide(color: kcPrimaryNeutral800),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: const BorderSide(color: kcPrimaryNeutral800),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: const BorderSide(color: kcPrimary400),
-                ),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                suffixIcon: const Icon(
-                  Iconsax.search_normal,
-                  color: Colors.grey,
-                  size: 20,
-                ),
+              filled: true,
+              fillColor: kcPrimaryNeutral900,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: kcPrimaryNeutral800),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: kcPrimaryNeutral800),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: const BorderSide(color: kcPrimary400),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              suffixIcon: const Icon(
+                Iconsax.search_normal,
+                color: Colors.grey,
+                size: 20,
               ),
             ),
-            verticalSpaceSmall,
-            // Use Current Location
-            GestureDetector(
-              onTap: () {
-                // TODO: Implement current location functionality
-                widget.onAddressSelected(
-                    "Current Location", "Fetched location details");
-              },
-              child: Row(
-                children: [
-                  const Icon(
-                    Iconsax.location,
-                    color: Colors.grey,
-                    size: 20,
-                  ),
-                  horizontalSpaceSmall,
-                  Text(
-                    "Use your current location",
-                    style: ktBodyRegularSize12.copyWith(
-                      color: kcPrimaryNeutral500,
-                      fontSize: 12,
+          ),
+          verticalSpaceSmall,
+          // Places List
+          if (places.value.isNotEmpty)
+            Container(
+              constraints: const BoxConstraints(maxHeight: 300),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: places.value.length,
+                itemBuilder: (context, index) {
+                  final place = places.value[index];
+                  return ListTile(
+                    leading: const Icon(
+                      Iconsax.location,
+                      color: Colors.grey,
+                      size: 20,
                     ),
-                  ),
-                ],
+                    title: Text(
+                      place['structured_formatting']?['main_text'] ??
+                          place['description'],
+                      style: ktBodySemiBoldSize20.copyWith(
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    ),
+                    subtitle: Text(
+                      place['structured_formatting']?['secondary_text'] ?? '',
+                      style: ktBodyRegularSize12.copyWith(
+                        color: kcPrimaryNeutral500,
+                        fontSize: 12,
+                      ),
+                    ),
+                    onTap: () async {
+                      getPlaceDetails(place['place_id']);
+                      final result = await ref
+                          .read(shopControllerProvider.notifier)
+                          .addAddress(
+                            searchController.text,
+                            city.value,
+                            state.value,
+                            long.value,
+                            lat.value,
+                          );
+                      if (result == true) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  );
+                },
               ),
             ),
-            verticalSpaceMedium,
-            // Suggestions List
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _filteredSuggestions.length,
-              separatorBuilder: (context, index) => const Divider(),
-              itemBuilder: (context, index) {
-                final address = _filteredSuggestions[index];
-                return ListTile(
-                  leading: const Icon(
-                    Iconsax.location,
-                    color: Colors.grey,
-                    size: 20,
-                  ),
-                  title: Text(
-                    address['title']!,
-                    style: ktBodySemiBoldSize20.copyWith(
-                      fontSize: 16,
-                      color: Colors.black,
-                    ),
-                  ),
-                  subtitle: Text(
-                    address['details']!,
-                    style: ktBodyRegularSize12.copyWith(
-                      color: kcPrimaryNeutral500,
-                      fontSize: 12,
-                    ),
-                  ),
-                  onTap: () {
-                    widget.onAddressSelected(
-                        address['title']!, address['details']!);
-                  },
-                );
-              },
-            ),
-            verticalSpaceMedium,
-          ],
-        ),
+          verticalSpaceMedium,
+        ],
       ),
     );
   }

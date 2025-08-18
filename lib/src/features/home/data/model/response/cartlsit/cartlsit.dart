@@ -25,14 +25,14 @@ class CartLsit {
 
   /// `dart:convert`
   ///
-  /// Parses the string and returns the resulting Json object as [CartLsit].
+  /// Parses the string and returns the resulting Json object as [Cartlsit].
   factory CartLsit.fromJson(String data) {
     return CartLsit.fromMap(json.decode(data) as Map<String, dynamic>);
   }
 
   /// `dart:convert`
   ///
-  /// Converts [CartLsit] to a JSON string.
+  /// Converts [Cartlsit] to a JSON string.
   String toJson() => json.encode(toMap());
 
   CartLsit copyWith({

@@ -23,12 +23,14 @@ class RegistrationScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Using hooks for controllers and state
-    final firstNameController = useTextEditingController();
-    final lastNameController = useTextEditingController();
-    final emailController = useTextEditingController();
-    final createPasswordController = useTextEditingController();
-    final confirmPasswordController = useTextEditingController();
-    final numberController = useTextEditingController();
+    final firstNameController = useTextEditingController(text: 'John');
+    final lastNameController = useTextEditingController(text: 'Doe');
+    final emailController =
+        useTextEditingController(text: 'john.doe@mailinator.com');
+    final createPasswordController = useTextEditingController(text: 'Test123.');
+    final confirmPasswordController =
+        useTextEditingController(text: 'Test123.');
+    final numberController = useTextEditingController(text: '08012345678');
     // State hooks for password visibility
     final isCreatePasswordVisible = useState(false);
     final isConfirmPasswordVisible = useState(false);

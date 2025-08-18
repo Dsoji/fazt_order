@@ -112,36 +112,53 @@ class OngoingOrderView extends HookConsumerWidget {
                     ),
                     verticalSpaceSmall,
                     Text(
-                      isCompleted
+                      orderItems.status == 'delivered'
                           ? "Order was completed within"
-                          : "Arriving in",
+                          : orderItems.status == 'recieved'
+                              ? "Order received - preparing soon"
+                              : orderItems.status == 'preparing'
+                                  ? "Your order is being prepared"
+                                  : orderItems.status == 'ready'
+                                      ? "Order ready and will be picked up soon"
+                                      : orderItems.status == 'in_transit'
+                                          ? "Order has been picked up and is on the way to you"
+                                          : orderItems.status == 'arrived'
+                                              ? "Rider has arrived"
+                                              : "Order has been delivered",
                       style: const TextStyle(
                           fontSize: 14,
                           color: kcPrimaryNeutral200,
                           letterSpacing: 1),
                     ),
                     verticalSpaceSmall,
-                    const Text(
-                      '00:00 ',
-                      style: TextStyle(
-                          fontSize: 16,
-                          color: kcPrimaryNeutral200,
-                          fontWeight: FontWeight.w600),
-                    ),
+                    // const Text(
+                    //   '00:00 ',
+                    //   style: TextStyle(
+                    //       fontSize: 16,
+                    //       color: kcPrimaryNeutral200,
+                    //       fontWeight: FontWeight.w600),
+                    // ),
                     verticalSpaceSmall,
                     DashProgressBar(
-                        currentStep: orderItems.status == 'pending'
+                        currentStep: orderItems.status == 'recieved'
                             ? 1
-                            : orderItems.status == 'ongoing'
+                            : orderItems.status == 'preparing'
                                 ? 2
-                                : orderItems.status == 'preparing'
+                                : orderItems.status == 'ready'
                                     ? 3
-                                    : 4,
-                        totalSteps: 8,
+                                    : orderItems.status == 'in_transit'
+                                        ? 4
+                                        : orderItems.status == 'arrived'
+                                            ? 5
+                                            : orderItems.status == 'delivered'
+                                                ? 6
+                                                : 7,
+                        totalSteps: 7,
                         activeColor: kcPrimary200,
                         inactiveColor: kcPrimary800),
                     verticalSpaceSmall,
-                    if (!isCompleted) ...[
+                    if (orderItems.status == 'pending' ||
+                        orderItems.status == 'recieved') ...[
                       verticalSpaceSmall,
                       Text(
                         cancelText,
@@ -151,7 +168,7 @@ class OngoingOrderView extends HookConsumerWidget {
                       ),
                       verticalSpaceMedium,
                       FullButton(
-                        text: 'Cancel',
+                        text: 'Cancel Order',
                         width: 150,
                         height: 48,
                         onPressed: () {
@@ -170,43 +187,19 @@ class OngoingOrderView extends HookConsumerWidget {
               verticalSpace(4),
 
               // Delivery Details
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Delivery Details",
-                    style: TextStyle(fontSize: 14, letterSpacing: 1),
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      "Update",
-                      style: TextStyle(color: kcPrimary400, letterSpacing: 1),
-                    ),
-                  ),
-                ],
+              const Text(
+                "Delivery Details",
+                style: TextStyle(fontSize: 14, letterSpacing: 1),
               ),
               Row(
                 children: [
                   const Icon(Iconsax.location, size: 20, color: Colors.grey),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Computer Village",
-                          style: TextStyle(
-                              fontSize: 16,
-                              letterSpacing: 1,
-                              color: kcPrimaryNeutral200),
-                        ),
-                        Text(
-                          orderItems.deliveryLocation?.address ?? '',
-                          style: const TextStyle(
-                              color: kcPrimaryNeutral500, fontSize: 11),
-                        ),
-                      ],
+                    child: Text(
+                      orderItems.deliveryLocation?.address ?? '',
+                      style: const TextStyle(
+                          color: kcPrimaryNeutral500, fontSize: 11),
                     ),
                   ),
                 ],

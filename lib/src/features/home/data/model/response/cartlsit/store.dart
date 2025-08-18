@@ -1,26 +1,18 @@
 import 'dart:convert';
 
 class Store {
-  String? storeDisplayImage;
-  String? storeName;
   String? id;
 
-  Store({this.storeDisplayImage, this.storeName, this.id});
+  Store({this.id});
 
   @override
-  String toString() {
-    return 'Store(storeDisplayImage: $storeDisplayImage, storeName: $storeName, id: $id)';
-  }
+  String toString() => 'Store(id: $id)';
 
   factory Store.fromMap(Map<String, dynamic> data) => Store(
-        storeDisplayImage: data['storeDisplayImage'] as String?,
-        storeName: data['storeName'] as String?,
         id: data['id'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
-        'storeDisplayImage': storeDisplayImage,
-        'storeName': storeName,
         'id': id,
       };
 
@@ -37,13 +29,9 @@ class Store {
   String toJson() => json.encode(toMap());
 
   Store copyWith({
-    String? storeDisplayImage,
-    String? storeName,
     String? id,
   }) {
     return Store(
-      storeDisplayImage: storeDisplayImage ?? this.storeDisplayImage,
-      storeName: storeName ?? this.storeName,
       id: id ?? this.id,
     );
   }

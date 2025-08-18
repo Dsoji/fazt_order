@@ -235,4 +235,74 @@ class ShopController extends StateNotifier<ShopState> {
       },
     );
   }
+
+  Future<bool> fetchStoreMealVariant(String shopId) async {
+    state = state.copyWith(storeMealVariant: const AsyncValue.loading());
+    final result =
+        await _authenticationRepository.fetchStoreMealVariant(shopId);
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            storeMealVariant: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(storeMealVariant: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
+
+  Future<bool> fetchMealVariantMenu({
+    String? categoryId,
+    String? shopId,
+  }) async {
+    state = state.copyWith(mealVariantMenu: const AsyncValue.loading());
+    final result = await _authenticationRepository.fetchMealVariantMenu(
+      categoryId: categoryId,
+      shopId: shopId,
+    );
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            mealVariantMenu: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(mealVariantMenu: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
+
+  Future<bool> addAddress(
+    String address,
+    String city,
+    String states,
+    String long,
+    String lat,
+  ) async {
+    state = state.copyWith(addAddress: const AsyncValue.loading());
+    final result = await _authenticationRepository.addAddress(
+      address,
+      city,
+      states,
+      long,
+      lat,
+    );
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            addAddress: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(addAddress: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
 }

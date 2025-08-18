@@ -4,6 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:logger/logger.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import 'src/features/home/data/controller/shop_controller.dart';
+
 // Provider for managing WebViewController state
 
 final logger = Logger();
@@ -89,7 +91,12 @@ class WebViewStack extends HookConsumerWidget {
             }
             if (url.contains('dev.com')) {
               debugPrint("🚨 Blocked navigation to dev.com, closing WebView");
-              if (context.mounted) Navigator.pop(context);
+              if (context.mounted) {
+                ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+                Navigator.pop(context);
+                Navigator.pop(context);
+                Navigator.pop(context);
+              }
             }
           },
           onNavigationRequest: (navigation) {
@@ -99,7 +106,12 @@ class WebViewStack extends HookConsumerWidget {
             // Block specific sites
             if (host.contains('dev.com')) {
               debugPrint("🚨 Blocked navigation to dev.com");
-              Navigator.pop(context);
+              if (context.mounted) {
+                ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+                Navigator.pop(context);
+                Navigator.pop(context);
+                Navigator.pop(context);
+              }
               return NavigationDecision.prevent;
             }
 
@@ -120,7 +132,10 @@ class WebViewStack extends HookConsumerWidget {
             isLoading.value = false;
             debugPrint("❌ Web resource error: ${error.description}");
             Future.delayed(const Duration(seconds: 2), () {
-              if (context.mounted) Navigator.pop(context);
+              ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+              Navigator.pop(context);
+              Navigator.pop(context);
+              Navigator.pop(context);
             });
           },
         ),

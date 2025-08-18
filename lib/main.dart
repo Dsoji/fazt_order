@@ -1,53 +1,87 @@
+import 'dart:io';
+
 import 'package:fazt_order/redirect_screen.dart';
-import 'package:fazt_order/src/common/app_colors.dart';
+import 'package:fazt_order/src/common/api/dio_api_interceptor.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'firebase_options.dart';
+import 'src/common/res/app_colors.dart';
+import 'src/common/utils/dimesnsion.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final envPath = '${Directory.current.path}/.env';
+  print('Looking for .env at: $envPath');
+
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    print('Error loading .env: $e');
+    print('Current directory: ${Directory.current.path}');
+    print('Files in current directory: ${Directory.current.listSync()}');
+  }
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: kcPrimaryNeutral950,
-    statusBarIconBrightness: Brightness.dark,
-    statusBarBrightness: Brightness.light,
-  ));
+
   await Hive.initFlutter();
   await Hive.openBox('data');
-  SystemChrome.setPreferredOrientations(
-      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]).then((_) {
+
+  final navigatorKey = GlobalKey<NavigatorState>();
+
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]).then((_) {
     runApp(
-      const ProviderScope(child: MyApp()),
+      ProviderScope(
+        overrides: [
+          navigatorKeyProvider.overrideWithValue(navigatorKey),
+        ],
+        child: MyApp(navigatorKey: navigatorKey),
+      ),
     );
   });
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends HookConsumerWidget {
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  const MyApp({super.key, required this.navigatorKey});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mediaQuery = MediaQuery.of(context);
+    final scale =
+        mediaQuery.textScaler.clamp(minScaleFactor: 0.8, maxScaleFactor: 1.2);
+    Animate.restartOnHotReload = true;
+
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Fazt Vendor',
-      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        appBarTheme: const AppBarTheme(
-          backgroundColor: kcPrimaryNeutral950,
-          elevation: 0,
-        ),
-        fontFamily: 'Lato',
-        scaffoldBackgroundColor: kcPrimaryNeutral950,
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-            backgroundColor: kcPrimaryNeutral950, elevation: 0),
+        appBarTheme: const AppBarTheme(backgroundColor: AppColors.neutral950),
+        scaffoldBackgroundColor: AppColors.neutral950,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
+      ),
+      builder: (context, child) => MediaQuery(
+        data: mediaQuery.copyWith(textScaler: scale),
+        child: Builder(
+          builder: (context) {
+            final media = MediaQuery.of(context);
+            Dims.setSize(media);
+            return child!;
+          },
+        ),
       ),
       home: const RedirectScreen(),
     );

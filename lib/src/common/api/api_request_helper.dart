@@ -3,9 +3,10 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:fazt_order/src/common/api/api.dart';
+import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../toast/toast.dart';
 import '../utils/utils.dart';
 
 final apiRequestHelperProvider = Provider<ApiRequestHelper>((ref) {
@@ -42,9 +43,13 @@ class ApiRequestHelper {
     if (response.statusCode == 200 || response.statusCode == 201) {
       final data = BaseModel.fromMap(response.data);
       if (showSuccessToast) {
-        ToastService().showToast(
-          NotificationType.success,
-          message: data.message ?? '',
+        Fluttertoast.showToast(
+          msg: data.message!,
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+          fontSize: 14.0,
         );
       }
       return ResultValue.success(

@@ -1,17 +1,16 @@
 import 'dart:convert';
 
-import 'meal.dart';
-import 'option.dart';
+import 'meal_variant.dart';
 
 class Item {
-  Meal? meal;
+  MealVariant? mealVariant;
   int? mealQuantity;
-  List<Option>? options;
+  List<dynamic>? options;
   int? packNumber;
   String? id;
 
   Item({
-    this.meal,
+    this.mealVariant,
     this.mealQuantity,
     this.options,
     this.packNumber,
@@ -20,25 +19,23 @@ class Item {
 
   @override
   String toString() {
-    return 'Item(meal: $meal, mealQuantity: $mealQuantity, options: $options, packNumber: $packNumber, id: $id)';
+    return 'Item(mealVariant: $mealVariant, mealQuantity: $mealQuantity, options: $options, packNumber: $packNumber, id: $id)';
   }
 
   factory Item.fromMap(Map<String, dynamic> data) => Item(
-        meal: data['meal'] == null
+        mealVariant: data['mealVariant'] == null
             ? null
-            : Meal.fromMap(data['meal'] as Map<String, dynamic>),
+            : MealVariant.fromMap(data['mealVariant'] as Map<String, dynamic>),
         mealQuantity: data['mealQuantity'] as int?,
-        options: (data['options'] as List<dynamic>?)
-            ?.map((e) => Option.fromMap(e as Map<String, dynamic>))
-            .toList(),
+        options: data['options'] as List<dynamic>?,
         packNumber: data['packNumber'] as int?,
         id: data['_id'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
-        'meal': meal?.toMap(),
+        'mealVariant': mealVariant?.toMap(),
         'mealQuantity': mealQuantity,
-        'options': options?.map((e) => e.toMap()).toList(),
+        'options': options,
         'packNumber': packNumber,
         '_id': id,
       };
@@ -56,14 +53,14 @@ class Item {
   String toJson() => json.encode(toMap());
 
   Item copyWith({
-    Meal? meal,
+    MealVariant? mealVariant,
     int? mealQuantity,
-    List<Option>? options,
+    List<dynamic>? options,
     int? packNumber,
     String? id,
   }) {
     return Item(
-      meal: meal ?? this.meal,
+      mealVariant: mealVariant ?? this.mealVariant,
       mealQuantity: mealQuantity ?? this.mealQuantity,
       options: options ?? this.options,
       packNumber: packNumber ?? this.packNumber,

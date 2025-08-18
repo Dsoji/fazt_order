@@ -4,12 +4,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../common/utils/failures.dart';
 import '../../../../common/utils/multiple_results.dart';
-import '../model/response/cart_lsit/cart_lsit.dart';
+import '../model/response/cartlsit/cartlsit.dart';
+import '../model/response/meal_variant_menu/meal_variant_menu.dart';
 import '../model/response/my_orders_list/my_orders_list.dart';
 import '../model/response/order_link/order_link.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 import '../model/response/store_categories/store_categories.dart';
+import '../model/response/store_meal_variant/store_meal_variant.dart';
 import '../service/shop_service.dart';
 
 final shopRepositoryProvider = Provider((ref) {
@@ -256,6 +258,88 @@ class ShopRepository {
                 message: 'Failed to fetch orders list',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to fetch orders list'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, StoreMealVariant>> fetchStoreMealVariant(
+      String shopId) async {
+    try {
+      final data = await authService.fetchStoreMealVariant(shopId);
+
+      if (data.isSuccess) {
+        return Success(data.value ?? StoreMealVariant());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to fetch store meal variant',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to fetch store meal variant'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, MealVariantMenu>> fetchMealVariantMenu({
+    String? categoryId,
+    String? shopId,
+  }) async {
+    try {
+      final data = await authService.fetchMealVariantMenu(
+        categoryId: categoryId,
+        shopId: shopId,
+      );
+
+      if (data.isSuccess) {
+        return Success(data.value ?? MealVariantMenu());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to fetch meal variant menu',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to fetch meal variant menu'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, String>> addAddress(
+    String address,
+    String city,
+    String state,
+    String long,
+    String lat,
+  ) async {
+    try {
+      final data = await authService.addAddress(
+        address,
+        city,
+        state,
+        long,
+        lat,
+      );
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to add address',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to add address'),
               ),
         );
       }

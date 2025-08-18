@@ -10,7 +10,7 @@ import '../../common/app_colors.dart';
 import '../../common/ui_helpers.dart';
 import '../../common/widgets/text_styles.dart';
 import '../home/data/controller/shop_controller.dart';
-import '../home/data/model/response/cart_lsit/cart.dart';
+import '../home/data/model/response/cartlsit/cart.dart';
 import '../profile/data/controller/profile_controller.dart';
 
 final logger = Logger();
@@ -31,6 +31,7 @@ class PaymentScreen extends HookConsumerWidget {
     final selectedPaymentMethod = useState<String>("wallet");
     final userDetails =
         ref.watch(profileControllerProvider).userDetails.valueOrNull;
+    final location = userDetails?.user?.location;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -198,13 +199,13 @@ class PaymentScreen extends HookConsumerWidget {
                   .read(shopControllerProvider.notifier)
                   .makeOrder(
                     selectedItems.id ?? '',
-                    userDetails?.user?.location?.address ?? '',
-                    userDetails?.user?.location?.city ?? '',
-                    userDetails?.user?.location?.state ?? '',
+                    userDetails?.user?.location?.address ?? 'Just an address',
+                    userDetails?.user?.location?.city ?? 'ogba',
+                    userDetails?.user?.location?.state ?? 'Lagos',
                     userDetails?.user?.location?.coordinates?[0].toString() ??
-                        '',
+                        '333.0',
                     userDetails?.user?.location?.coordinates?[1].toString() ??
-                        '',
+                        '6.540',
                     vendorMessage ?? "",
                     riderMessage ?? "",
                     selectedPaymentMethod.value,
