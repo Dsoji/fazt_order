@@ -347,4 +347,25 @@ class ShopRepository {
       return Error(failure);
     }
   }
+
+  Future<Result<FailureHandler, String>> clearCart(String cartId) async {
+    try {
+      final data = await authService.clearCart(cartId);
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to clear cart',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to clear cart'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
 }

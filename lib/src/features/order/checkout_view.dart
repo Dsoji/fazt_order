@@ -75,7 +75,7 @@ class CheckoutScreen extends HookConsumerWidget {
                       context: context,
                       isScrollControlled: true,
                       builder: (context) => EditAddressBottomSheet(
-                        currentAddress: orderState.deliveryAddress,
+                        // currentAddress: orderState.deliveryAddress,
                         onUpdate: (newAddress) {
                           ref
                               .read(orderProvider.notifier)

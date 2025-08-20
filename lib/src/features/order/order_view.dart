@@ -3,12 +3,15 @@ import 'package:fazt_order/src/features/order/completed_orders.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../providers/order_provider.dart';
 import '../../common/app_colors.dart';
+import '../../common/res/app_colors.dart';
 import '../home/data/controller/shop_controller.dart';
 import 'my_orders.dart';
 
@@ -191,16 +194,20 @@ class OrderView extends HookConsumerWidget {
                           right: 10,
                           child: GestureDetector(
                             behavior: HitTestBehavior.translucent,
-                            onTap: () {
-                              // Handle delete from cart using cartItemAsync data
-                              // ref
-                              //     .read(shopControllerProvider.notifier)
-                              //     .removeFromCart(item.id);
+                            onTap: () async {
+                              final result = await ref
+                                  .read(shopControllerProvider.notifier)
+                                  .clearCart(item.id ?? '');
+                              if (result) {
+                                ref
+                                    .read(shopControllerProvider.notifier)
+                                    .fetchCart();
+                              }
                             },
                             child: const CircleAvatar(
                               backgroundColor: kcPrimaryRed900,
                               radius: 12,
-                              child: Icon(Iconsax.trash,
+                              child: Icon(IconsaxPlusLinear.trash,
                                   size: 15, color: kcPrimaryRed200),
                             ),
                           ),
@@ -241,21 +248,68 @@ class OrderView extends HookConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
+        loading: () => Center(
+          child: Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
         error: (error, stackTrace) => Center(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              const Icon(Icons.error, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Error loading cart: $error'),
-              const SizedBox(height: 16),
+              SizedBox(
+                height: 200,
+                width: 200,
+                child: Lottie.asset('asset/lottie/DBSkpgXyIT.json'),
+              ),
+              const Gap(16),
+              const Text(
+                'Unable to fetch option groups at this momemnt please try again later. Or head to your profile to create a shop.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color.fromARGB(255, 46, 22, 20),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Gap(16),
               ElevatedButton(
                 onPressed: () {
                   ref.read(shopControllerProvider.notifier).fetchCart();
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brand300,
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text('Retry'),
               ),
             ],
@@ -268,66 +322,6 @@ class OrderView extends HookConsumerWidget {
       appBar: AppBar(
         title: const Text("Orders",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-        actions: [
-          GestureDetector(
-            onTap: () {
-              // Check if cart has items using cartItemAsync
-              cartItemAsync.whenData((cartData) {
-                final hasCartItems = (cartData.carts ?? []).isNotEmpty;
-                if (hasCartItems && selectedIndex.value == 0) {
-                  clearItems();
-                } else if (ongoingItems.isNotEmpty &&
-                    selectedIndex.value == 1) {
-                  clearItems();
-                } else if (completedItems.isNotEmpty &&
-                    selectedIndex.value == 2) {
-                  clearItems();
-                }
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    selectedIndex.value == 0
-                        ? "Clear cart items"
-                        : selectedIndex.value == 1
-                            ? ""
-                            : "",
-                    style: TextStyle(
-                      color: selectedIndex.value == 0
-                          ? kcPrimary400
-                          : selectedIndex.value == 1
-                              ? (ongoingItems.isNotEmpty
-                                  ? kcPrimary400
-                                  : kcPrimaryNeutral700)
-                              : (completedItems.isNotEmpty
-                                  ? kcPrimary400
-                                  : kcPrimaryNeutral700),
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Container(
-                    height: 1,
-                    width: 100,
-                    color: selectedIndex.value == 0
-                        ? kcPrimary400
-                        : selectedIndex.value == 1
-                            ? (ongoingItems.isNotEmpty
-                                ? kcPrimary400
-                                : kcPrimaryNeutral700)
-                            : (completedItems.isNotEmpty
-                                ? kcPrimary400
-                                : kcPrimaryNeutral700),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
       body: Column(
         children: [

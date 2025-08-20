@@ -254,4 +254,14 @@ class ShopService {
       parser: (data) => BaseModel.toRawString(data),
     );
   }
+
+  Future<ResultValue<String>> clearCart(String cartId) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.patch(
+        'carts/$cartId/clear',
+        header: {'Authorization': 'Bearer $accessToken'},
+      ),
+      parser: (data) => BaseModel.toRawString(data),
+    );
+  }
 }

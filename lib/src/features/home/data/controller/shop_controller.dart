@@ -305,4 +305,21 @@ class ShopController extends StateNotifier<ShopState> {
       },
     );
   }
+
+  Future<bool> clearCart(String cartId) async {
+    state = state.copyWith(clearCart: const AsyncValue.loading());
+    final result = await _authenticationRepository.clearCart(cartId);
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            clearCart: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(clearCart: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
 }
