@@ -405,4 +405,25 @@ class ProfileController extends StateNotifier<ProfileState> {
       },
     );
   }
+
+  Future<bool> fetchWallet() async {
+    state = state.copyWith(wallet: const AsyncValue.loading());
+
+    final result = await _authenticationRepository.fetchWallet();
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+          wallet: AsyncValue.error(error, StackTrace.current),
+        );
+        return false;
+      },
+      (success) {
+        state = state.copyWith(
+          wallet: AsyncValue.data(success),
+        );
+        return true;
+      },
+    );
+  }
 }

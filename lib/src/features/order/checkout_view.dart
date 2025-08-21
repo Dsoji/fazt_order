@@ -267,33 +267,31 @@ class CheckoutScreen extends HookConsumerWidget {
                                       Text(
                                           "₦${(item.mealVariant?.meal?.price ?? 0).toStringAsFixed(0)}"),
                                       verticalSpace(15),
-                                      Row(
-                                        children: [
-                                          const Text("Your menu",
-                                              style: TextStyle(
-                                                  color: kcPrimaryNeutral200)),
-                                          horizontalSpaceSmall,
-                                          GestureDetector(
-                                            behavior:
-                                                HitTestBehavior.translucent,
-                                            child: const Row(
-                                              children: [
-                                                Icon(Iconsax.edit,
-                                                    size: 15,
-                                                    color: kcPrimary400),
-                                                horizontalSpaceTiny,
-                                                Text("Edit",
-                                                    style: TextStyle(
-                                                        color: kcPrimary400)),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
+                                      // Row(
+                                      //   children: [
+                                      //     const Text("Your menu",
+                                      //         style: TextStyle(
+                                      //             color: kcPrimaryNeutral200)),
+                                      //     horizontalSpaceSmall,
+                                      //     GestureDetector(
+                                      //       behavior:
+                                      //           HitTestBehavior.translucent,
+                                      //       child: const Row(
+                                      //         children: [
+                                      //           Icon(Iconsax.edit,
+                                      //               size: 15,
+                                      //               color: kcPrimary400),
+                                      //           horizontalSpaceTiny,
+                                      //           Text("Edit",
+                                      //               style: TextStyle(
+                                      //                   color: kcPrimary400)),
+                                      //         ],
+                                      //       ),
+                                      //     ),
+                                      //   ],
+                                      // ),
                                       verticalSpaceSmall,
-                                      const Text("Spicy",
-                                          style: TextStyle(
-                                              color: kcPrimaryNeutral500)),
+
                                       verticalSpaceSmall,
                                     ],
                                   ),

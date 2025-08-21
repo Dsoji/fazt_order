@@ -1,6 +1,7 @@
 // import 'package:fazt_order/src/features/manage_users/data/model/response/manager_list/manager_list.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/image_upload_response.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/store_details/store_details.dart';
+import 'package:fazt_order/src/features/profile/data/model/response/user_wallet/user_wallet.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../auth/data/model/payload/profile_payload.dart';
@@ -25,6 +26,7 @@ class ProfileState {
   final AsyncValue<String> addShop;
   final AsyncValue<String> loader;
   final AsyncValue<String> addMeal;
+  final AsyncValue<UserWallet> wallet;
   const ProfileState({
     required this.profilePayload,
     required this.userDetails,
@@ -42,6 +44,7 @@ class ProfileState {
     required this.loader,
     required this.addMeal,
     required this.storeInfo,
+    required this.wallet,
   });
 
   factory ProfileState.initial() {
@@ -62,6 +65,7 @@ class ProfileState {
       loader: const AsyncValue.data(''),
       addMeal: const AsyncValue.data(''),
       storeInfo: AsyncData(StoreDetails()),
+      wallet: AsyncValue.data(UserWallet()),
     );
   }
 
@@ -85,6 +89,7 @@ class ProfileState {
     AsyncValue<String>? loader,
     AsyncValue<String>? addMeal,
     AsyncValue<StoreDetails>? storeInfo,
+    AsyncValue<UserWallet>? wallet,
   }) {
     return ProfileState(
       profilePayload: profilePayload ?? this.profilePayload,
@@ -103,6 +108,7 @@ class ProfileState {
       loader: loader ?? this.loader,
       addMeal: addMeal ?? this.addMeal,
       storeInfo: storeInfo ?? this.storeInfo,
+      wallet: wallet ?? this.wallet,
     );
   }
 }

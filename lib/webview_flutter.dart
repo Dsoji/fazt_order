@@ -36,6 +36,8 @@ class FaztWebViewScreen extends HookConsumerWidget {
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
+            ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+            ref.read(shopControllerProvider.notifier).fetchCart();
           },
           icon: const Icon(Icons.arrow_back),
         ),
@@ -93,6 +95,7 @@ class WebViewStack extends HookConsumerWidget {
               debugPrint("🚨 Blocked navigation to dev.com, closing WebView");
               if (context.mounted) {
                 ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+                ref.read(shopControllerProvider.notifier).fetchCart();
                 Navigator.pop(context);
                 Navigator.pop(context);
                 Navigator.pop(context);
@@ -108,6 +111,7 @@ class WebViewStack extends HookConsumerWidget {
               debugPrint("🚨 Blocked navigation to dev.com");
               if (context.mounted) {
                 ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+                ref.read(shopControllerProvider.notifier).fetchCart();
                 Navigator.pop(context);
                 Navigator.pop(context);
                 Navigator.pop(context);
@@ -133,6 +137,7 @@ class WebViewStack extends HookConsumerWidget {
             debugPrint("❌ Web resource error: ${error.description}");
             Future.delayed(const Duration(seconds: 2), () {
               ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+              ref.read(shopControllerProvider.notifier).fetchCart();
               Navigator.pop(context);
               Navigator.pop(context);
               Navigator.pop(context);

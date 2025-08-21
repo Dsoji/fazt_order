@@ -12,7 +12,6 @@ import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
 import '../../auth/login/presentation/login_screen.dart';
-import '../../home/presentation/edit_address.dart';
 import '../../home/presentation/favorites_view.dart';
 import '../data/controller/profile_controller.dart';
 import 'customer_support_view.dart';
@@ -167,21 +166,21 @@ class ProfileView extends HookConsumerWidget {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _buildListItem(
-                      backgroundColor: kcPrimaryBlue900,
-                      icon: Iconsax.location,
-                      iconColor: kcPrimaryBlue200,
-                      title: "Addresses",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const AddressesView()),
-                        );
-                      },
-                    ),
-                    verticalSpaceTiny,
-                    SvgPicture.asset('asset/svgs/dotted_line.svg'),
+                    // _buildListItem(
+                    //   backgroundColor: kcPrimaryBlue900,
+                    //   icon: Iconsax.location,
+                    //   iconColor: kcPrimaryBlue200,
+                    //   title: "Addresses",
+                    //   onTap: () {
+                    //     Navigator.push(
+                    //       context,
+                    //       MaterialPageRoute(
+                    //           builder: (context) => const AddressesView()),
+                    //     );
+                    //   },
+                    // ),
+                    // verticalSpaceTiny,
+                    // SvgPicture.asset('asset/svgs/dotted_line.svg'),
                     verticalSpaceTiny,
                     _buildListItem(
                       backgroundColor: kcPrimaryYellow980,

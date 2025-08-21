@@ -23,6 +23,7 @@ abstract class IApiClient {
     String uri, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
+    Map<String, dynamic>? header,
   });
 
   /// patch

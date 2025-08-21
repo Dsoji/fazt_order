@@ -56,6 +56,7 @@ class HomeView extends HookConsumerWidget {
         ref.read(shopControllerProvider.notifier).fetchShops();
         ref.read(shopControllerProvider.notifier).fetchCart();
         ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+        ref.read(profileControllerProvider.notifier).fetchWallet();
         // ref.read(profileControllerProvider.notifier).fetchStoreDetails();
         // ref.read(profileControllerProvider.notifier).listManager();
         // ref.read(mealControllerProvider.notifier).fetchMealCategory();
@@ -212,16 +213,31 @@ class HomeView extends HookConsumerWidget {
                   ],
                 ),
               ),
-              data: (shops) => ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                itemCount: shops.results?.length ?? 0,
-                itemBuilder: (context, index) {
-                  final shop = shops.results![index];
-                  return RestaurantCard(
-                    restaurant: shop,
-                    index: index,
-                  );
+              data: (shops) => RefreshIndicator(
+                onRefresh: () async {
+                  await ref
+                      .read(profileControllerProvider.notifier)
+                      .fetchProfile();
+                  await ref.read(shopControllerProvider.notifier).fetchShops();
+                  await ref.read(shopControllerProvider.notifier).fetchCart();
+                  await ref
+                      .read(shopControllerProvider.notifier)
+                      .fetchMyOrdersList();
+                  await ref
+                      .read(profileControllerProvider.notifier)
+                      .fetchWallet();
                 },
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  itemCount: shops.results?.length ?? 0,
+                  itemBuilder: (context, index) {
+                    final shop = shops.results![index];
+                    return RestaurantCard(
+                      restaurant: shop,
+                      index: index,
+                    );
+                  },
+                ),
               ),
             ),
           ),

@@ -4,9 +4,11 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
+import '../../../common/widgets/shimmer_restaurant_card.dart';
 import '../../profile/data/controller/profile_controller.dart';
 import '../data/controller/shop_controller.dart';
 import '../data/model/response/search_global/meal.dart';
@@ -241,8 +243,55 @@ class SearchRestaurantView extends HookConsumerWidget {
   Widget _buildAllTab(AsyncValue<SearchGlobal> searchResults, String query,
       BuildContext context) {
     return searchResults.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(),
+      loading: () => ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        itemCount: 10,
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: Row(
+            children: [
+              Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        width: double.infinity,
+                        height: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        width: 100,
+                        height: 14,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       error: (error, stackTrace) => _buildErrorWidget(error, query),
       data: (searchGlobal) {
@@ -295,8 +344,10 @@ class SearchRestaurantView extends HookConsumerWidget {
   Widget _buildRestaurantTab(AsyncValue<SearchGlobal> searchResults,
       String query, BuildContext context) {
     return searchResults.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(),
+      loading: () => ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        itemCount: 10,
+        itemBuilder: (context, index) => const ShimmerRestaurantCard(),
       ),
       error: (error, stackTrace) => _buildErrorWidget(error, query),
       data: (searchGlobal) {
@@ -326,8 +377,10 @@ class SearchRestaurantView extends HookConsumerWidget {
   Widget _buildMenuTab(AsyncValue<SearchGlobal> searchResults, String query,
       BuildContext context) {
     return searchResults.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(),
+      loading: () => ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        itemCount: 10,
+        itemBuilder: (context, index) => const ShimmerRestaurantCard(),
       ),
       error: (error, stackTrace) => _buildErrorWidget(error, query),
       data: (searchGlobal) {

@@ -7,9 +7,9 @@ import '../../../../common/utils/multiple_results.dart';
 import '../../../../common/utils/utils.dart';
 import '../../../auth/data/model/payload/profile_payload.dart';
 import '../../../auth/data/model/response/user_model/user_model.dart';
-
 import '../model/payload/add_shop_payload.dart';
 import '../model/payload/sales_operation_payload.dart';
+import '../model/response/user_wallet/user_wallet.dart';
 import '../service/profile_service.dart';
 
 final profileRepositoryProvider = Provider((ref) {
@@ -466,6 +466,27 @@ class ProfileRepository {
                 message: 'Failed to add meal',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to add meal'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, UserWallet>> fetchWallet() async {
+    try {
+      final data = await authService.fetchWallet();
+
+      if (data.isSuccess) {
+        return Success(data.value ?? UserWallet());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to fetch wallet',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to fetch wallet'),
               ),
         );
       }

@@ -3,7 +3,9 @@ import 'package:fazt_order/src/features/dashboard_view.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gap/gap.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../common/res/app_assets.dart';
@@ -132,12 +134,33 @@ class LoginScreen extends HookConsumerWidget {
                             .read(authenticationControllerProvider.notifier)
                             .signIn(email, password);
                         if (result == true) {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const DashboardView(),
-                            ),
-                          );
+                          final user = ref
+                              .watch(authenticationControllerProvider)
+                              .login
+                              .valueOrNull;
+
+                          final userRole = user?.user?.role;
+                          if (userRole == 'user') {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const DashboardView(),
+                              ),
+                            );
+                          } else {
+                            final box = Hive.box('data');
+                            await box.clear();
+                            Fluttertoast.showToast(
+                              msg:
+                                  "You are not authorized as a vendor and cannot access this app",
+                              toastLength: Toast.LENGTH_LONG,
+                              gravity: ToastGravity.TOP,
+                              backgroundColor:
+                                  const Color.fromARGB(255, 228, 212, 62),
+                              textColor: Colors.black,
+                              fontSize: 14.0,
+                            );
+                          }
                         }
 
                         // Handle login logic

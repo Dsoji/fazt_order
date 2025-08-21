@@ -11,7 +11,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../../providers/order_provider.dart';
 import '../../common/app_colors.dart';
-import '../../common/res/app_colors.dart';
+import '../../common/widgets/reusable_buttons.dart';
 import '../home/data/controller/shop_controller.dart';
 import 'my_orders.dart';
 
@@ -113,6 +113,9 @@ class OrderView extends HookConsumerWidget {
               itemCount: cartItems.length,
               itemBuilder: (context, index) {
                 final item = cartItems[index];
+                if ((item.items?.length ?? 0) < 1) {
+                  return const SizedBox.shrink();
+                }
                 return Column(
                   children: [
                     Stack(
@@ -284,7 +287,7 @@ class OrderView extends HookConsumerWidget {
         ),
         error: (error, stackTrace) => Center(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
                 height: 200,
@@ -302,15 +305,15 @@ class OrderView extends HookConsumerWidget {
                 ),
               ),
               const Gap(16),
-              ElevatedButton(
+              OutlinButton(
+                text: "Retry",
+                width: 150,
+                height: 48,
+                color: kcPrimary400,
+                bgColor: kcPrimaryNeutral900,
                 onPressed: () {
                   ref.read(shopControllerProvider.notifier).fetchCart();
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.brand300,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Retry'),
               ),
             ],
           ),

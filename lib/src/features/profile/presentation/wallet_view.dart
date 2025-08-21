@@ -1,79 +1,83 @@
+import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
+
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
+import '../data/controller/profile_controller.dart';
 
-class WalletView extends StatefulWidget {
+class WalletView extends HookConsumerWidget {
   const WalletView({super.key});
 
   @override
-  _WalletViewState createState() => _WalletViewState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch wallet state from provider
+    final walletState = ref.watch(profileControllerProvider).wallet;
 
-class _WalletViewState extends State<WalletView> {
-  // Sample data for cards and transactions (replace with provider or API data)
-  final List<Map<String, String>> _cards = [
-    {'type': 'Mastercard', 'number': '**** **** **** 1234'},
-    {'type': 'Visa', 'number': '**** **** **** 1234'},
-  ];
+    // Local state for cards and transactions
+    final cards = useState<List<Map<String, String>>>([]);
+    final transactions = useState<List<Map<String, dynamic>>>([]);
+    final wallet = ref.watch(profileControllerProvider).wallet.valueOrNull;
 
-  final List<Map<String, dynamic>> _transactions = [
-    {'type': 'Top Up', 'amount': 20000, 'date': 'Today 1:36 pm'},
-    {'type': 'Top Up', 'amount': 20000, 'date': 'Today 1:36 pm'},
-    {'type': 'Order Payment', 'amount': -20000, 'date': 'Today 1:36 pm'},
-    {'type': 'Top Up', 'amount': 20000, 'date': 'Today 1:36 pm'},
-  ];
-
-  final double _balance = 356000000;
-
-  void _deleteCard(int index) async {
-    bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Card'),
-        content: const Text('Are you sure you want to delete this card?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      setState(() {
-        _cards.removeAt(index);
+    // Fetch wallet data when widget is first built
+    useEffect(() {
+      Future.microtask(() {
+        ref.read(profileControllerProvider.notifier).fetchWallet();
       });
+      return null;
+    }, []);
+
+    void deleteCard(int index) async {
+      bool? confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Card'),
+          content: const Text('Are you sure you want to delete this card?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm == true) {
+        cards.value = [...cards.value]..removeAt(index);
+      }
     }
-  }
 
-  void _addAnotherCard() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: kcPrimaryNeutral950,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => AddCardBottomSheet(
-        onSave: (type, number) {
-          setState(() {
-            _cards.add({'type': type, 'number': number});
-          });
-        },
-      ),
-    );
-  }
+    void addAnotherCard() {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: kcPrimaryNeutral950,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => AddCardBottomSheet(
+          onSave: (type, number) {
+            cards.value = [
+              ...cards.value,
+              {'type': type, 'number': number}
+            ];
+          },
+        ),
+      );
+    }
 
-  @override
-  Widget build(BuildContext context) {
+    // Get balance from wallet state or use default
+    final balance = wallet?.wallet?.availableBalance?.toDouble() ?? 0.00;
+
     return Scaffold(
       backgroundColor: kcPrimaryNeutral950,
       appBar: AppBar(
@@ -125,7 +129,7 @@ class _WalletViewState extends State<WalletView> {
                     ),
                     verticalSpaceTiny,
                     Text(
-                      "₦ ${_balance.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}",
+                      "₦ ${balance.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}",
                       style: ktBodySemiBoldSize20.copyWith(
                         fontSize: 40,
                         color: Colors.black,
@@ -138,25 +142,16 @@ class _WalletViewState extends State<WalletView> {
             ),
             verticalSpaceMedium,
             // Top Up Section
-            Container(
-              width: double.infinity,
-              height: screenHeight(context) * 0.065,
-              decoration: BoxDecoration(
-                color: kcTransparent,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: kcPrimary400, width: 1),
-              ),
-              child: Center(
-                child: Text(
-                  "Top Up",
-                  style: ktBodySemiBoldSize20.copyWith(
-                    fontSize: 20,
-                    color: kcPrimary400,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-            ),
+
+            OutlinButton(
+                text: 'Top Up',
+                width: double.infinity,
+                height: screenHeight(context) * 0.065,
+                onPressed: () {
+                  Fluttertoast.showToast(msg: 'Coming Soon...');
+                },
+                color: kcPrimary400,
+                bgColor: kcPrimaryNeutral900),
             verticalSpaceSmall,
             Text(
               "Credit/Debit Cards",
@@ -170,9 +165,9 @@ class _WalletViewState extends State<WalletView> {
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: _cards.length,
+              itemCount: cards.value.length,
               itemBuilder: (context, index) {
-                final card = _cards[index];
+                final card = cards.value[index];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: Row(
@@ -194,7 +189,7 @@ class _WalletViewState extends State<WalletView> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => _deleteCard(index),
+                        onTap: () => deleteCard(index),
                         child: Container(
                           padding: const EdgeInsets.all(4),
                           decoration: const BoxDecoration(
@@ -215,7 +210,7 @@ class _WalletViewState extends State<WalletView> {
             ),
             verticalSpaceSmall,
             GestureDetector(
-              onTap: _addAnotherCard,
+              onTap: addAnotherCard,
               child: Row(
                 children: [
                   const Icon(
@@ -257,9 +252,9 @@ class _WalletViewState extends State<WalletView> {
                   ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _transactions.length,
+                    itemCount: transactions.value.length,
                     itemBuilder: (context, index) {
-                      final transaction = _transactions[index];
+                      final transaction = transactions.value[index];
                       final isPositive = transaction['amount']! > 0;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8.0),
@@ -330,92 +325,80 @@ class _WalletViewState extends State<WalletView> {
   }
 }
 
-class AddCardBottomSheet extends StatefulWidget {
+class AddCardBottomSheet extends HookConsumerWidget {
   final Function(String, String) onSave;
 
   const AddCardBottomSheet({super.key, required this.onSave});
 
   @override
-  _AddCardBottomSheetState createState() => _AddCardBottomSheetState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cardNumberController = useTextEditingController();
+    final expiryController = useTextEditingController();
+    final cvvController = useTextEditingController();
 
-class _AddCardBottomSheetState extends State<AddCardBottomSheet> {
-  final TextEditingController _cardNumberController = TextEditingController();
-  final TextEditingController _expiryController = TextEditingController();
-  final TextEditingController _cvvController = TextEditingController();
+    void saveCard() {
+      final cardNumber = cardNumberController.text.trim();
+      final expiry = expiryController.text.trim();
+      final cvv = cvvController.text.trim();
 
-  void _saveCard() {
-    final cardNumber = _cardNumberController.text.trim();
-    final expiry = _expiryController.text.trim();
-    final cvv = _cvvController.text.trim();
+      if (cardNumber.isEmpty || expiry.isEmpty || cvv.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill in all fields'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
-    if (cardNumber.isEmpty || expiry.isEmpty || cvv.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all fields'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+      // Basic validation for card number (16 digits), expiry (MM/YY), and CVV (3-4 digits)
+      if (cardNumber.length != 16 ||
+          !RegExp(r'^\d{16}$').hasMatch(cardNumber)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid card number. Must be 16 digits.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (!RegExp(r'^(0[1-9]|1[0-2])/([0-9]{2})$').hasMatch(expiry)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid expiry date. Format must be MM/YY.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (cvv.length < 3 || cvv.length > 4 || !RegExp(r'^\d+$').hasMatch(cvv)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid CVV. Must be 3 or 4 digits.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Determine card type based on card number (simplified logic)
+      String cardType = 'Visa';
+      if (cardNumber.startsWith('4')) {
+        cardType = 'Visa';
+      } else if (cardNumber.startsWith('5')) {
+        cardType = 'Mastercard';
+      }
+
+      // Format card number for display (e.g., **** **** **** 1234)
+      final formattedCardNumber =
+          '**** **** **** ${cardNumber.substring(cardNumber.length - 4)}';
+
+      onSave(cardType, formattedCardNumber);
+      Navigator.pop(context);
     }
 
-    // Basic validation for card number (16 digits), expiry (MM/YY), and CVV (3-4 digits)
-    if (cardNumber.length != 16 || !RegExp(r'^\d{16}$').hasMatch(cardNumber)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid card number. Must be 16 digits.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (!RegExp(r'^(0[1-9]|1[0-2])/([0-9]{2})$').hasMatch(expiry)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid expiry date. Format must be MM/YY.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (cvv.length < 3 || cvv.length > 4 || !RegExp(r'^\d+$').hasMatch(cvv)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid CVV. Must be 3 or 4 digits.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Determine card type based on card number (simplified logic)
-    String cardType = 'Visa';
-    if (cardNumber.startsWith('4')) {
-      cardType = 'Visa';
-    } else if (cardNumber.startsWith('5')) {
-      cardType = 'Mastercard';
-    }
-
-    // Format card number for display (e.g., **** **** **** 1234)
-    final formattedCardNumber =
-        '**** **** **** ${cardNumber.substring(cardNumber.length - 4)}';
-
-    widget.onSave(cardType, formattedCardNumber);
-    Navigator.pop(context);
-  }
-
-  @override
-  void dispose() {
-    _cardNumberController.dispose();
-    _expiryController.dispose();
-    _cvvController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -450,7 +433,7 @@ class _AddCardBottomSheetState extends State<AddCardBottomSheet> {
             // Card Number Field
             _buildTextField(
               label: "Card Number",
-              controller: _cardNumberController,
+              controller: cardNumberController,
               hintText: "1234 **** 5678",
               keyboardType: TextInputType.number,
             ),
@@ -461,7 +444,7 @@ class _AddCardBottomSheetState extends State<AddCardBottomSheet> {
                 Expanded(
                   child: _buildTextField(
                     label: "Valid thru",
-                    controller: _expiryController,
+                    controller: expiryController,
                     hintText: "MM/YY",
                     keyboardType: TextInputType.datetime,
                   ),
@@ -470,7 +453,7 @@ class _AddCardBottomSheetState extends State<AddCardBottomSheet> {
                 Expanded(
                   child: _buildTextField(
                     label: "CVV",
-                    controller: _cvvController,
+                    controller: cvvController,
                     hintText: "CVV",
                     keyboardType: TextInputType.number,
                   ),
@@ -482,7 +465,7 @@ class _AddCardBottomSheetState extends State<AddCardBottomSheet> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _saveCard,
+                onPressed: saveCard,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.withOpacity(0.1),
                   padding: const EdgeInsets.symmetric(vertical: 16),

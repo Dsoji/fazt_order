@@ -12,6 +12,7 @@ import '../../../auth/data/model/response/user_model/user_model.dart';
 // import '../../../manage_users/data/model/response/manager_list/manager_list.dart';
 import '../model/payload/add_shop_payload.dart';
 import '../model/payload/sales_operation_payload.dart';
+import '../model/response/user_wallet/user_wallet.dart';
 
 final logger = Logger();
 //
@@ -390,11 +391,26 @@ class ProfileeService {
         },
       ),
       parser: (data) {
-        print(data);
         return BaseModel.toRawString(data);
       },
       showErrorToast: true,
       showSuccessToast: true,
+    );
+  }
+
+  Future<ResultValue<UserWallet>> fetchWallet() async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.get(
+        'users/wallet',
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+        },
+      ),
+      parser: (data) {
+        return UserWallet.fromMap(data);
+      },
+      showErrorToast: true,
+      showSuccessToast: false,
     );
   }
 }
