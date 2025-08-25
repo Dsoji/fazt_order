@@ -494,4 +494,29 @@ class ProfileRepository {
       return Error(failure);
     }
   }
+
+  Future<Result<FailureHandler, String>> verifyPayment({
+    required String paymentId,
+  }) async {
+    try {
+      final data = await authService.verifyPayment(
+        paymentId: paymentId,
+      );
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to verify payment',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to verify payment'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
 }

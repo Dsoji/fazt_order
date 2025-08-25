@@ -413,4 +413,27 @@ class ProfileeService {
       showSuccessToast: false,
     );
   }
+
+  Future<ResultValue<String>> verifyPayment({
+    required String paymentId,
+  }) async {
+    final String accessToken = await box.get('accessToken');
+
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'payments/verify',
+        header: {
+          'Authorization': 'Bearer $accessToken',
+        },
+        data: {
+          "reference": paymentId,
+        },
+      ),
+      parser: (data) {
+        return BaseModel.toRawString(data);
+      },
+      showErrorToast: true,
+      showSuccessToast: true,
+    );
+  }
 }

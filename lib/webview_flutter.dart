@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import 'src/features/home/data/controller/shop_controller.dart';
+import 'src/features/profile/data/controller/profile_controller.dart';
 
 // Provider for managing WebViewController state
 
@@ -13,10 +14,12 @@ final logger = Logger();
 class FaztWebViewScreen extends HookConsumerWidget {
   final String uri;
   final String? title;
+  final String? reference;
   const FaztWebViewScreen({
     super.key,
     required this.uri,
     this.title,
+    this.reference,
   });
 
   @override
@@ -35,9 +38,13 @@ class FaztWebViewScreen extends HookConsumerWidget {
         automaticallyImplyLeading: false,
         leading: IconButton(
           onPressed: () {
-            Navigator.pop(context);
+            ref
+                .read(profileControllerProvider.notifier)
+                .verifyPayment(paymentId: reference ?? '');
+
             ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
             ref.read(shopControllerProvider.notifier).fetchCart();
+            Navigator.pop(context);
           },
           icon: const Icon(Icons.arrow_back),
         ),
@@ -46,7 +53,10 @@ class FaztWebViewScreen extends HookConsumerWidget {
           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
-      body: WebViewStack(controller: controller),
+      body: WebViewStack(
+        controller: controller,
+        reference: reference,
+      ),
     );
   }
 }
@@ -54,9 +64,10 @@ class FaztWebViewScreen extends HookConsumerWidget {
 //
 
 class WebViewStack extends HookConsumerWidget {
-  const WebViewStack({required this.controller, super.key});
+  const WebViewStack({required this.controller, this.reference, super.key});
 
   final WebViewController controller;
+  final String? reference;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -96,6 +107,9 @@ class WebViewStack extends HookConsumerWidget {
               if (context.mounted) {
                 ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
                 ref.read(shopControllerProvider.notifier).fetchCart();
+                ref
+                    .read(profileControllerProvider.notifier)
+                    .verifyPayment(paymentId: reference ?? '');
                 Navigator.pop(context);
                 Navigator.pop(context);
                 Navigator.pop(context);
@@ -112,6 +126,9 @@ class WebViewStack extends HookConsumerWidget {
               if (context.mounted) {
                 ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
                 ref.read(shopControllerProvider.notifier).fetchCart();
+                ref
+                    .read(profileControllerProvider.notifier)
+                    .verifyPayment(paymentId: reference ?? '');
                 Navigator.pop(context);
                 Navigator.pop(context);
                 Navigator.pop(context);
@@ -138,6 +155,9 @@ class WebViewStack extends HookConsumerWidget {
             Future.delayed(const Duration(seconds: 2), () {
               ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
               ref.read(shopControllerProvider.notifier).fetchCart();
+              ref
+                  .read(profileControllerProvider.notifier)
+                  .verifyPayment(paymentId: reference ?? '');
               Navigator.pop(context);
               Navigator.pop(context);
               Navigator.pop(context);

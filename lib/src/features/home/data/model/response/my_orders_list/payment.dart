@@ -12,6 +12,7 @@ class Payment {
   String? paymentReference;
   String? paymentUrl;
   String? transactionId;
+  DateTime? completedAt;
 
   Payment({
     this.subtotal,
@@ -25,11 +26,12 @@ class Payment {
     this.paymentReference,
     this.paymentUrl,
     this.transactionId,
+    this.completedAt,
   });
 
   @override
   String toString() {
-    return 'Payment(subtotal: $subtotal, deliveryFee: $deliveryFee, serviceFee: $serviceFee, total: $total, paymentMethod: $paymentMethod, paymentStatus: $paymentStatus, initiatedAt: $initiatedAt, id: $id, paymentReference: $paymentReference, paymentUrl: $paymentUrl, transactionId: $transactionId)';
+    return 'Payment(subtotal: $subtotal, deliveryFee: $deliveryFee, serviceFee: $serviceFee, total: $total, paymentMethod: $paymentMethod, paymentStatus: $paymentStatus, initiatedAt: $initiatedAt, id: $id, paymentReference: $paymentReference, paymentUrl: $paymentUrl, transactionId: $transactionId, completedAt: $completedAt)';
   }
 
   factory Payment.fromMap(Map<String, dynamic> data) => Payment(
@@ -46,6 +48,9 @@ class Payment {
         paymentReference: data['paymentReference'] as String?,
         paymentUrl: data['paymentUrl'] as String?,
         transactionId: data['transactionId'] as String?,
+        completedAt: data['completedAt'] == null
+            ? null
+            : DateTime.parse(data['completedAt'] as String),
       );
 
   Map<String, dynamic> toMap() => {
@@ -60,6 +65,7 @@ class Payment {
         'paymentReference': paymentReference,
         'paymentUrl': paymentUrl,
         'transactionId': transactionId,
+        'completedAt': completedAt?.toIso8601String(),
       };
 
   /// `dart:convert`
@@ -86,6 +92,7 @@ class Payment {
     String? paymentReference,
     String? paymentUrl,
     String? transactionId,
+    DateTime? completedAt,
   }) {
     return Payment(
       subtotal: subtotal ?? this.subtotal,
@@ -99,6 +106,7 @@ class Payment {
       paymentReference: paymentReference ?? this.paymentReference,
       paymentUrl: paymentUrl ?? this.paymentUrl,
       transactionId: transactionId ?? this.transactionId,
+      completedAt: completedAt ?? this.completedAt,
     );
   }
 }

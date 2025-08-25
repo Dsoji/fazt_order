@@ -3,15 +3,13 @@ import 'dart:convert';
 import 'delivery_location.dart';
 import 'item.dart';
 import 'payment.dart';
-import 'shop.dart';
 import 'status_history.dart';
-import 'user.dart';
 
 class OrderResult {
   DeliveryLocation? deliveryLocation;
   String? orderNumber;
-  User? user;
-  Shop? shop;
+  String? user;
+  String? shop;
   String? store;
   List<Item>? items;
   int? packCount;
@@ -55,15 +53,9 @@ class OrderResult {
             : DeliveryLocation.fromMap(
                 data['deliveryLocation'] as Map<String, dynamic>),
         orderNumber: data['orderNumber'] as String?,
-        user: data['user'] == null
-            ? null
-            : User.fromMap(data['user'] as Map<String, dynamic>),
-        shop: data['shop'] == null
-            ? null
-            : Shop.fromMap(data['shop'] as Map<String, dynamic>),
-        store: data['store'] is Map<String, dynamic>
-            ? (data['store'] as Map<String, dynamic>)['id'] as String?
-            : data['store'] as String?,
+        user: data['user'] as String?,
+        shop: data['shop'] as String?,
+        store: data['store'] as String?,
         items: (data['items'] as List<dynamic>?)
             ?.map((e) => Item.fromMap(e as Map<String, dynamic>))
             .toList(),
@@ -71,9 +63,9 @@ class OrderResult {
         deliveryType: data['deliveryType'] as String?,
         storeMessage: data['storeMessage'] as String?,
         status: data['status'] as String?,
-        // statusHistory: (data['statusHistory'] as List<dynamic>?)
-        //     ?.map((e) => StatusHistory.fromMap(e as Map<String, dynamic>))
-        //     .toList(),
+        statusHistory: (data['statusHistory'] as List<dynamic>?)
+            ?.map((e) => StatusHistory.fromMap(e as Map<String, dynamic>))
+            .toList(),
         payment: data['payment'] == null
             ? null
             : Payment.fromMap(data['payment'] as Map<String, dynamic>),
@@ -92,15 +84,15 @@ class OrderResult {
   Map<String, dynamic> toMap() => {
         'deliveryLocation': deliveryLocation?.toMap(),
         'orderNumber': orderNumber,
-        'user': user?.toMap(),
-        'shop': shop?.toMap(),
+        'user': user,
+        'shop': shop,
         'store': store,
         'items': items?.map((e) => e.toMap()).toList(),
         'packCount': packCount,
         'deliveryType': deliveryType,
         'storeMessage': storeMessage,
         'status': status,
-        // 'statusHistory': statusHistory?.map((e) => e.toMap()).toList(),
+        'statusHistory': statusHistory?.map((e) => e.toMap()).toList(),
         'payment': payment?.toMap(),
         'orderPlacedAt': orderPlacedAt?.toIso8601String(),
         'createdAt': createdAt?.toIso8601String(),
@@ -117,14 +109,14 @@ class OrderResult {
 
   /// `dart:convert`
   ///
-  /// Converts [OrderResult] to a JSON string.
+  /// Converts [Result] to a JSON string.
   String toJson() => json.encode(toMap());
 
   OrderResult copyWith({
     DeliveryLocation? deliveryLocation,
     String? orderNumber,
-    User? user,
-    Shop? shop,
+    String? user,
+    String? shop,
     String? store,
     List<Item>? items,
     int? packCount,

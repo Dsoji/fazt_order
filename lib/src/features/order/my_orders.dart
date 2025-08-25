@@ -22,10 +22,12 @@ class MyOrders extends HookConsumerWidget {
         // Filter ongoing orders (you might need to adjust the status filter based on your API)
         final ongoingOrders = ordersData.results
                 ?.where((order) =>
-                    order.status == 'pending' ||
-                    order.status == 'ongoing' ||
+                    order.status == 'paid' ||
+                    order.status == 'confirmed' ||
                     order.status == 'preparing' ||
-                    order.status == 'ready')
+                    order.status == 'ready' ||
+                    order.status == 'on_the_way' ||
+                    order.status == 'delivered')
                 .toList() ??
             [];
 
@@ -93,28 +95,31 @@ class MyOrders extends HookConsumerWidget {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: firstItem?.meal?.mealImage != null
-                                    ? Image.network(
-                                        firstItem!.meal!.mealImage!,
-                                        width: 80,
-                                        height: 80,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                          return Image.asset(
+                                child:
+                                    firstItem?.mealVariant?.meal?.mealImage !=
+                                            null
+                                        ? Image.network(
+                                            firstItem!
+                                                .mealVariant!.meal!.mealImage!,
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              return Image.asset(
+                                                "asset/images/Frame 269.png",
+                                                width: 80,
+                                                height: 80,
+                                                fit: BoxFit.cover,
+                                              );
+                                            },
+                                          )
+                                        : Image.asset(
                                             "asset/images/Frame 269.png",
                                             width: 80,
                                             height: 80,
                                             fit: BoxFit.cover,
-                                          );
-                                        },
-                                      )
-                                    : Image.asset(
-                                        "asset/images/Frame 269.png",
-                                        width: 80,
-                                        height: 80,
-                                        fit: BoxFit.cover,
-                                      ),
+                                          ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
@@ -122,7 +127,7 @@ class MyOrders extends HookConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      firstItem?.meal?.mealName ??
+                                      firstItem?.mealVariant?.meal?.mealName ??
                                           "Unknown Item",
                                       style: const TextStyle(
                                           fontSize: 16,
@@ -178,6 +183,7 @@ class MyOrders extends HookConsumerWidget {
         );
       },
       loading: () => ListView.builder(
+        padding: const EdgeInsets.all(16),
         itemCount: 3,
         itemBuilder: (context, index) => Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
@@ -249,6 +255,12 @@ class MyOrders extends HookConsumerWidget {
               child: Lottie.asset('asset/lottie/DBSkpgXyIT.json'),
             ),
             const SizedBox(height: 16),
+            const Gap(16),
+            Text(
+              "Error fetching orders ${error.toString()}",
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const Gap(16),
             OutlinButton(
               text: "Retry",
               width: 150,

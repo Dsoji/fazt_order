@@ -217,12 +217,21 @@ class PaymentScreen extends HookConsumerWidget {
                     .valueOrNull
                     ?.payment
                     ?.paymentUrl;
+                final reference = ref
+                    .read(shopControllerProvider)
+                    .makeOrders
+                    .valueOrNull
+                    ?.payment
+                    ?.reference;
                 logger.d(orderLink);
                 if (orderLink != null) {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => FaztWebViewScreen(uri: orderLink),
+                      builder: (context) => FaztWebViewScreen(
+                        uri: orderLink,
+                        reference: reference,
+                      ),
                     ),
                   );
                 }

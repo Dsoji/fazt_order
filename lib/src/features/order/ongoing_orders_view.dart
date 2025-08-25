@@ -263,7 +263,7 @@ class OngoingOrderView extends HookConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        item.meal?.mealName ?? '',
+                        item.mealVariant?.meal?.mealName ?? '',
                         style: const TextStyle(color: kcPrimaryNeutral500),
                       ),
                       Text(

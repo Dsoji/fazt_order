@@ -426,4 +426,27 @@ class ProfileController extends StateNotifier<ProfileState> {
       },
     );
   }
+
+  Future<bool> verifyPayment({required String paymentId}) async {
+    state = state.copyWith(loader: const AsyncValue.loading());
+
+    final result = await _authenticationRepository.verifyPayment(
+      paymentId: paymentId,
+    );
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+          loader: AsyncValue.error(error, StackTrace.current),
+        );
+        return false;
+      },
+      (success) {
+        state = state.copyWith(
+          loader: AsyncValue.data(success),
+        );
+        return true;
+      },
+    );
+  }
 }

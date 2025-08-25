@@ -1,49 +1,54 @@
 import 'dart:convert';
 
-import 'meal.dart';
-import 'option.dart';
+import 'meal_variant.dart';
 
 class Item {
-  Meal? meal;
+  MealVariant? mealVariant;
   int? mealQuantity;
-  List<Option>? options;
+  List<dynamic>? options;
   int? packNumber;
   int? itemPrice;
+  int? cachedMealPrice;
+  List<dynamic>? cachedOptionPrices;
   String? id;
 
   Item({
-    this.meal,
+    this.mealVariant,
     this.mealQuantity,
     this.options,
     this.packNumber,
     this.itemPrice,
+    this.cachedMealPrice,
+    this.cachedOptionPrices,
     this.id,
   });
 
   @override
   String toString() {
-    return 'Item(meal: $meal, mealQuantity: $mealQuantity, options: $options, packNumber: $packNumber, itemPrice: $itemPrice, id: $id)';
+    return 'Item(mealVariant: $mealVariant, mealQuantity: $mealQuantity, options: $options, packNumber: $packNumber, itemPrice: $itemPrice, cachedMealPrice: $cachedMealPrice, cachedOptionPrices: $cachedOptionPrices, id: $id)';
   }
 
   factory Item.fromMap(Map<String, dynamic> data) => Item(
-        meal: data['meal'] == null
+        mealVariant: data['mealVariant'] == null
             ? null
-            : Meal.fromMap(data['meal'] as Map<String, dynamic>),
+            : MealVariant.fromMap(data['mealVariant'] as Map<String, dynamic>),
         mealQuantity: data['mealQuantity'] as int?,
-        options: (data['options'] as List<dynamic>?)
-            ?.map((e) => Option.fromMap(e as Map<String, dynamic>))
-            .toList(),
+        options: data['options'] as List<dynamic>?,
         packNumber: data['packNumber'] as int?,
         itemPrice: data['itemPrice'] as int?,
+        cachedMealPrice: data['cachedMealPrice'] as int?,
+        cachedOptionPrices: data['cachedOptionPrices'] as List<dynamic>?,
         id: data['_id'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
-        'meal': meal?.toMap(),
+        'mealVariant': mealVariant?.toMap(),
         'mealQuantity': mealQuantity,
-        'options': options?.map((e) => e.toMap()).toList(),
+        'options': options,
         'packNumber': packNumber,
         'itemPrice': itemPrice,
+        'cachedMealPrice': cachedMealPrice,
+        'cachedOptionPrices': cachedOptionPrices,
         '_id': id,
       };
 
@@ -60,19 +65,23 @@ class Item {
   String toJson() => json.encode(toMap());
 
   Item copyWith({
-    Meal? meal,
+    MealVariant? mealVariant,
     int? mealQuantity,
-    List<Option>? options,
+    List<dynamic>? options,
     int? packNumber,
     int? itemPrice,
+    int? cachedMealPrice,
+    List<dynamic>? cachedOptionPrices,
     String? id,
   }) {
     return Item(
-      meal: meal ?? this.meal,
+      mealVariant: mealVariant ?? this.mealVariant,
       mealQuantity: mealQuantity ?? this.mealQuantity,
       options: options ?? this.options,
       packNumber: packNumber ?? this.packNumber,
       itemPrice: itemPrice ?? this.itemPrice,
+      cachedMealPrice: cachedMealPrice ?? this.cachedMealPrice,
+      cachedOptionPrices: cachedOptionPrices ?? this.cachedOptionPrices,
       id: id ?? this.id,
     );
   }

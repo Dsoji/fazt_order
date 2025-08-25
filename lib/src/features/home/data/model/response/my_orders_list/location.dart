@@ -1,13 +1,13 @@
 import 'dart:convert';
 
-class DeliveryLocation {
+class Location {
   String? type;
   List<dynamic>? coordinates;
   String? address;
   String? state;
   String? city;
 
-  DeliveryLocation({
+  Location({
     this.type,
     this.coordinates,
     this.address,
@@ -17,18 +17,16 @@ class DeliveryLocation {
 
   @override
   String toString() {
-    return 'DeliveryLocation(type: $type, coordinates: $coordinates, address: $address, state: $state, city: $city)';
+    return 'Location(type: $type, coordinates: $coordinates, address: $address, state: $state, city: $city)';
   }
 
-  factory DeliveryLocation.fromMap(Map<String, dynamic> data) {
-    return DeliveryLocation(
-      type: data['type'] as String?,
-      coordinates: data['coordinates'] as List<dynamic>?,
-      address: data['address'] as String?,
-      state: data['state'] as String?,
-      city: data['city'] as String?,
-    );
-  }
+  factory Location.fromMap(Map<String, dynamic> data) => Location(
+        type: data['type'] as String?,
+        coordinates: data['coordinates'] as List<dynamic>?,
+        address: data['address'] as String?,
+        state: data['state'] as String?,
+        city: data['city'] as String?,
+      );
 
   Map<String, dynamic> toMap() => {
         'type': type,
@@ -40,24 +38,24 @@ class DeliveryLocation {
 
   /// `dart:convert`
   ///
-  /// Parses the string and returns the resulting Json object as [DeliveryLocation].
-  factory DeliveryLocation.fromJson(String data) {
-    return DeliveryLocation.fromMap(json.decode(data) as Map<String, dynamic>);
+  /// Parses the string and returns the resulting Json object as [Location].
+  factory Location.fromJson(String data) {
+    return Location.fromMap(json.decode(data) as Map<String, dynamic>);
   }
 
   /// `dart:convert`
   ///
-  /// Converts [DeliveryLocation] to a JSON string.
+  /// Converts [Location] to a JSON string.
   String toJson() => json.encode(toMap());
 
-  DeliveryLocation copyWith({
+  Location copyWith({
     String? type,
     List<dynamic>? coordinates,
     String? address,
     String? state,
     String? city,
   }) {
-    return DeliveryLocation(
+    return Location(
       type: type ?? this.type,
       coordinates: coordinates ?? this.coordinates,
       address: address ?? this.address,
