@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../common/utils/failures.dart';
 import '../../../../common/utils/multiple_results.dart';
+import '../model/payload/courier_payload.dart';
 import '../model/response/cartlsit/cartlsit.dart';
 import '../model/response/meal_variant_menu/meal_variant_menu.dart';
 import '../model/response/my_orders_list/my_orders_list.dart';
@@ -361,6 +362,28 @@ class ShopRepository {
                 message: 'Failed to clear cart',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to clear cart'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, String>> bookCourier(
+      CourierPayload payload) async {
+    try {
+      final data = await authService.bookCourier(payload);
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to book courier',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to book courier'),
               ),
         );
       }

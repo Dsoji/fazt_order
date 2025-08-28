@@ -6,6 +6,7 @@ import '../../../../common/api/api_client.dart';
 import '../../../../common/api/api_request_helper.dart';
 import '../../../../common/api/dio_api_client.dart';
 import '../../../../common/utils/utils.dart';
+import '../model/payload/courier_payload.dart';
 import '../model/response/cartlsit/cartlsit.dart';
 import '../model/response/meal_variant_menu/meal_variant_menu.dart';
 import '../model/response/my_orders_list/my_orders_list.dart';
@@ -260,6 +261,17 @@ class ShopService {
       () => apiClient.patch(
         'carts/$cartId/clear',
         header: {'Authorization': 'Bearer $accessToken'},
+      ),
+      parser: (data) => BaseModel.toRawString(data),
+    );
+  }
+
+  Future<ResultValue<String>> bookCourier(CourierPayload payload) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'parcels/',
+        header: {'Authorization': 'Bearer $accessToken'},
+        data: payload,
       ),
       parser: (data) => BaseModel.toRawString(data),
     );

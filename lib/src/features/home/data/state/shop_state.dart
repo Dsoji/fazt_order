@@ -24,6 +24,7 @@ class ShopState {
   final AsyncValue<MealVariantMenu> mealVariantMenu;
   final AsyncValue<String> addAddress;
   final AsyncValue<String> clearCart;
+  final AsyncValue<String> bookCourier;
   const ShopState({
     required this.shops,
     required this.shopFoodCategory,
@@ -38,6 +39,7 @@ class ShopState {
     required this.mealVariantMenu,
     required this.addAddress,
     required this.clearCart,
+    required this.bookCourier,
   });
 
   factory ShopState.initial() {
@@ -55,6 +57,7 @@ class ShopState {
       mealVariantMenu: AsyncValue.data(MealVariantMenu()),
       addAddress: const AsyncValue.data(''),
       clearCart: const AsyncValue.data(''),
+      bookCourier: const AsyncValue.data(''),
     );
   }
 
@@ -72,6 +75,7 @@ class ShopState {
     AsyncValue<MealVariantMenu>? mealVariantMenu,
     AsyncValue<String>? addAddress,
     AsyncValue<String>? clearCart,
+    AsyncValue<String>? bookCourier,
   }) {
     return ShopState(
       shops: shops ?? this.shops,
@@ -87,6 +91,7 @@ class ShopState {
       mealVariantMenu: mealVariantMenu ?? this.mealVariantMenu,
       addAddress: addAddress ?? this.addAddress,
       clearCart: clearCart ?? this.clearCart,
+      bookCourier: bookCourier ?? this.bookCourier,
     );
   }
 
