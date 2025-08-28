@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../model/payload/courier_payload.dart';
 import '../repository/shop_repository.dart';
 import '../state/shop_state.dart';
 
@@ -318,6 +319,23 @@ class ShopController extends StateNotifier<ShopState> {
       },
       (success) {
         state = state.copyWith(clearCart: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
+
+  Future<bool> bookCourier(CourierPayload payload) async {
+    state = state.copyWith(bookCourier: const AsyncValue.loading());
+    final result = await _authenticationRepository.bookCourier(payload);
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            bookCourier: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(bookCourier: AsyncValue.data(success));
         return true;
       },
     );

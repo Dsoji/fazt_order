@@ -14,7 +14,10 @@ import 'package:http/http.dart' as http;
 import 'package:timelines_plus/timelines_plus.dart';
 
 import '../../common/res/app_colors.dart';
+import '../../common/utils/validator.dart';
 import '../../common/widgets/reusable_buttons.dart';
+import '../home/data/controller/shop_controller.dart';
+import '../home/data/model/payload/courier_payload.dart';
 
 class CourierView extends HookConsumerWidget {
   const CourierView({super.key});
@@ -259,340 +262,368 @@ class CourierView extends HookConsumerWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            OutlinButton(
-              text: "Order History",
-              width: double.infinity,
-              height: 50,
-              onPressed: () {},
-              color: AppColors.brand400,
-              bgColor: Colors.transparent,
+        child: ListView(children: [
+          OutlinButton(
+            text: "Order History",
+            width: double.infinity,
+            height: 50,
+            onPressed: () {},
+            color: AppColors.brand400,
+            bgColor: Colors.transparent,
+          ),
+          const Gap(24),
+          SegmentedTabControl(
+            tabPadding: const EdgeInsets.all(0),
+            controller: tabController,
+            tabTextColor: AppColors.neutral500,
+            selectedTabTextColor: Colors.black,
+            indicatorPadding: const EdgeInsets.symmetric(
+              horizontal: 4,
+              vertical: 4,
             ),
-            const Gap(24),
-            SegmentedTabControl(
-              tabPadding: const EdgeInsets.all(0),
-              controller: tabController,
-              tabTextColor: AppColors.neutral500,
-              selectedTabTextColor: Colors.black,
-              indicatorPadding: const EdgeInsets.symmetric(
-                horizontal: 4,
-                vertical: 4,
+            textStyle: const TextStyle(
+              fontSize: 12,
+              color: AppColors.neutral500,
+            ),
+            barDecoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            indicatorDecoration: BoxDecoration(
+              color: AppColors.brand900,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            tabs: const [
+              SegmentTab(label: "Sending"),
+              SegmentTab(label: "Receiving"),
+            ],
+          ),
+          const Gap(24),
+          FixedTimeline.tileBuilder(
+            theme: TimelineThemeData(
+              nodePosition: 0,
+              indicatorTheme: const IndicatorThemeData(
+                position: 0,
+                size: 20.0,
               ),
-              textStyle: const TextStyle(
-                fontSize: 12,
-                color: AppColors.neutral500,
+              connectorTheme: const ConnectorThemeData(
+                thickness: 2.0,
+                color: AppColors.green400,
               ),
-              barDecoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              indicatorDecoration: BoxDecoration(
-                color: AppColors.brand900,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              tabs: const [
-                SegmentTab(label: "Sending"),
-                SegmentTab(label: "Receiving"),
+            ),
+            builder: TimelineTileBuilder.connected(
+              itemCount: 2,
+              connectorBuilder: (context, index, type) {
+                return const DashedLineConnector(
+                  color: AppColors.green400,
+                  gap: 2.0,
+                  dash: 4.0,
+                );
+              },
+              indicatorBuilder: (context, index) {
+                return index == 0
+                    ? const DotIndicator(
+                        color: AppColors.green400,
+                        child: Icon(Icons.check, color: Colors.white, size: 12),
+                      )
+                    : const OutlinedDotIndicator(
+                        borderWidth: 2.0,
+                        color: AppColors.orange800,
+                      );
+              },
+              contentsBuilder: (context, index) {
+                if (index == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.only(
+                        left: 8.0, bottom: 16.0), // Reduced bottom padding
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          "Pick Up Address",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF424242),
+                          ),
+                        ),
+                        const Gap(16),
+                        CustomFormTextField(
+                          hintText: 'Enter pick up address',
+                          fieldName: 'pickup_address',
+                          keyboardType: TextInputType.text,
+                          controller: pickUpController,
+                          onChanged: (text) {
+                            debounceTimer.value?.cancel();
+                            debounceTimer.value =
+                                Timer(const Duration(milliseconds: 400), () {
+                              if (text != null) {
+                                searchPickUpPlaces(text);
+                              }
+                            });
+                          },
+                          validator: (val) =>
+                              Validators.requiredField(val, 'pickup_address'),
+                        ),
+                        if (pickUpPlaces.value.isNotEmpty)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            constraints: const BoxConstraints(
+                              maxHeight:
+                                  200, // Use maxHeight instead of fixed height
+                              minHeight: 50,
+                            ),
+                            child: SingleChildScrollView(
+                              // Add scroll for overflow
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: pickUpPlaces.value.map((place) {
+                                  return ListTile(
+                                    title: Text(place['description']),
+                                    onTap: () {
+                                      getPickUpPlaceDetails(place['place_id']);
+                                      pickUpController.text =
+                                          place['description'];
+                                      pickUpPlaces.value = [];
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                } else {
+                  return Padding(
+                    padding: const EdgeInsets.only(
+                        left: 8.0, bottom: 16.0), // Reduced bottom padding
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          "Delivery Address",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF424242),
+                          ),
+                        ),
+                        const Gap(16),
+                        CustomFormTextField(
+                          hintText: 'Enter delivery address',
+                          fieldName: 'delivery_address',
+                          keyboardType: TextInputType.text,
+                          controller: deliveryController,
+                          onChanged: (text) {
+                            debounceTimer.value?.cancel();
+                            debounceTimer.value =
+                                Timer(const Duration(milliseconds: 400), () {
+                              if (text != null) {
+                                searchDeliveryPlaces(text);
+                              }
+                            });
+                          },
+                          validator: (val) =>
+                              Validators.requiredField(val, 'delivery_address'),
+                        ),
+                        if (deliveryPlaces.value.isNotEmpty)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            constraints: const BoxConstraints(
+                              maxHeight:
+                                  200, // Use maxHeight instead of fixed height
+                              minHeight: 50,
+                            ),
+                            child: SingleChildScrollView(
+                              // Add scroll for overflow
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: deliveryPlaces.value.map((place) {
+                                  return ListTile(
+                                    title: Text(place['description']),
+                                    onTap: () {
+                                      getDeliveryPlaceDetails(
+                                          place['place_id']);
+                                      deliveryController.text =
+                                          place['description'];
+                                      deliveryPlaces.value = [];
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+          const Gap(16), // Reduced gap after timeline
+          ReusableDropdown(
+              label: 'Parcel Type',
+              hintText: 'Parcel Type',
+              items: const ['Parcel', 'Box', 'Envelope'],
+              onChanged: (value) {}),
+          const Gap(16),
+          CustomFormTextField(
+            hintText: 'Instructions',
+            labelText: 'Instructions',
+            fieldName: 'instructions',
+            keyboardType: TextInputType.text,
+            controller: instructionsController,
+            onChanged: (value) {},
+          ),
+          const Gap(24),
+          Text(
+            isSending.value ? 'Sender Information' : 'Receiver Information',
+            style: const TextStyle(
+              fontSize: 16,
+              color: AppColors.neutral200,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Gap(16),
+          CustomFormTextField(
+            labelText: 'Name',
+            hintText: 'Name',
+            fieldName: 'name',
+            keyboardType: TextInputType.text,
+            controller: nameController,
+            onChanged: (value) {},
+            validator: (val) => Validators.requiredField(val, 'name'),
+          ),
+          const Gap(16),
+          CustomFormTextField(
+            labelText: 'Phone Number',
+            hintText: 'Phone Number',
+            fieldName: 'phone_number',
+            keyboardType: TextInputType.phone,
+            controller: phoneNumberController,
+            onChanged: (value) {},
+            validator: (val) => Validators.requiredField(val, 'phone_number'),
+          ),
+          const Gap(16),
+          CustomFormTextField(
+            labelText: 'Email',
+            hintText: 'Email',
+            fieldName: 'email',
+            keyboardType: TextInputType.emailAddress,
+            controller: emailController,
+            onChanged: (value) {},
+            validator: (val) => Validators.requiredField(val, 'email'),
+          ),
+          const Gap(24),
+          Text(
+            !isSending.value ? 'Sender Information' : 'Receiver Information',
+            style: const TextStyle(
+              fontSize: 16,
+              color: AppColors.neutral200,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Gap(16),
+          CustomFormTextField(
+            labelText: 'Name',
+            hintText: 'Name',
+            fieldName: 'name',
+            keyboardType: TextInputType.text,
+            controller: nameController2,
+            onChanged: (value) {},
+            validator: (val) => Validators.requiredField(val, 'name'),
+          ),
+          const Gap(16),
+          CustomFormTextField(
+            labelText: 'Phone Number',
+            hintText: 'Phone Number',
+            fieldName: 'phone_number',
+            keyboardType: TextInputType.phone,
+            controller: phoneNumberController2,
+            onChanged: (value) {},
+            validator: (val) => Validators.requiredField(val, 'phone_number'),
+          ),
+          const Gap(16),
+          CustomFormTextField(
+            labelText: 'Email',
+            hintText: 'Email',
+            fieldName: 'email',
+            keyboardType: TextInputType.emailAddress,
+            controller: emailController2,
+            onChanged: (value) {},
+            validator: (val) => Validators.requiredField(val, 'email'),
+          ),
+          const Gap(24),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.brand950, // Light lime green background
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Delivery Fee",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF424242), // Dark grey text
+                  ),
+                ),
+                Text(
+                  "₦ 1,000",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF424242), // Dark grey text
+                  ),
+                ),
               ],
             ),
-            const Gap(24),
-            FixedTimeline.tileBuilder(
-              theme: TimelineThemeData(
-                nodePosition: 0,
-                indicatorTheme: const IndicatorThemeData(
-                  position: 0,
-                  size: 20.0,
+          ),
+          const Gap(40),
+          FullButton(
+            text: 'Continue',
+            width: double.infinity,
+            height: 48,
+            onPressed: () async {
+              if (formKey.currentState!.saveAndValidate()) {
+                final formData = formKey.currentState!.value;
+                print(formData);
+              }
+              final request = ref.read(shopControllerProvider.notifier);
+              final response = await request.bookCourier(
+                CourierPayload(
+                  deliveryAddress: deliveryController.text,
+                  pickUpAddress: pickUpController.text,
+                  parcelType: 'Parcel',
+                  instructions: instructionsController.text,
+                  dispatchType: 'swift',
+                  deliveryType: 'Standard',
+                  receiverName: nameController2.text,
+                  receiverPhone: phoneNumberController2.text,
+                  receiverEmail: emailController2.text,
+                  senderName: nameController.text,
+                  senderPhone: phoneNumberController.text,
+                  senderEmail: emailController.text,
                 ),
-                connectorTheme: const ConnectorThemeData(
-                  thickness: 2.0,
-                  color: AppColors.green400,
-                ),
-              ),
-              builder: TimelineTileBuilder.connected(
-                itemCount: 2,
-                connectorBuilder: (context, index, type) {
-                  return const DashedLineConnector(
-                    color: AppColors.green400,
-                    gap: 2.0,
-                    dash: 4.0,
-                  );
-                },
-                indicatorBuilder: (context, index) {
-                  return index == 0
-                      ? const DotIndicator(
-                          color: AppColors.green400,
-                          child:
-                              Icon(Icons.check, color: Colors.white, size: 12),
-                        )
-                      : const OutlinedDotIndicator(
-                          borderWidth: 2.0,
-                          color: AppColors.orange800,
-                        );
-                },
-                contentsBuilder: (context, index) {
-                  if (index == 0) {
-                    return Padding(
-                      padding: const EdgeInsets.only(
-                          left: 8.0, bottom: 16.0), // Reduced bottom padding
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            "Pick Up Address",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF424242),
-                            ),
-                          ),
-                          const Gap(16),
-                          CustomFormTextField(
-                            hintText: 'Enter pick up address',
-                            fieldName: 'pickup_address',
-                            keyboardType: TextInputType.text,
-                            controller: pickUpController,
-                            onChanged: (text) {
-                              debounceTimer.value?.cancel();
-                              debounceTimer.value =
-                                  Timer(const Duration(milliseconds: 400), () {
-                                if (text != null) {
-                                  searchPickUpPlaces(text);
-                                }
-                              });
-                            },
-                          ),
-                          if (pickUpPlaces.value.isNotEmpty)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              constraints: const BoxConstraints(
-                                maxHeight:
-                                    200, // Use maxHeight instead of fixed height
-                                minHeight: 50,
-                              ),
-                              child: SingleChildScrollView(
-                                // Add scroll for overflow
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: pickUpPlaces.value.map((place) {
-                                    return ListTile(
-                                      title: Text(place['description']),
-                                      onTap: () {
-                                        getPickUpPlaceDetails(
-                                            place['place_id']);
-                                        pickUpController.text =
-                                            place['description'];
-                                        pickUpPlaces.value = [];
-                                      },
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  } else {
-                    return Padding(
-                      padding: const EdgeInsets.only(
-                          left: 8.0, bottom: 16.0), // Reduced bottom padding
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            "Delivery Address",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF424242),
-                            ),
-                          ),
-                          const Gap(16),
-                          CustomFormTextField(
-                            hintText: 'Enter delivery address',
-                            fieldName: 'delivery_address',
-                            keyboardType: TextInputType.text,
-                            controller: deliveryController,
-                            onChanged: (text) {
-                              debounceTimer.value?.cancel();
-                              debounceTimer.value =
-                                  Timer(const Duration(milliseconds: 400), () {
-                                if (text != null) {
-                                  searchDeliveryPlaces(text);
-                                }
-                              });
-                            },
-                          ),
-                          if (deliveryPlaces.value.isNotEmpty)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              constraints: const BoxConstraints(
-                                maxHeight:
-                                    200, // Use maxHeight instead of fixed height
-                                minHeight: 50,
-                              ),
-                              child: SingleChildScrollView(
-                                // Add scroll for overflow
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: deliveryPlaces.value.map((place) {
-                                    return ListTile(
-                                      title: Text(place['description']),
-                                      onTap: () {
-                                        getDeliveryPlaceDetails(
-                                            place['place_id']);
-                                        deliveryController.text =
-                                            place['description'];
-                                        deliveryPlaces.value = [];
-                                      },
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  }
-                },
-              ),
-            ),
-            const Gap(16), // Reduced gap after timeline
-            ReusableDropdown(
-                label: 'Parcel Type',
-                hintText: 'Parcel Type',
-                items: const ['Parcel', 'Box', 'Envelope'],
-                onChanged: (value) {}),
-            const Gap(16),
-            CustomFormTextField(
-              hintText: 'Instructions',
-              labelText: 'Instructions',
-              fieldName: 'instructions',
-              keyboardType: TextInputType.text,
-              controller: instructionsController,
-              onChanged: (value) {},
-            ),
-            const Gap(24),
-            Text(
-              isSending.value ? 'Sender Information' : 'Receiver Information',
-              style: const TextStyle(
-                fontSize: 16,
-                color: AppColors.neutral200,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Gap(16),
-            CustomFormTextField(
-              labelText: 'Name',
-              hintText: 'Name',
-              fieldName: 'name',
-              keyboardType: TextInputType.text,
-              controller: nameController,
-              onChanged: (value) {},
-            ),
-            const Gap(16),
-            CustomFormTextField(
-              labelText: 'Phone Number',
-              hintText: 'Phone Number',
-              fieldName: 'phone_number',
-              keyboardType: TextInputType.phone,
-              controller: phoneNumberController,
-              onChanged: (value) {},
-            ),
-            const Gap(16),
-            CustomFormTextField(
-              labelText: 'Email',
-              hintText: 'Email',
-              fieldName: 'email',
-              keyboardType: TextInputType.emailAddress,
-              controller: emailController,
-              onChanged: (value) {},
-            ),
-            const Gap(24),
-            Text(
-              !isSending.value ? 'Sender Information' : 'Receiver Information',
-              style: const TextStyle(
-                fontSize: 16,
-                color: AppColors.neutral200,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Gap(16),
-            CustomFormTextField(
-              labelText: 'Name',
-              hintText: 'Name',
-              fieldName: 'name',
-              keyboardType: TextInputType.text,
-              controller: nameController2,
-              onChanged: (value) {},
-            ),
-            const Gap(16),
-            CustomFormTextField(
-              labelText: 'Phone Number',
-              hintText: 'Phone Number',
-              fieldName: 'phone_number',
-              keyboardType: TextInputType.phone,
-              controller: phoneNumberController2,
-              onChanged: (value) {},
-            ),
-            const Gap(16),
-            CustomFormTextField(
-              labelText: 'Email',
-              hintText: 'Email',
-              fieldName: 'email',
-              keyboardType: TextInputType.emailAddress,
-              controller: emailController2,
-              onChanged: (value) {},
-            ),
-            const Gap(24),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.brand950, // Light lime green background
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Delivery Fee",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF424242), // Dark grey text
-                    ),
-                  ),
-                  Text(
-                    "₦ 1,000",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF424242), // Dark grey text
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Gap(40),
-            FullButton(
-              text: 'Continue',
-              width: double.infinity,
-              height: 48,
-              onPressed: () {},
-              color: AppColors.brand400,
-              textColor: Colors.white,
-            ),
-            const Gap(150),
-          ],
-        ),
+              );
+            },
+            color: AppColors.brand400,
+            textColor: Colors.white,
+          ),
+          const Gap(150),
+        ]),
       ),
     );
   }
