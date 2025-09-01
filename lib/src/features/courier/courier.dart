@@ -6,7 +6,6 @@ import 'package:fazt_order/src/common/widgets/custom_textfield.dart';
 import 'package:fazt_order/src/common/widgets/reusbale_dropdown_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -34,7 +33,6 @@ class CourierView extends HookConsumerWidget {
       return null;
     }, [tabController]);
 
-    final formKey = GlobalKey<FormBuilderState>();
     final pickUpController = useTextEditingController();
     final deliveryController = useTextEditingController();
     final pickUpPlaces = useState<List<dynamic>>([]);
@@ -62,10 +60,20 @@ class CourierView extends HookConsumerWidget {
     // For debouncing search input
     final debounceTimer = useRef<Timer?>(null);
 
-    final String apiKey = dotenv.env['MAP_KEY'] ?? '';
+    // For safer dotenv access
+    String getApiKey() {
+      try {
+        return dotenv.env['MAP_KEY'] ?? '';
+      } catch (e) {
+        print('Error accessing MAP_KEY: $e');
+        return '';
+      }
+    }
+
+    final String apiKey = getApiKey();
 
     Future<void> searchPickUpPlaces(String query) async {
-      if (query.isEmpty || apiKey.isEmpty) {
+      if (query.isEmpty) {
         pickUpPlaces.value = [];
         return;
       }
@@ -73,7 +81,7 @@ class CourierView extends HookConsumerWidget {
       isLoading.value = true;
 
       final url =
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=$apiKey&types=geocode';
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=AIzaSyCZfDAROgHIb5FhQP863pKus-bJ3pKCgvo&types=geocode';
       try {
         final response = await http.get(Uri.parse(url));
         final json = jsonDecode(response.body);
@@ -82,16 +90,18 @@ class CourierView extends HookConsumerWidget {
           pickUpPlaces.value = json['predictions'];
         } else {
           print('Error fetching places: ${json['status']}');
+          pickUpPlaces.value = [];
         }
       } catch (e) {
         print('Error: $e');
+        pickUpPlaces.value = [];
       } finally {
         isLoading.value = false;
       }
     }
 
     Future<void> searchDeliveryPlaces(String query) async {
-      if (query.isEmpty || apiKey.isEmpty) {
+      if (query.isEmpty) {
         deliveryPlaces.value = [];
         return;
       }
@@ -99,7 +109,7 @@ class CourierView extends HookConsumerWidget {
       isLoading.value = true;
 
       final url =
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=$apiKey&types=geocode';
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=AIzaSyCZfDAROgHIb5FhQP863pKus-bJ3pKCgvo&types=geocode';
       try {
         final response = await http.get(Uri.parse(url));
         final json = jsonDecode(response.body);
@@ -108,20 +118,21 @@ class CourierView extends HookConsumerWidget {
           deliveryPlaces.value = json['predictions'];
         } else {
           print('Error fetching places: ${json['status']}');
+          deliveryPlaces.value = [];
         }
       } catch (e) {
         print('Error: $e');
+        deliveryPlaces.value = [];
       } finally {
         isLoading.value = false;
       }
     }
 
     Future<void> getPickUpPlaceDetails(String placeId) async {
-      if (apiKey.isEmpty) return;
       isLoading.value = true;
 
       final url =
-          'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$apiKey';
+          'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=AIzaSyCZfDAROgHIb5FhQP863pKus-bJ3pKCgvo';
 
       try {
         final response = await http.get(Uri.parse(url));
@@ -164,11 +175,10 @@ class CourierView extends HookConsumerWidget {
     }
 
     Future<void> getDeliveryPlaceDetails(String placeId) async {
-      if (apiKey.isEmpty) return;
       isLoading.value = true;
 
       final url =
-          'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$apiKey';
+          'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=AIzaSyCZfDAROgHIb5FhQP863pKus-bJ3pKCgvo';
 
       try {
         final response = await http.get(Uri.parse(url));
@@ -596,16 +606,45 @@ class CourierView extends HookConsumerWidget {
             text: 'Continue',
             width: double.infinity,
             height: 48,
+            isLoading: ref.watch(shopControllerProvider).bookCourier.isLoading,
             onPressed: () async {
-              if (formKey.currentState!.saveAndValidate()) {
-                final formData = formKey.currentState!.value;
-                print(formData);
+              // Remove the form validation since you removed FormBuilder
+              // if (formKey.currentState!.saveAndValidate()) {
+              //   final formData = formKey.currentState!.value;
+              //   print(formData);
+              // }
+
+              // Add basic validation
+              if (pickUpController.text.isEmpty ||
+                  deliveryController.text.isEmpty ||
+                  nameController.text.isEmpty ||
+                  phoneNumberController.text.isEmpty ||
+                  emailController.text.isEmpty ||
+                  nameController2.text.isEmpty ||
+                  phoneNumberController2.text.isEmpty ||
+                  emailController2.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please fill in all required fields'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
               }
+
               final request = ref.read(shopControllerProvider.notifier);
               final response = await request.bookCourier(
                 CourierPayload(
+                  deliveryAddressCity: deliveryCity.value,
+                  deliveryAddressState: deliveryState.value,
+                  deliveryAddressLong: deliveryLong.value,
+                  deliveryAddressLat: deliveryLat.value,
+                  pickUpAddressCity: pickUpCity.value,
+                  pickUpAddressState: pickUpState.value,
                   deliveryAddress: deliveryController.text,
                   pickUpAddress: pickUpController.text,
+                  pickUpAddressLong: pickUpLong.value,
+                  pickUpAddressLat: pickUpLat.value,
                   parcelType: 'Parcel',
                   instructions: instructionsController.text,
                   dispatchType: 'swift',
@@ -618,6 +657,27 @@ class CourierView extends HookConsumerWidget {
                   senderEmail: emailController.text,
                 ),
               );
+
+              // Clear form if successful
+              if (response == true) {
+                pickUpController.clear();
+                deliveryController.clear();
+                nameController.clear();
+                phoneNumberController.clear();
+                emailController.clear();
+                nameController2.clear();
+                phoneNumberController2.clear();
+                emailController2.clear();
+                instructionsController.clear();
+                pickUpLat.value = '';
+                pickUpLong.value = '';
+                deliveryLat.value = '';
+                deliveryLong.value = '';
+                pickUpCity.value = '';
+                pickUpState.value = '';
+                deliveryCity.value = '';
+                deliveryState.value = '';
+              }
             },
             color: AppColors.brand400,
             textColor: Colors.white,

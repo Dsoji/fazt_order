@@ -2,7 +2,7 @@ import 'dart:convert';
 
 class DeliveryLocation {
   String? type;
-  List<dynamic>? coordinates;
+  List<double>? coordinates;
   String? address;
   String? state;
   String? city;
@@ -23,7 +23,9 @@ class DeliveryLocation {
   factory DeliveryLocation.fromMap(Map<String, dynamic> data) {
     return DeliveryLocation(
       type: data['type'] as String?,
-      coordinates: data['coordinates'] as List<dynamic>?,
+      coordinates: (data['coordinates'] as List<dynamic>?)
+          ?.map((e) => (e as num).toDouble())
+          .toList(),
       address: data['address'] as String?,
       state: data['state'] as String?,
       city: data['city'] as String?,
@@ -52,7 +54,7 @@ class DeliveryLocation {
 
   DeliveryLocation copyWith({
     String? type,
-    List<dynamic>? coordinates,
+    List<double>? coordinates,
     String? address,
     String? state,
     String? city,

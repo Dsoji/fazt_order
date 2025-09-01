@@ -1,16 +1,19 @@
 import 'dart:convert';
 
+import 'package:fazt_order/src/features/home/data/model/response/my_orders_list/user.dart';
+
 import 'delivery_location.dart';
 import 'item.dart';
 import 'payment.dart';
+import 'shop.dart';
 import 'status_history.dart';
 
 class OrderResult {
   DeliveryLocation? deliveryLocation;
   String? orderNumber;
-  String? user;
-  String? shop;
-  String? store;
+  User? user;
+  Shop? shop;
+  String? store; // Changed back to String? since API returns string
   List<Item>? items;
   int? packCount;
   String? deliveryType;
@@ -53,9 +56,13 @@ class OrderResult {
             : DeliveryLocation.fromMap(
                 data['deliveryLocation'] as Map<String, dynamic>),
         orderNumber: data['orderNumber'] as String?,
-        user: data['user'] as String?,
-        shop: data['shop'] as String?,
-        store: data['store'] as String?,
+        user: data['user'] == null
+            ? null
+            : User.fromMap(data['user'] as Map<String, dynamic>),
+        shop: data['shop'] == null
+            ? null
+            : Shop.fromMap(data['shop'] as Map<String, dynamic>),
+        store: data['store'] as String?, // Changed back to String?
         items: (data['items'] as List<dynamic>?)
             ?.map((e) => Item.fromMap(e as Map<String, dynamic>))
             .toList(),
@@ -84,15 +91,15 @@ class OrderResult {
   Map<String, dynamic> toMap() => {
         'deliveryLocation': deliveryLocation?.toMap(),
         'orderNumber': orderNumber,
-        'user': user,
-        'shop': shop,
-        'store': store,
+        'user': user?.toMap(),
+        'shop': shop?.toMap(),
+        'store': store, // Changed back to just store (not store?.toMap())
         'items': items?.map((e) => e.toMap()).toList(),
         'packCount': packCount,
         'deliveryType': deliveryType,
         'storeMessage': storeMessage,
         'status': status,
-        'statusHistory': statusHistory?.map((e) => e.toMap()).toList(),
+        'statusHistory': statusHistory?.map((e) => e.toJson()).toList(),
         'payment': payment?.toMap(),
         'orderPlacedAt': orderPlacedAt?.toIso8601String(),
         'createdAt': createdAt?.toIso8601String(),
@@ -115,9 +122,9 @@ class OrderResult {
   OrderResult copyWith({
     DeliveryLocation? deliveryLocation,
     String? orderNumber,
-    String? user,
-    String? shop,
-    String? store,
+    User? user,
+    Shop? shop,
+    String? store, // Changed back to String?
     List<Item>? items,
     int? packCount,
     String? deliveryType,

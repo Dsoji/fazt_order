@@ -8,13 +8,12 @@ class MealVariant {
   Meal? meal;
   bool? inStock;
   String? notes;
-  String? id;
 
-  MealVariant({this.shop, this.meal, this.inStock, this.notes, this.id});
+  MealVariant({this.shop, this.meal, this.inStock, this.notes});
 
   @override
   String toString() {
-    return 'MealVariant(shop: $shop, meal: $meal, inStock: $inStock, notes: $notes, id: $id)';
+    return 'MealVariant(shop: $shop, meal: $meal, inStock: $inStock, notes: $notes)';
   }
 
   factory MealVariant.fromMap(Map<String, dynamic> data) => MealVariant(
@@ -26,7 +25,6 @@ class MealVariant {
             : Meal.fromMap(data['meal'] as Map<String, dynamic>),
         inStock: data['inStock'] as bool?,
         notes: data['notes'] as String?,
-        id: data['id'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -34,7 +32,6 @@ class MealVariant {
         'meal': meal?.toMap(),
         'inStock': inStock,
         'notes': notes,
-        'id': id,
       };
 
   /// `dart:convert`
@@ -54,14 +51,12 @@ class MealVariant {
     Meal? meal,
     bool? inStock,
     String? notes,
-    String? id,
   }) {
     return MealVariant(
       shop: shop ?? this.shop,
       meal: meal ?? this.meal,
       inStock: inStock ?? this.inStock,
       notes: notes ?? this.notes,
-      id: id ?? this.id,
     );
   }
 }

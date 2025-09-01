@@ -9,10 +9,9 @@ class Payment {
   String? paymentStatus;
   DateTime? initiatedAt;
   String? id;
-  String? paymentReference;
-  String? paymentUrl;
-  String? transactionId;
   DateTime? completedAt;
+  String? paymentReference;
+  String? transactionId;
 
   Payment({
     this.subtotal,
@@ -23,15 +22,14 @@ class Payment {
     this.paymentStatus,
     this.initiatedAt,
     this.id,
-    this.paymentReference,
-    this.paymentUrl,
-    this.transactionId,
     this.completedAt,
+    this.paymentReference,
+    this.transactionId,
   });
 
   @override
   String toString() {
-    return 'Payment(subtotal: $subtotal, deliveryFee: $deliveryFee, serviceFee: $serviceFee, total: $total, paymentMethod: $paymentMethod, paymentStatus: $paymentStatus, initiatedAt: $initiatedAt, id: $id, paymentReference: $paymentReference, paymentUrl: $paymentUrl, transactionId: $transactionId, completedAt: $completedAt)';
+    return 'Payment(subtotal: $subtotal, deliveryFee: $deliveryFee, serviceFee: $serviceFee, total: $total, paymentMethod: $paymentMethod, paymentStatus: $paymentStatus, initiatedAt: $initiatedAt, id: $id, completedAt: $completedAt, paymentReference: $paymentReference, transactionId: $transactionId)';
   }
 
   factory Payment.fromMap(Map<String, dynamic> data) => Payment(
@@ -45,12 +43,11 @@ class Payment {
             ? null
             : DateTime.parse(data['initiatedAt'] as String),
         id: data['_id'] as String?,
-        paymentReference: data['paymentReference'] as String?,
-        paymentUrl: data['paymentUrl'] as String?,
-        transactionId: data['transactionId'] as String?,
         completedAt: data['completedAt'] == null
             ? null
             : DateTime.parse(data['completedAt'] as String),
+        paymentReference: data['paymentReference'] as String?,
+        transactionId: data['transactionId'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -62,10 +59,9 @@ class Payment {
         'paymentStatus': paymentStatus,
         'initiatedAt': initiatedAt?.toIso8601String(),
         '_id': id,
-        'paymentReference': paymentReference,
-        'paymentUrl': paymentUrl,
-        'transactionId': transactionId,
         'completedAt': completedAt?.toIso8601String(),
+        'paymentReference': paymentReference,
+        'transactionId': transactionId,
       };
 
   /// `dart:convert`
@@ -89,10 +85,9 @@ class Payment {
     String? paymentStatus,
     DateTime? initiatedAt,
     String? id,
-    String? paymentReference,
-    String? paymentUrl,
-    String? transactionId,
     DateTime? completedAt,
+    String? paymentReference,
+    String? transactionId,
   }) {
     return Payment(
       subtotal: subtotal ?? this.subtotal,
@@ -103,10 +98,9 @@ class Payment {
       paymentStatus: paymentStatus ?? this.paymentStatus,
       initiatedAt: initiatedAt ?? this.initiatedAt,
       id: id ?? this.id,
-      paymentReference: paymentReference ?? this.paymentReference,
-      paymentUrl: paymentUrl ?? this.paymentUrl,
-      transactionId: transactionId ?? this.transactionId,
       completedAt: completedAt ?? this.completedAt,
+      paymentReference: paymentReference ?? this.paymentReference,
+      transactionId: transactionId ?? this.transactionId,
     );
   }
 }

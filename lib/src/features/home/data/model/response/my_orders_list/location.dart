@@ -1,39 +1,41 @@
 import 'dart:convert';
 
 class Location {
-  String? type;
-  List<dynamic>? coordinates;
   String? address;
-  String? state;
   String? city;
+  String? state;
+  List<double>? coordinates;
+  String? type;
 
   Location({
-    this.type,
-    this.coordinates,
     this.address,
-    this.state,
     this.city,
+    this.state,
+    this.coordinates,
+    this.type,
   });
 
   @override
   String toString() {
-    return 'Location(type: $type, coordinates: $coordinates, address: $address, state: $state, city: $city)';
+    return 'Location(address: $address, city: $city, state: $state, coordinates: $coordinates, type: $type)';
   }
 
   factory Location.fromMap(Map<String, dynamic> data) => Location(
-        type: data['type'] as String?,
-        coordinates: data['coordinates'] as List<dynamic>?,
         address: data['address'] as String?,
-        state: data['state'] as String?,
         city: data['city'] as String?,
+        state: data['state'] as String?,
+        coordinates: (data['coordinates'] as List<dynamic>?)
+            ?.map((e) => (e as num).toDouble())
+            .toList(),
+        type: data['type'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
-        'type': type,
-        'coordinates': coordinates,
         'address': address,
-        'state': state,
         'city': city,
+        'state': state,
+        'coordinates': coordinates,
+        'type': type,
       };
 
   /// `dart:convert`
@@ -49,18 +51,18 @@ class Location {
   String toJson() => json.encode(toMap());
 
   Location copyWith({
-    String? type,
-    List<dynamic>? coordinates,
     String? address,
-    String? state,
     String? city,
+    String? state,
+    List<double>? coordinates,
+    String? type,
   }) {
     return Location(
-      type: type ?? this.type,
-      coordinates: coordinates ?? this.coordinates,
       address: address ?? this.address,
-      state: state ?? this.state,
       city: city ?? this.city,
+      state: state ?? this.state,
+      coordinates: coordinates ?? this.coordinates,
+      type: type ?? this.type,
     );
   }
 }

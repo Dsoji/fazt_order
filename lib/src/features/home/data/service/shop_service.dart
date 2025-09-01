@@ -263,6 +263,8 @@ class ShopService {
         header: {'Authorization': 'Bearer $accessToken'},
       ),
       parser: (data) => BaseModel.toRawString(data),
+      showErrorToast: true,
+      showSuccessToast: true,
     );
   }
 
@@ -274,6 +276,8 @@ class ShopService {
         data: payload,
       ),
       parser: (data) => BaseModel.toRawString(data),
+      showErrorToast: true,
+      showSuccessToast: true,
     );
   }
 }

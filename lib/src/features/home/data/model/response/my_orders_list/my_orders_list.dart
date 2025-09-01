@@ -13,7 +13,7 @@ class MyOrdersList {
 
   @override
   String toString() {
-    return 'MyOrdersList(total: $total, pageCount: $pageCount, pagination: $pagination, results: $results)';
+    return 'OrderList(total: $total, pageCount: $pageCount, pagination: $pagination, results: $results)';
   }
 
   factory MyOrdersList.fromMap(Map<String, dynamic> data) => MyOrdersList(
@@ -36,14 +36,14 @@ class MyOrdersList {
 
   /// `dart:convert`
   ///
-  /// Parses the string and returns the resulting Json object as [MyOrdersList].
+  /// Parses the string and returns the resulting Json object as [OrderList].
   factory MyOrdersList.fromJson(String data) {
     return MyOrdersList.fromMap(json.decode(data) as Map<String, dynamic>);
   }
 
   /// `dart:convert`
   ///
-  /// Converts [MyOrdersList] to a JSON string.
+  /// Converts [OrderList] to a JSON string.
   String toJson() => json.encode(toMap());
 
   MyOrdersList copyWith({
