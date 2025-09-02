@@ -646,6 +646,8 @@ class AddToCartBottomSheet extends HookConsumerWidget {
     // Update the state management to track quantities for each option
     final selectedItemsWithQuantity =
         useState<Map<String, Map<String, int>>>({});
+    final mealVariants =
+        ref.watch(shopControllerProvider).storeMealVariant.valueOrNull?.results;
 
     // Calculate total price including selected options
     final totalPrice = useMemoized(() {
@@ -657,18 +659,21 @@ class AddToCartBottomSheet extends HookConsumerWidget {
         for (final optionGroup in options) {
           final selectedItemsForGroup =
               selectedItemsWithQuantity.value[optionGroup.id ?? ''] ?? {};
-          final items = optionGroup.items ?? [];
+          final itemIds = optionGroup.items ?? [];
 
           for (final entry in selectedItemsForGroup.entries) {
             final itemId = entry.key;
             final quantity = entry.value;
 
             // Find the corresponding item to get its price
-            for (final item in items) {
-              if (item.id == itemId) {
-                optionsPrice += ((item.price ?? 0) * quantity).toInt();
-                break;
-              }
+            final item = mealVariants
+                ?.where(
+                  (variant) => variant.id == itemId,
+                )
+                .firstOrNull;
+
+            if (item != null) {
+              optionsPrice += ((item.meal?.price ?? 0) * quantity).toInt();
             }
           }
         }
@@ -820,7 +825,21 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                         ),
                         itemBuilder: (context, index) {
                           final optionGroup = options[index];
-                          final items = optionGroup.items ?? [];
+                          final itemIds = optionGroup.items ?? [];
+
+                          // Get actual item details from mealVariant
+                          final items = itemIds
+                              .map((itemId) {
+                                return mealVariant
+                                    ?.where(
+                                      (variant) => variant.id == itemId,
+                                    )
+                                    .firstOrNull;
+                              })
+                              .where((item) => item != null)
+                              .cast<Item>()
+                              .toList();
+
                           final optionNames = items.map((item) {
                             final price = item.price ?? 0;
                             return price > 0
