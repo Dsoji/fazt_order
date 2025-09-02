@@ -22,10 +22,12 @@ void main() async {
 
   try {
     await dotenv.load(fileName: '.env');
+    print('Environment variables loaded successfully');
   } catch (e) {
     print('Error loading .env: $e');
     print('Current directory: ${Directory.current.path}');
     print('Files in current directory: ${Directory.current.listSync()}');
+    print('Please create a .env file with MAP_KEY=your_google_maps_api_key');
   }
 
   await Firebase.initializeApp(

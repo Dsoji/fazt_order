@@ -912,54 +912,56 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                               ],
                             ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 8),
                           // Add to Cart Button
-                          FullButton(
-                            text: 'Add to Cart ₦$totalPrice',
-                            width: 240,
-                            height: 48,
-                            isLoading: ref
-                                .watch(shopControllerProvider)
-                                .addToCart
-                                .isLoading,
-                            onPressed: () async {
-                              // Prepare the options data for the API
-                              List<Map<String, dynamic>> optionsData = [];
+                          Expanded(
+                            child: FullButton(
+                              text: 'Add to Cart ₦$totalPrice',
+                              width: double.infinity,
+                              height: 48,
+                              isLoading: ref
+                                  .watch(shopControllerProvider)
+                                  .addToCart
+                                  .isLoading,
+                              onPressed: () async {
+                                // Prepare the options data for the API
+                                List<Map<String, dynamic>> optionsData = [];
 
-                              for (final optionGroup in options ?? []) {
-                                final selectedItemsForGroup =
-                                    selectedItemsWithQuantity
-                                            .value[optionGroup.id ?? ''] ??
-                                        {};
+                                for (final optionGroup in options ?? []) {
+                                  final selectedItemsForGroup =
+                                      selectedItemsWithQuantity
+                                              .value[optionGroup.id ?? ''] ??
+                                          {};
 
-                                for (final entry
-                                    in selectedItemsForGroup.entries) {
-                                  optionsData.add({
-                                    "optionItem": entry.key,
-                                    "quantity": entry.value,
-                                  });
+                                  for (final entry
+                                      in selectedItemsForGroup.entries) {
+                                    optionsData.add({
+                                      "optionItem": entry.key,
+                                      "quantity": entry.value,
+                                    });
+                                  }
                                 }
-                              }
 
-                              // Call your updated addToCart method
-                              final result = await ref
-                                  .read(shopControllerProvider.notifier)
-                                  .addToCart(
-                                    menuItem.id ?? '',
-                                    quantity.value,
-                                    optionsData,
-                                    // Add the missing parameter
-                                  );
-
-                              if (result == true) {
-                                await ref
+                                // Call your updated addToCart method
+                                final result = await ref
                                     .read(shopControllerProvider.notifier)
-                                    .fetchCart();
-                                Navigator.pop(context);
-                              }
-                            },
-                            color: AppColors.brand400,
-                            textColor: Colors.white,
+                                    .addToCart(
+                                      menuItem.id ?? '',
+                                      quantity.value,
+                                      optionsData,
+                                      // Add the missing parameter
+                                    );
+
+                                if (result == true) {
+                                  await ref
+                                      .read(shopControllerProvider.notifier)
+                                      .fetchCart();
+                                  Navigator.pop(context);
+                                }
+                              },
+                              color: AppColors.brand400,
+                              textColor: Colors.white,
+                            ),
                           ),
                         ],
                       ),
