@@ -25,6 +25,7 @@ class PlaceSearchPage extends HookWidget {
     final debounceTimer = useRef<Timer?>(null);
 
     final String? apiKey = dotenv.env['MAP_KEY'];
+    // AIzaSyCZfDAROgHIb5FhQP863pKus-bJ3pKCgvo
 
     Future<void> searchPlaces(String query) async {
       if (query.isEmpty) {
