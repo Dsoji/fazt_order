@@ -41,7 +41,11 @@ class Meal {
         category: data['category'] == null
             ? null
             : Category.fromMap(data['category'] as Map<String, dynamic>),
-        optionGroup: data['optionGroup'] as List<OptionGroup>?,
+        optionGroup: data['optionGroup'] != null
+            ? (data['optionGroup'] as List<dynamic>)
+                .map((e) => OptionGroup.fromMap(e as Map<String, dynamic>))
+                .toList()
+            : null,
         store: data['store'] as String?,
       );
 

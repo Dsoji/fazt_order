@@ -22,7 +22,9 @@ class Location {
 
   factory Location.fromMap(Map<String, dynamic> data) => Location(
         type: data['type'] as String?,
-        coordinates: data['coordinates'] as List<double>?,
+        coordinates: data['coordinates'] != null 
+            ? (data['coordinates'] as List<dynamic>).map((e) => (e as num).toDouble()).toList()
+            : null,
         address: data['address'] as String?,
         state: data['state'] as String?,
         city: data['city'] as String?,

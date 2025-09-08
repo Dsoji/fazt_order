@@ -371,7 +371,11 @@ class RestaurantDetailsView extends HookConsumerWidget {
                             .toList() ??
                         [],
                   ),
-                  error: (error, stackTrace) => Text('Error: $error'),
+                  error: (error, stackTrace) {
+                    logger
+                        .d('Error loading meal variants: $error\n$stackTrace');
+                    return Text('Error: $error');
+                  },
                   loading: () => ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
