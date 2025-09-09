@@ -9,25 +9,28 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:logger/logger.dart';
 
 import 'firebase_options.dart';
 import 'src/common/res/app_colors.dart';
 import 'src/common/utils/dimesnsion.dart';
 
+final logger = Logger();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final envPath = '${Directory.current.path}/.env';
-  print('Looking for .env at: $envPath');
+  logger.d('Looking for .env at: $envPath');
 
   try {
     await dotenv.load(fileName: '.env');
-    print('Environment variables loaded successfully');
+    logger.d('Environment variables loaded successfully');
   } catch (e) {
-    print('Error loading .env: $e');
-    print('Current directory: ${Directory.current.path}');
-    print('Files in current directory: ${Directory.current.listSync()}');
-    print('Please create a .env file with MAP_KEY=your_google_maps_api_key');
+    logger.d('Error loading .env: $e');
+    logger.d('Current directory: ${Directory.current.path}');
+    logger.d('Files in current directory: ${Directory.current.listSync()}');
+    logger.d('Please create a .env file with MAP_KEY=your_google_maps_api_key');
   }
 
   await Firebase.initializeApp(
