@@ -68,8 +68,7 @@ class HomeView extends HookConsumerWidget {
       return (text.length <= cutoff) ? text : '${text.substring(0, cutoff)}...';
     }
 
-    final userDetails =
-        ref.watch(profileControllerProvider).userDetails.valueOrNull;
+    final userDetails = ref.watch(profileControllerProvider).userDetails;
 
     final shops = ref.watch(shopControllerProvider).shops;
 
@@ -85,13 +84,54 @@ class HomeView extends HookConsumerWidget {
             children: [
               const Icon(Iconsax.location, color: kcPrimary400),
               horizontalSpaceTiny,
-              Text(
-                truncateWithEllipsis(
-                    25,
-                    userDetails?.user?.location?.address ??
-                        'Your Location'), // or any dynamic text
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              userDetails.maybeWhen(
+                loading: () => userDetails.hasValue
+                    ? Text(
+                        truncateWithEllipsis(
+                            25,
+                            userDetails.value?.user?.location?.address ??
+                                'Your Location'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors
+                              .grey, // Slightly dimmed to indicate loading
+                        ),
+                      )
+                    : const Text(
+                        'Loading location...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey,
+                        ),
+                      ),
+                error: (error, stackTrace) => userDetails.hasValue
+                    ? Text(
+                        truncateWithEllipsis(
+                            25,
+                            userDetails.value?.user?.location?.address ??
+                                'Your Location'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors
+                              .red, // Red tint to indicate error but show cached data
+                        ),
+                      )
+                    : const Text(
+                        'Your Location',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
+                orElse: () => Text(
+                  truncateWithEllipsis(
+                      25,
+                      userDetails.valueOrNull?.user?.location?.address ??
+                          'Your Location'),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w500),
+                ),
               ),
               horizontalSpaceTiny,
               SvgPicture.asset(
@@ -241,7 +281,7 @@ class HomeView extends HookConsumerWidget {
               ),
             ),
           ),
-          const Gap(150),
+          const Gap(92),
         ],
       ),
     );

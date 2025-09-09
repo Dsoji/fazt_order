@@ -22,28 +22,150 @@ class ProfileView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userDetails =
-        ref.watch(profileControllerProvider).userDetails.valueOrNull;
+    final userDetails = ref.watch(profileControllerProvider).userDetails;
 
-    Future<void> navigateToEditProfile() async {
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => EditProfileView(
-            firstName: userDetails?.user?.firstName ?? '',
-            lastName: userDetails?.user?.lastName ?? '',
-            phone: userDetails?.user?.phone ?? '',
-            email: userDetails?.user?.email ?? '',
+    Widget buildUserProfileSection(dynamic userDetails,
+        {bool isLoading = false, bool hasError = false}) {
+      final opacity = isLoading ? 0.7 : (hasError ? 0.8 : 1.0);
+      final nameColor = hasError ? Colors.red.shade300 : Colors.black;
+
+      return Column(
+        children: [
+          // Avatar with loading/error indication
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 50,
+                backgroundImage:
+                    const AssetImage('asset/images/profile-picture.png'),
+                backgroundColor: kcPrimaryNeutral800,
+                child: isLoading
+                    ? Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+            ],
           ),
-        ),
+          verticalSpaceSmall,
+          // User Name
+          Opacity(
+            opacity: opacity,
+            child: Text(
+              '${userDetails?.user?.firstName ?? ''} ${userDetails?.user?.lastName ?? ''}'
+                  .trim(),
+              style: ktBodySemiBoldSize20.copyWith(
+                fontSize: 16,
+                color: nameColor,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+          verticalSpaceTiny,
+          // Contact Details
+          Opacity(
+            opacity: opacity,
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(
+                    text: "Mobile: ",
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: kcPrimaryNeutral500,
+                    ),
+                  ),
+                  TextSpan(
+                    text: userDetails?.user?.phone ?? '',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color:
+                          hasError ? Colors.red.shade300 : kcPrimaryNeutral200,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          verticalSpaceTiny,
+          Opacity(
+            opacity: opacity,
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(
+                    text: "Email: ",
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: kcPrimaryNeutral500,
+                    ),
+                  ),
+                  TextSpan(
+                    text: userDetails?.user?.email ?? '',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color:
+                          hasError ? Colors.red.shade300 : kcPrimaryNeutral200,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          verticalSpaceSmall,
+          // Edit Button
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EditProfileView(),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                border: Border.all(color: kcPrimary600, width: 1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Iconsax.edit,
+                    size: 16,
+                    color: kcPrimary400,
+                  ),
+                  horizontalSpaceTiny,
+                  Text(
+                    "Edit",
+                    style: TextStyle(
+                      color: kcPrimary400,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       );
-      // if (result != null) {
-      //   profileNotifier.updateProfile(
-      //     name: result['name'],
-      //     phone: result['phone'],
-      //     email: result['email'],
-      //   );
-      // }
     }
 
     return Scaffold(
@@ -55,102 +177,17 @@ class ProfileView extends HookConsumerWidget {
             children: [
               // Header Section
               Center(
-                child: Column(
-                  children: [
-                    // Avatar
-                    const CircleAvatar(
-                      radius: 50,
-                      backgroundImage:
-                          AssetImage('asset/images/profile-picture.png'),
-                      backgroundColor: kcPrimaryNeutral800,
-                    ),
-                    verticalSpaceSmall,
-                    // User Name
-                    Text(
-                      '${userDetails?.user?.firstName ?? ''} ${userDetails?.user?.lastName ?? ''}'
-                          .trim(),
-                      style: ktBodySemiBoldSize20.copyWith(
-                        fontSize: 16,
-                        color: Colors.black,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    verticalSpaceTiny,
-                    // Contact Details
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          const TextSpan(
-                            text: "Mobile: ",
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: kcPrimaryNeutral500,
-                            ),
-                          ),
-                          TextSpan(
-                            text: userDetails?.user?.phone ?? '',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: kcPrimaryNeutral200,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    verticalSpaceTiny,
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          const TextSpan(
-                            text: "Email: ",
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: kcPrimaryNeutral500,
-                            ),
-                          ),
-                          TextSpan(
-                            text: userDetails?.user?.email ?? '',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: kcPrimaryNeutral200,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    verticalSpaceSmall,
-                    // Edit Button
-                    GestureDetector(
-                      onTap: navigateToEditProfile,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: kcPrimary600, width: 1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Iconsax.edit,
-                              size: 16,
-                              color: kcPrimary400,
-                            ),
-                            horizontalSpaceTiny,
-                            Text(
-                              "Edit",
-                              style: TextStyle(
-                                color: kcPrimary400,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                child: userDetails.maybeWhen(
+                  loading: () => userDetails.hasValue
+                      ? buildUserProfileSection(userDetails.value!,
+                          isLoading: true)
+                      : _buildLoadingProfileSection(),
+                  error: (error, stackTrace) => userDetails.hasValue
+                      ? buildUserProfileSection(userDetails.value!,
+                          hasError: true)
+                      : _buildErrorProfileSection(ref),
+                  orElse: () => buildUserProfileSection(
+                      userDetails.valueOrNull ?? userDetails.value!),
                 ),
               ),
               verticalSpaceMedium,
@@ -166,21 +203,6 @@ class ProfileView extends HookConsumerWidget {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    // _buildListItem(
-                    //   backgroundColor: kcPrimaryBlue900,
-                    //   icon: Iconsax.location,
-                    //   iconColor: kcPrimaryBlue200,
-                    //   title: "Addresses",
-                    //   onTap: () {
-                    //     Navigator.push(
-                    //       context,
-                    //       MaterialPageRoute(
-                    //           builder: (context) => const AddressesView()),
-                    //     );
-                    //   },
-                    // ),
-                    // verticalSpaceTiny,
-                    // SvgPicture.asset('asset/svgs/dotted_line.svg'),
                     verticalSpaceTiny,
                     _buildListItem(
                       backgroundColor: kcPrimaryYellow980,
@@ -212,8 +234,7 @@ class ProfileView extends HookConsumerWidget {
                       },
                     ),
                     verticalSpaceTiny,
-                    SvgPicture.asset(
-                        'asset/svgs/dotted_line.svg'), // Dashed divider
+                    SvgPicture.asset('asset/svgs/dotted_line.svg'),
                     verticalSpaceTiny,
                     _buildListItem(
                       backgroundColor: kcPrimaryPurple900,
@@ -229,8 +250,7 @@ class ProfileView extends HookConsumerWidget {
                       },
                     ),
                     verticalSpaceTiny,
-                    SvgPicture.asset(
-                        'asset/svgs/dotted_line.svg'), // Dashed divider
+                    SvgPicture.asset('asset/svgs/dotted_line.svg'),
                     verticalSpaceTiny,
                     _buildListItem(
                       backgroundColor: kcPrimaryGreen950,
@@ -287,6 +307,148 @@ class ProfileView extends HookConsumerWidget {
       //     // TODO: Handle other tab navigation (Order, Courier)
       //   },
       // ),
+    );
+  }
+
+  Widget _buildLoadingProfileSection() {
+    return Column(
+      children: [
+        // Loading Avatar
+        const CircleAvatar(
+          radius: 50,
+          backgroundColor: kcPrimaryNeutral800,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        ),
+        verticalSpaceSmall,
+        // Loading Name
+        Container(
+          width: 120,
+          height: 16,
+          decoration: BoxDecoration(
+            color: kcPrimaryNeutral800,
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        verticalSpaceTiny,
+        // Loading Mobile
+        Container(
+          width: 150,
+          height: 12,
+          decoration: BoxDecoration(
+            color: kcPrimaryNeutral800,
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        verticalSpaceTiny,
+        // Loading Email
+        Container(
+          width: 180,
+          height: 12,
+          decoration: BoxDecoration(
+            color: kcPrimaryNeutral800,
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+        verticalSpaceSmall,
+        // Edit Button (disabled)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: kcPrimaryNeutral600, width: 1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Iconsax.edit,
+                size: 16,
+                color: kcPrimaryNeutral600,
+              ),
+              horizontalSpaceTiny,
+              Text(
+                "Edit",
+                style: TextStyle(
+                  color: kcPrimaryNeutral600,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildErrorProfileSection(WidgetRef ref) {
+    return Column(
+      children: [
+        // Error Avatar
+        const CircleAvatar(
+          radius: 50,
+          backgroundColor: kcPrimaryNeutral800,
+          child: Icon(
+            Icons.error_outline,
+            color: Colors.red,
+            size: 30,
+          ),
+        ),
+        verticalSpaceSmall,
+        const Text(
+          'Failed to load profile',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.red,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        verticalSpaceTiny,
+        const Text(
+          'Please check your connection',
+          style: TextStyle(
+            fontSize: 12,
+            color: kcPrimaryNeutral500,
+          ),
+        ),
+        verticalSpaceSmall,
+        // Retry Button
+        GestureDetector(
+          onTap: () {
+            // Trigger profile fetch
+            ref.read(profileControllerProvider.notifier).fetchProfile();
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.red, width: 1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.refresh,
+                  size: 16,
+                  color: Colors.red,
+                ),
+                horizontalSpaceTiny,
+                Text(
+                  "Retry",
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

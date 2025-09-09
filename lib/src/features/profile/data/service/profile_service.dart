@@ -169,7 +169,7 @@ class ProfileeService {
         return UserModel.fromMap(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 

@@ -2,32 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
+
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
 import '../data/controller/profile_controller.dart';
 
 class EditProfileView extends HookConsumerWidget {
-  final String firstName;
-  final String lastName;
-  final String phone;
-  final String email;
-
   const EditProfileView({
     super.key,
-    required this.firstName,
-    required this.lastName,
-    required this.phone,
-    required this.email,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final userDetails = ref.watch(profileControllerProvider).userDetails;
     // Using hooks for text controllers
-    final firstNameController = useTextEditingController(text: firstName);
-    final lastNameController = useTextEditingController(text: lastName);
-    final phoneController = useTextEditingController(text: phone);
-    final emailController = useTextEditingController(text: email);
+    final firstNameController = useTextEditingController(
+        text: userDetails.valueOrNull?.user?.firstName ?? '');
+    final lastNameController = useTextEditingController(
+        text: userDetails.valueOrNull?.user?.lastName ?? '');
+    final phoneController = useTextEditingController(
+        text: userDetails.valueOrNull?.user?.phone ?? '');
+    final emailController = useTextEditingController(
+        text: userDetails.valueOrNull?.user?.email ?? '');
 
     // Watch the profile controller state
     final profileState = ref.watch(profileControllerProvider);

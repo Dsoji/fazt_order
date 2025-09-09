@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'meal.dart';
 import 'shop.dart';
 import 'store.dart';
 

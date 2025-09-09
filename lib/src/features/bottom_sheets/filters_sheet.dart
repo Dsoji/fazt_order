@@ -1,9 +1,6 @@
-import 'dart:ui';
-
 import 'package:fazt_order/src/common/app_colors.dart';
 import 'package:fazt_order/src/common/ui_helpers.dart';
 import 'package:fazt_order/src/common/widgets/text_styles.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:iconsax/iconsax.dart';
