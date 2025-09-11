@@ -690,15 +690,17 @@ class AddToCartBottomSheet extends HookConsumerWidget {
         ref.watch(shopControllerProvider).storeMealVariant.valueOrNull?.results;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.9,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
+      initialChildSize: 0.6, // Start smaller, let content determine size
+      minChildSize: 0.3, // Allow collapsing to smaller size
+      maxChildSize: 0.95, // Still allow full expansion when needed
+      expand: false, // Don't force expansion to fill available space
       builder: (context, scrollController) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min, // Size to fit content
           children: [
             // Handle bar and close button
             Container(
@@ -737,7 +739,8 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                 ],
               ),
             ),
-            Expanded(
+            // Flexible content area that adapts to content size
+            Flexible(
               child: SingleChildScrollView(
                 controller: scrollController,
                 padding: const EdgeInsets.all(16),
@@ -831,18 +834,37 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                           final optionGroup = options[index];
                           final itemIds = optionGroup.items ?? [];
 
+                          // Add debug prints to understand what data we have
+                          print('Option Group: ${optionGroup.groupName}');
+                          print('Item IDs: $itemIds');
+                          print(
+                              'MealVariant length: ${mealVariant?.length ?? 0}');
+                          if (mealVariant != null) {
+                            print(
+                                'Available variant IDs: ${mealVariant.map((v) => v.id).toList()}');
+                            print(
+                                'Available variant names: ${mealVariant.map((v) => v.meal?.mealName).toList()}');
+                          }
+
                           // Get actual item details from mealVariant
                           final items = itemIds
                               .map((itemId) {
-                                return mealVariant
+                                final foundItem = mealVariant
                                     ?.where(
                                       (variant) => variant.id == itemId,
                                     )
                                     .firstOrNull;
+
+                                // Debug what we found
+                                print(
+                                    'Looking for itemId: $itemId, Found: ${foundItem?.meal?.mealName ?? "No item name"}');
+                                return foundItem;
                               })
                               .where((item) => item != null)
                               .cast<Item>()
                               .toList();
+
+                          print('Final items count: ${items.length}');
 
                           final optionNames = items.map((item) {
                             final price = item.price ?? 0;
@@ -850,6 +872,8 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                 ? '${item.item} ₦$price'
                                 : item.item ?? '';
                           }).toList();
+
+                          print('Option names: $optionNames');
 
                           return buildCustomizationSection(
                             optionGroup.groupName ?? 'Customization',
