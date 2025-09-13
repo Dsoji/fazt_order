@@ -14,9 +14,9 @@ import '../../../common/res/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
 import '../data/controller/shop_controller.dart';
+import '../data/model/response/meal_details/item.dart' as meal_details;
 import '../data/model/response/meal_variant_menu/result.dart';
 import '../data/model/response/shops_model/result.dart';
-import '../data/model/response/store_meals/item.dart';
 
 final logger = Logger();
 
@@ -437,7 +437,10 @@ class RestaurantDetailsView extends HookConsumerWidget {
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, MealVariantMenuResult menuItem) {
+  Widget _buildMenuItem(
+    BuildContext context,
+    MealVariantMenuResult menuItem,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
@@ -645,69 +648,77 @@ class AddToCartBottomSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    useEffect(() {
+      Future.microtask(() {
+        ref
+            .read(shopControllerProvider.notifier)
+            .fetchMealDetails(menuItem.id ?? '');
+      });
+      return null;
+    }, [menuItem.id]);
+
+    final mealDetailsAsync = ref.watch(shopControllerProvider).mealDetails;
     final quantity = useState(1);
-    final options = menuItem.meal?.optionGroup;
-    // Update the state management to track quantities for each option
     final selectedItemsWithQuantity =
         useState<Map<String, Map<String, int>>>({});
     final mealVariants =
         ref.watch(shopControllerProvider).storeMealVariant.valueOrNull?.results;
 
-    // Calculate total price including selected options
+    // Move useMemoized outside of AsyncValue.when
     final totalPrice = useMemoized(() {
-      int basePrice = menuItem.meal?.price ?? 0;
+      final mealDetails = mealDetailsAsync.valueOrNull;
+      if (mealDetails == null) return 0;
+
+      int basePrice = mealDetails.mealVariant?.meal?.price ?? 0;
       num optionsPrice = 0;
+      final options = mealDetails.mealVariant?.meal?.optionGroup;
 
       // Calculate price from selected options with quantities
       if (options != null) {
         for (final optionGroup in options) {
           final selectedItemsForGroup =
               selectedItemsWithQuantity.value[optionGroup.id ?? ''] ?? {};
-          final itemIds = optionGroup.items ?? [];
+          final items = optionGroup.items ?? [];
 
           for (final entry in selectedItemsForGroup.entries) {
             final itemId = entry.key;
             final quantity = entry.value;
 
             // Find the corresponding item to get its price
-            final item = mealVariants
-                ?.where(
-                  (variant) => variant.id == itemId,
-                )
-                .firstOrNull;
+            final item = items.where((item) => item.id == itemId).firstOrNull;
 
             if (item != null) {
-              optionsPrice += ((item.meal?.price ?? 0) * quantity).toInt();
+              optionsPrice += ((item.price ?? 0) * quantity).toInt();
             }
           }
         }
       }
 
       return (basePrice + optionsPrice) * quantity.value;
-    }, [selectedItemsWithQuantity.value, quantity.value, options]);
-
-    final mealVariant =
-        ref.watch(shopControllerProvider).storeMealVariant.valueOrNull?.results;
+    }, [
+      selectedItemsWithQuantity.value,
+      quantity.value,
+      mealDetailsAsync,
+    ]);
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.6, // Start smaller, let content determine size
-      minChildSize: 0.3, // Allow collapsing to smaller size
-      maxChildSize: 0.95, // Still allow full expansion when needed
-      expand: false, // Don't force expansion to fill available space
+      initialChildSize: 0.6,
+      minChildSize: 0.3,
+      maxChildSize: 0.95,
+      expand: false,
       builder: (context, scrollController) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Size to fit content
+          mainAxisSize: MainAxisSize.min,
           children: [
             // Handle bar and close button
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  // Handle bar
                   Expanded(
                     child: Center(
                       child: Container(
@@ -720,7 +731,6 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                       ),
                     ),
                   ),
-                  // Close button
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
                     child: Container(
@@ -739,26 +749,44 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                 ],
               ),
             ),
-            // Flexible content area that adapts to content size
+            // Content area with AsyncValue.when
             Flexible(
-              child: SingleChildScrollView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Food image
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: menuItem.meal?.mealImage != null &&
-                              menuItem.meal!.mealImage!.isNotEmpty
-                          ? Image.network(
-                              menuItem.meal!.mealImage!,
-                              width: double.infinity,
-                              height: 200,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
+              child: mealDetailsAsync.when(
+                data: (mealDetails) {
+                  final options = mealDetails.mealVariant?.meal?.optionGroup;
+
+                  return SingleChildScrollView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Food image
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: mealDetails.mealVariant?.meal?.mealImage !=
+                                      null &&
+                                  mealDetails
+                                      .mealVariant!.meal!.mealImage!.isNotEmpty
+                              ? Image.network(
+                                  mealDetails.mealVariant!.meal!.mealImage!,
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: double.infinity,
+                                      height: 200,
+                                      color: Colors.grey[300],
+                                      child: Icon(
+                                        Icons.fastfood,
+                                        color: Colors.grey[600],
+                                        size: 50,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Container(
                                   width: double.infinity,
                                   height: 200,
                                   color: Colors.grey[300],
@@ -767,254 +795,304 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                     color: Colors.grey[600],
                                     size: 50,
                                   ),
-                                );
-                              },
-                            )
-                          : Container(
-                              width: double.infinity,
-                              height: 200,
-                              color: Colors.grey[300],
-                              child: Icon(
-                                Icons.fastfood,
-                                color: Colors.grey[600],
-                                size: 50,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(height: 16),
+                                ),
+                        ),
+                        const SizedBox(height: 16),
 
-                    // Food name
-                    Text(
-                      menuItem.meal?.mealName ?? 'Food Item',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                        // Food name
+                        Text(
+                          mealDetails.mealVariant?.meal?.mealName ??
+                              'Food Item',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
 
-                    // Description
-                    Text(
-                      menuItem.meal?.mealDescription ??
-                          'Delicious food description',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.neutral500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                        // Description
+                        Text(
+                          mealDetails.mealVariant?.meal?.mealDescription ??
+                              'Delicious food description',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.neutral500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
 
-                    // Price
-                    Text(
-                      'From ₦${menuItem.meal?.price ?? 0}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.neutral200,
-                      ),
-                    ),
-                    const Gap(16),
-                    const Divider(
-                      color: AppColors.neutral200,
-                      thickness: 0.5,
-                    ),
-                    const Gap(16),
-
-                    // Dynamic customization sections based on optionGroup
-                    if (options != null && options.isNotEmpty)
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: options.length,
-                        separatorBuilder: (context, index) => const Divider(
+                        // Price
+                        Text(
+                          'From ₦${mealDetails.mealVariant?.meal?.price ?? 0}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.neutral200,
+                          ),
+                        ),
+                        const Gap(16),
+                        const Divider(
                           color: AppColors.neutral200,
                           thickness: 0.5,
-                          height: 32,
                         ),
-                        itemBuilder: (context, index) {
-                          final optionGroup = options[index];
-                          final itemIds = optionGroup.items ?? [];
+                        const Gap(16),
 
-                          // Add debug prints to understand what data we have
-                          print('Option Group: ${optionGroup.groupName}');
-                          print('Item IDs: $itemIds');
-                          print(
-                              'MealVariant length: ${mealVariant?.length ?? 0}');
-                          if (mealVariant != null) {
-                            print(
-                                'Available variant IDs: ${mealVariant.map((v) => v.id).toList()}');
-                            print(
-                                'Available variant names: ${mealVariant.map((v) => v.meal?.mealName).toList()}');
-                          }
-
-                          // Get actual item details from mealVariant
-                          final items = itemIds
-                              .map((itemId) {
-                                final foundItem = mealVariant
-                                    ?.where(
-                                      (variant) => variant.id == itemId,
-                                    )
-                                    .firstOrNull;
-
-                                // Debug what we found
-                                print(
-                                    'Looking for itemId: $itemId, Found: ${foundItem?.meal?.mealName ?? "No item name"}');
-                                return foundItem;
-                              })
-                              .where((item) => item != null)
-                              .cast<Item>()
-                              .toList();
-
-                          print('Final items count: ${items.length}');
-
-                          final optionNames = items.map((item) {
-                            final price = item.price ?? 0;
-                            return price > 0
-                                ? '${item.item} ₦$price'
-                                : item.item ?? '';
-                          }).toList();
-
-                          print('Option names: $optionNames');
-
-                          return buildCustomizationSection(
-                            optionGroup.groupName ?? 'Customization',
-                            optionNames,
-                            items,
-                            isRequired: optionGroup.least != null &&
-                                optionGroup.least! > 0,
-                            maxSelection: optionGroup.most ?? 1,
-                            groupId: optionGroup.id ?? '',
-                            selectedItemIdsWithQuantity:
-                                selectedItemsWithQuantity
-                                        .value[optionGroup.id ?? ''] ??
-                                    {},
-                            onSelectionChanged: (selectedItemIdsWithQuantity) {
-                              final newSelectedItems =
-                                  Map<String, Map<String, int>>.from(
-                                      selectedItemsWithQuantity.value);
-                              newSelectedItems[optionGroup.id ?? ''] =
-                                  selectedItemIdsWithQuantity;
-                              selectedItemsWithQuantity.value =
-                                  newSelectedItems;
-                            },
-                          );
-                        },
-                      )
-                    else
-                      // Fallback to default sections if no options available
-                      const Column(
-                        children: [],
-                      ),
-
-                    // Add to Cart Section
-                    Padding(
-                      padding:
-                          const EdgeInsets.only(left: 8, right: 8, bottom: 16),
-                      child: Row(
-                        children: [
-                          // Quantity Selector
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              border: Border.all(
-                                  color: AppColors.brand400, width: 1),
-                              borderRadius: BorderRadius.circular(20),
+                        // Dynamic customization sections based on optionGroup
+                        if (options != null && options.isNotEmpty)
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: options.length,
+                            separatorBuilder: (context, index) => const Divider(
+                              color: AppColors.neutral200,
+                              thickness: 0.5,
+                              height: 32,
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    if (quantity.value > 1) {
-                                      quantity.value--;
+                            itemBuilder: (context, index) {
+                              final optionGroup = options[index];
+                              final items = optionGroup.items ?? [];
+
+                              final optionNames = items.map((item) {
+                                final price = item.price ?? 0;
+                                return price > 0
+                                    ? '${item.item} ₦$price'
+                                    : item.item ?? '';
+                              }).toList();
+
+                              return buildCustomizationSection(
+                                optionGroup.groupName ?? 'Customization',
+                                optionNames,
+                                items,
+                                isRequired: optionGroup.least != null &&
+                                    optionGroup.least! > 0,
+                                maxSelection: optionGroup.most ?? 1,
+                                groupId: optionGroup.id ?? '',
+                                selectedItemIdsWithQuantity:
+                                    selectedItemsWithQuantity
+                                            .value[optionGroup.id ?? ''] ??
+                                        {},
+                                onSelectionChanged:
+                                    (selectedItemIdsWithQuantity) {
+                                  final newSelectedItems =
+                                      Map<String, Map<String, int>>.from(
+                                          selectedItemsWithQuantity.value);
+                                  newSelectedItems[optionGroup.id ?? ''] =
+                                      selectedItemIdsWithQuantity;
+                                  selectedItemsWithQuantity.value =
+                                      newSelectedItems;
+                                },
+                              );
+                            },
+                          )
+                        else
+                          const Column(
+                            children: [],
+                          ),
+
+                        // Add to Cart Section
+                        Padding(
+                          padding: const EdgeInsets.only(
+                              left: 8, right: 8, bottom: 16),
+                          child: Row(
+                            children: [
+                              // Quantity Selector
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  border: Border.all(
+                                      color: AppColors.brand400, width: 1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        if (quantity.value > 1) {
+                                          quantity.value--;
+                                        }
+                                      },
+                                      child: const Icon(
+                                        Icons.remove,
+                                        color: AppColors.brand300,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(
+                                      '${quantity.value}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.brand300,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    GestureDetector(
+                                      onTap: () {
+                                        quantity.value++;
+                                      },
+                                      child: const Icon(
+                                        Icons.add,
+                                        color: AppColors.brand300,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Add to Cart Button
+                              Expanded(
+                                child: FullButton(
+                                  text: 'Add to Cart ₦$totalPrice',
+                                  width: double.infinity,
+                                  height: 48,
+                                  isLoading: ref
+                                      .watch(shopControllerProvider)
+                                      .addToCart
+                                      .isLoading,
+                                  onPressed: () async {
+                                    // Prepare the options data for the API
+                                    List<Map<String, dynamic>> optionsData = [];
+
+                                    for (final optionGroup in options ?? []) {
+                                      final selectedItemsForGroup =
+                                          selectedItemsWithQuantity.value[
+                                                  optionGroup.id ?? ''] ??
+                                              {};
+
+                                      for (final entry
+                                          in selectedItemsForGroup.entries) {
+                                        optionsData.add({
+                                          "optionItem": entry.key,
+                                          "quantity": entry.value,
+                                        });
+                                      }
+                                    }
+
+                                    // Call your updated addToCart method
+                                    final result = await ref
+                                        .read(shopControllerProvider.notifier)
+                                        .addToCart(
+                                          menuItem.id ?? '',
+                                          quantity.value,
+                                          optionsData,
+                                        );
+
+                                    if (result == true) {
+                                      await ref
+                                          .read(shopControllerProvider.notifier)
+                                          .fetchCart();
+                                      Navigator.pop(context);
                                     }
                                   },
-                                  child: const Icon(
-                                    Icons.remove,
-                                    color: AppColors.brand300,
-                                    size: 20,
-                                  ),
+                                  color: AppColors.brand400,
+                                  textColor: Colors.white,
                                 ),
-                                const SizedBox(width: 16),
-                                Text(
-                                  '${quantity.value}',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.brand300,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                GestureDetector(
-                                  onTap: () {
-                                    quantity.value++;
-                                  },
-                                  child: const Icon(
-                                    Icons.add,
-                                    color: AppColors.brand300,
-                                    size: 20,
-                                  ),
-                                ),
-                              ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                loading: () => Padding(
+                  padding: const EdgeInsets.all(32.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(
+                          width: double.infinity,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(
+                          width: 150,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(
+                          width: double.infinity,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                error: (error, stackTrace) {
+                  logger.e('Error loading meal details: $error\n$stackTrace');
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Colors.red[400],
+                            size: 48,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Failed to load meal details',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.red[400],
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          // Add to Cart Button
-                          Expanded(
-                            child: FullButton(
-                              text: 'Add to Cart ₦$totalPrice',
-                              width: double.infinity,
-                              height: 48,
-                              isLoading: ref
-                                  .watch(shopControllerProvider)
-                                  .addToCart
-                                  .isLoading,
-                              onPressed: () async {
-                                // Prepare the options data for the API
-                                List<Map<String, dynamic>> optionsData = [];
-
-                                for (final optionGroup in options ?? []) {
-                                  final selectedItemsForGroup =
-                                      selectedItemsWithQuantity
-                                              .value[optionGroup.id ?? ''] ??
-                                          {};
-
-                                  for (final entry
-                                      in selectedItemsForGroup.entries) {
-                                    optionsData.add({
-                                      "optionItem": entry.key,
-                                      "quantity": entry.value,
-                                    });
-                                  }
-                                }
-
-                                // Call your updated addToCart method
-                                final result = await ref
-                                    .read(shopControllerProvider.notifier)
-                                    .addToCart(
-                                      menuItem.id ?? '',
-                                      quantity.value,
-                                      optionsData,
-                                      // Add the missing parameter
-                                    );
-
-                                if (result == true) {
-                                  await ref
-                                      .read(shopControllerProvider.notifier)
-                                      .fetchCart();
-                                  Navigator.pop(context);
-                                }
-                              },
-                              color: AppColors.brand400,
-                              textColor: Colors.white,
+                          const SizedBox(height: 8),
+                          Text(
+                            'Please try again',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
                             ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              ref
+                                  .read(shopControllerProvider.notifier)
+                                  .fetchMealDetails(menuItem.id ?? '');
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.brand400,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Retry'),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ],
@@ -1027,14 +1105,13 @@ class AddToCartBottomSheet extends HookConsumerWidget {
   Widget buildCustomizationSection(
     String title,
     List<String> options,
-    List<Item> items, // Use dynamic to avoid import issues
+    List<meal_details.Item> items, // Use the meal_details Item type
     {
     required bool isRequired,
     required int maxSelection,
     required String groupId,
-    required Map<String, int>
-        selectedItemIdsWithQuantity, // Changed to track quantities
-    required Function(Map<String, int>) onSelectionChanged, // Updated callback
+    required Map<String, int> selectedItemIdsWithQuantity,
+    required Function(Map<String, int>) onSelectionChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

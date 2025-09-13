@@ -1,3 +1,4 @@
+import 'package:fazt_order/src/features/home/data/model/response/meal_details/meal_details.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:logger/logger.dart';
@@ -278,6 +279,18 @@ class ShopService {
       parser: (data) => BaseModel.toRawString(data),
       showErrorToast: true,
       showSuccessToast: true,
+    );
+  }
+
+  Future<ResultValue<MealDetails>> fetchMealDetails(String mealId) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.get(
+        'meal-variants//$mealId',
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+        },
+      ),
+      parser: (data) => MealDetails.fromMap(data),
     );
   }
 }

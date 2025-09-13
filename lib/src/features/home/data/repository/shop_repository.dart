@@ -6,6 +6,7 @@ import '../../../../common/utils/failures.dart';
 import '../../../../common/utils/multiple_results.dart';
 import '../model/payload/courier_payload.dart';
 import '../model/response/cartlsit/cartlsit.dart';
+import '../model/response/meal_details/meal_details.dart';
 import '../model/response/meal_variant_menu/meal_variant_menu.dart';
 import '../model/response/my_orders_list/my_orders_list.dart';
 import '../model/response/order_link/order_link.dart';
@@ -384,6 +385,28 @@ class ShopRepository {
                 message: 'Failed to book courier',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to book courier'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, MealDetails>> fetchMealDetails(
+      String mealId) async {
+    try {
+      final data = await authService.fetchMealDetails(mealId);
+
+      if (data.isSuccess) {
+        return Success(data.value ?? MealDetails());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to fetch meal details',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to fetch meal details'),
               ),
         );
       }

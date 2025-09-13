@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../model/response/cartlsit/cartlsit.dart';
+import '../model/response/meal_details/meal_details.dart';
 import '../model/response/meal_variant_menu/meal_variant_menu.dart';
 import '../model/response/my_orders_list/my_orders_list.dart';
 import '../model/response/order_link/order_link.dart';
@@ -25,6 +26,7 @@ class ShopState {
   final AsyncValue<String> addAddress;
   final AsyncValue<String> clearCart;
   final AsyncValue<String> bookCourier;
+  final AsyncValue<MealDetails> mealDetails;
   const ShopState({
     required this.shops,
     required this.shopFoodCategory,
@@ -40,6 +42,7 @@ class ShopState {
     required this.addAddress,
     required this.clearCart,
     required this.bookCourier,
+    required this.mealDetails,
   });
 
   factory ShopState.initial() {
@@ -58,6 +61,7 @@ class ShopState {
       addAddress: const AsyncValue.data(''),
       clearCart: const AsyncValue.data(''),
       bookCourier: const AsyncValue.data(''),
+      mealDetails: AsyncValue.data(MealDetails()),
     );
   }
 
@@ -76,6 +80,7 @@ class ShopState {
     AsyncValue<String>? addAddress,
     AsyncValue<String>? clearCart,
     AsyncValue<String>? bookCourier,
+    AsyncValue<MealDetails>? mealDetails,
   }) {
     return ShopState(
       shops: shops ?? this.shops,
@@ -92,6 +97,7 @@ class ShopState {
       addAddress: addAddress ?? this.addAddress,
       clearCart: clearCart ?? this.clearCart,
       bookCourier: bookCourier ?? this.bookCourier,
+      mealDetails: mealDetails ?? this.mealDetails,
     );
   }
 

@@ -340,4 +340,21 @@ class ShopController extends StateNotifier<ShopState> {
       },
     );
   }
+
+  Future<bool> fetchMealDetails(String mealId) async {
+    state = state.copyWith(mealDetails: const AsyncValue.loading());
+    final result = await _authenticationRepository.fetchMealDetails(mealId);
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            mealDetails: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(mealDetails: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
 }
