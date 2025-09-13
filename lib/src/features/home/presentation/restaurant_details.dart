@@ -2,6 +2,7 @@ import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
@@ -954,6 +955,47 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                       .addToCart
                                       .isLoading,
                                   onPressed: () async {
+                                    // Check if required options are selected
+                                    final options = mealDetails
+                                        .mealVariant?.meal?.optionGroup;
+                                    bool hasRequiredSelections = true;
+                                    String? missingRequiredGroup;
+
+                                    if (options != null) {
+                                      for (final optionGroup in options) {
+                                        final isRequired =
+                                            optionGroup.least != null &&
+                                                optionGroup.least! > 0;
+                                        if (isRequired) {
+                                          final selectedItemsForGroup =
+                                              selectedItemsWithQuantity.value[
+                                                      optionGroup.id ?? ''] ??
+                                                  {};
+
+                                          if (selectedItemsForGroup.isEmpty) {
+                                            hasRequiredSelections = false;
+                                            missingRequiredGroup =
+                                                optionGroup.groupName;
+                                            break;
+                                          }
+                                        }
+                                      }
+                                    }
+
+                                    if (!hasRequiredSelections) {
+                                      Fluttertoast.showToast(
+                                        msg:
+                                            '🚨 Please select all required options',
+                                        toastLength: Toast.LENGTH_LONG,
+                                        gravity: ToastGravity.TOP,
+                                        backgroundColor: Colors.yellow[600],
+                                        textColor: Colors.black,
+                                        fontSize: 14.0,
+                                      );
+
+                                      return;
+                                    }
+
                                     // Prepare the options data for the API
                                     List<Map<String, dynamic>> optionsData = [];
 
