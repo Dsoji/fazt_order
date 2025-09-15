@@ -1008,7 +1008,7 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                       for (final entry
                                           in selectedItemsForGroup.entries) {
                                         optionsData.add({
-                                          "optionItem": entry.key,
+                                          "optionItemVariant": entry.key,
                                           "quantity": entry.value,
                                         });
                                       }
