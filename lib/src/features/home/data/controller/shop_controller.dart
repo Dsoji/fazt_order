@@ -357,4 +357,21 @@ class ShopController extends StateNotifier<ShopState> {
       },
     );
   }
+
+  Future<bool> fetchCourierList() async {
+    state = state.copyWith(courierList: const AsyncValue.loading());
+    final result = await _authenticationRepository.fetchCourierList();
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            courierList: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(courierList: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
 }

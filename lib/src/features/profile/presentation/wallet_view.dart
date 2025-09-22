@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
@@ -18,61 +19,22 @@ class WalletView extends HookConsumerWidget {
     // Watch wallet state from provider
     final walletState = ref.watch(profileControllerProvider).wallet.valueOrNull;
 
-    // Local state for cards and transactions
-    final cards = useState<List<Map<String, String>>>([]);
-    final transactions = useState<List<Map<String, dynamic>>>([]);
+    // Local state
     final wallet = ref.watch(profileControllerProvider).wallet.valueOrNull;
 
-    // Fetch wallet data when widget is first built
+    final transactionHistory =
+        ref.watch(profileControllerProvider).transactionHistory;
+
+    // Fetch wallet and transaction history when widget is first built
     useEffect(() {
       Future.microtask(() {
         ref.read(profileControllerProvider.notifier).fetchWallet();
+        ref.read(profileControllerProvider.notifier).fetchTransactionHistory();
       });
       return null;
     }, []);
 
-    void deleteCard(int index) async {
-      bool? confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Delete Card'),
-          content: const Text('Are you sure you want to delete this card?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        ),
-      );
-
-      if (confirm == true) {
-        cards.value = [...cards.value]..removeAt(index);
-      }
-    }
-
-    void addAnotherCard() {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: kcPrimaryNeutral950,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (context) => AddCardBottomSheet(
-          onSave: (type, number) {
-            cards.value = [
-              ...cards.value,
-              {'type': type, 'number': number}
-            ];
-          },
-        ),
-      );
-    }
+    // (removed unused add/delete card helpers)
 
     // Get balance from wallet state or use default
     final balance = wallet?.wallet?.availableBalance?.toDouble() ?? 0.00;
@@ -319,12 +281,7 @@ class WalletView extends HookConsumerWidget {
                                       width: double.infinity,
                                       height: 48,
                                       onPressed: () {
-                                        // Copy all details to clipboard
-                                        final details = '''
-Bank: ${walletState?.wallet?.bankTransfer?.bankName ?? 'N/A'}
-Account: ${walletState?.wallet?.bankTransfer?.accountNumber ?? 'N/A'}
-Name: ${walletState?.wallet?.bankTransfer?.accountName ?? 'N/A'}''';
-                                        // Add copy to clipboard functionality here
+                                        // TODO: add copy-to-clipboard if needed
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                           const SnackBar(
@@ -380,61 +337,90 @@ Name: ${walletState?.wallet?.bankTransfer?.accountName ?? 'N/A'}''';
                     ),
                   ),
                   verticalSpaceSmall,
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: transactions.value.length,
-                    itemBuilder: (context, index) {
-                      final transaction = transactions.value[index];
-                      final isPositive = transaction['amount']! > 0;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Column(
+                  transactionHistory.when(
+                    loading: () => ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: 10,
+                      itemBuilder: (context, index) => Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Row(
                           children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Iconsax.money_recive,
-                                  color: kcPrimary300,
-                                  size: 20,
+                            Shimmer.fromColors(
+                              baseColor: Colors.grey[300]!,
+                              highlightColor: Colors.grey[100]!,
+                              child: Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
-                                horizontalSpaceSmall,
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        transaction['type']!,
-                                        style: ktBodyRegularSize12.copyWith(
-                                          color: kcPrimary300,
-                                          fontSize: 14,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                      verticalSpaceTiny,
-                                      Text(
-                                        transaction['date']!,
-                                        style: ktBodyRegularSize12.copyWith(
-                                          color: kcPrimary500,
-                                          fontSize: 12,
-                                          letterSpacing: 1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  "${isPositive ? '+' : '-'} ₦${transaction['amount']!.abs().toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}",
-                                  style: ktBodyRegularSize12.copyWith(
-                                    color:
-                                        isPositive ? Colors.green : Colors.red,
-                                    fontSize: 14,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Shimmer.fromColors(
+                                    baseColor: Colors.grey[300]!,
+                                    highlightColor: Colors.grey[100]!,
+                                    child: Container(
+                                      width: double.infinity,
+                                      height: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Shimmer.fromColors(
+                                    baseColor: Colors.grey[300]!,
+                                    highlightColor: Colors.grey[100]!,
+                                    child: Container(
+                                      width: 100,
+                                      height: 14,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    error: (err, st) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: Center(
+                        child: Text(
+                          'Failed to load transactions',
+                          style: ktBodyRegularSize12.copyWith(
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),
+                    ),
+                    data: (data) {
+                      final list = data.results ?? [];
+                      if (list.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: Center(
+                            child: Text(
+                              'No transactions yet',
+                              style: ktBodyRegularSize12.copyWith(
+                                color: kcPrimary500,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: list.length,
+                        separatorBuilder: (_, __) => Column(
+                          children: [
                             verticalSpaceSmall,
                             SvgPicture.asset(
                               'asset/svgs/dotted_line.svg',
@@ -443,6 +429,78 @@ Name: ${walletState?.wallet?.bankTransfer?.accountName ?? 'N/A'}''';
                             verticalSpaceSmall,
                           ],
                         ),
+                        itemBuilder: (context, index) {
+                          final t = list[index];
+                          final amount = (t.amount ?? 0).toDouble();
+                          final isCompleted =
+                              (t.status ?? '').toLowerCase() == 'completed';
+                          final isPending =
+                              (t.status ?? '').toLowerCase() == 'pending';
+                          final isPositive =
+                              isCompleted; // credit-like on completion
+                          final amountText =
+                              "${isPositive ? '+' : '-'} ₦${amount.abs().toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}";
+                          final title = (t.type ?? '').replaceAll('_', ' ');
+                          final dateText = t.createdAt != null
+                              ? '${t.createdAt!.year}-${t.createdAt!.month.toString().padLeft(2, '0')}-${t.createdAt!.day.toString().padLeft(2, '0')} '
+                                  '${t.createdAt!.hour.toString().padLeft(2, '0')}:${t.createdAt!.minute.toString().padLeft(2, '0')}'
+                              : '';
+
+                          Color amountColor = Colors.red;
+                          if (isCompleted) amountColor = Colors.green;
+                          if (isPending) amountColor = Colors.orange;
+
+                          return Row(
+                            children: [
+                              const Icon(
+                                Iconsax.money_recive,
+                                color: kcPrimary300,
+                                size: 20,
+                              ),
+                              horizontalSpaceSmall,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title.isEmpty ? 'Transaction' : title,
+                                      style: ktBodyRegularSize12.copyWith(
+                                        color: kcPrimary300,
+                                        fontSize: 14,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                    verticalSpaceTiny,
+                                    Text(
+                                      dateText,
+                                      style: ktBodyRegularSize12.copyWith(
+                                        color: kcPrimary500,
+                                        fontSize: 12,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                    Text(
+                                      t.status ?? '',
+                                      style: ktBodyRegularSize12.copyWith(
+                                        color: amountColor,
+                                        fontSize: 12,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                amountText,
+                                style: ktBodyRegularSize12.copyWith(
+                                  color: amountColor,
+                                  fontSize: 14,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       );
                     },
                   ),

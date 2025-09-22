@@ -20,18 +20,18 @@ final logger = Logger();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final envPath = '${Directory.current.path}/.env';
-  logger.d('Looking for .env at: $envPath');
+  // final envPath = '${Directory.current.path}/.env';
+  // logger.d('Looking for .env at: $envPath');
 
-  try {
-    await dotenv.load(fileName: '.env');
-    logger.d('Environment variables loaded successfully');
-  } catch (e) {
-    logger.d('Error loading .env: $e');
-    logger.d('Current directory: ${Directory.current.path}');
-    logger.d('Files in current directory: ${Directory.current.listSync()}');
-    logger.d('Please create a .env file with MAP_KEY=your_google_maps_api_key');
-  }
+  // try {
+  //   await dotenv.load(fileName: '.env');
+  //   logger.d('Environment variables loaded successfully');
+  // } catch (e) {
+  //   logger.d('Error loading .env: $e');
+  //   logger.d('Current directory: ${Directory.current.path}');
+  //   logger.d('Files in current directory: ${Directory.current.listSync()}');
+  //   logger.d('Please create a .env file with MAP_KEY=your_google_maps_api_key');
+  // }
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,

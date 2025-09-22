@@ -62,10 +62,14 @@ class RestaurantCard extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "${restaurant.store?.storeName ?? ''} (${restaurant.shopName ?? ''})",
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
+                      Expanded(
+                        child: Text(
+                          "${restaurant.store?.storeName ?? ''} (${restaurant.shopName ?? ''})",
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       GestureDetector(
                         behavior: HitTestBehavior.translucent,
@@ -83,9 +87,14 @@ class RestaurantCard extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "${restaurant.location?.address ?? ''}, ${restaurant.location?.city ?? ''}, ${restaurant.location?.state ?? ''} state.",
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      Expanded(
+                        child: Text(
+                          "${restaurant.location?.address ?? ''}, ${restaurant.location?.city ?? ''}, ${restaurant.location?.state ?? ''} state.",
+                          style:
+                              TextStyle(fontSize: 14, color: Colors.grey[600]),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       Row(
                         children: [

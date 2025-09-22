@@ -1,3 +1,4 @@
+import 'package:fazt_order/src/features/courier/data/model/courier_list.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../model/response/cartlsit/cartlsit.dart';
@@ -27,7 +28,9 @@ class ShopState {
   final AsyncValue<String> clearCart;
   final AsyncValue<String> bookCourier;
   final AsyncValue<MealDetails> mealDetails;
+  final AsyncValue<CourierListResponse> courierList;
   const ShopState({
+    required this.courierList,
     required this.shops,
     required this.shopFoodCategory,
     required this.searchQuery,
@@ -47,6 +50,7 @@ class ShopState {
 
   factory ShopState.initial() {
     return ShopState(
+      courierList: AsyncValue.data(CourierListResponse()),
       shops: AsyncValue.data(ShopsModel()),
       shopFoodCategory: AsyncValue.data(StoreCategories()),
       searchQuery: AsyncValue.data(SearchGlobal()),
@@ -66,6 +70,7 @@ class ShopState {
   }
 
   ShopState copyWith({
+    AsyncValue<CourierListResponse>? courierList,
     AsyncValue<ShopsModel>? shops,
     AsyncValue<StoreCategories>? shopFoodCategory,
     AsyncValue<SearchGlobal>? searchQuery,
@@ -83,6 +88,7 @@ class ShopState {
     AsyncValue<MealDetails>? mealDetails,
   }) {
     return ShopState(
+      courierList: courierList ?? this.courierList,
       shops: shops ?? this.shops,
       shopFoodCategory: shopFoodCategory ?? this.shopFoodCategory,
       searchQuery: searchQuery ?? this.searchQuery,

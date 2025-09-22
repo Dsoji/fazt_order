@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../common/utils/failures.dart';
 import '../../../../common/utils/multiple_results.dart';
+import '../../../courier/data/model/courier_list.dart';
 import '../model/payload/courier_payload.dart';
 import '../model/response/cartlsit/cartlsit.dart';
 import '../model/response/meal_details/meal_details.dart';
@@ -407,6 +408,27 @@ class ShopRepository {
                 message: 'Failed to fetch meal details',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to fetch meal details'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, CourierListResponse>> fetchCourierList() async {
+    try {
+      final data = await authService.fetchCourierList();
+
+      if (data.isSuccess) {
+        return Success(data.value ?? CourierListResponse());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to fetch courier list',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to fetch courier list'),
               ),
         );
       }

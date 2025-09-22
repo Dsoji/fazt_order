@@ -1,4 +1,5 @@
 import 'package:fazt_order/src/features/profile/data/model/response/image_upload_response.dart';
+import 'package:fazt_order/src/features/profile/data/model/response/transaction_history.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/store_details/store_details.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -434,6 +435,25 @@ class ProfileeService {
       },
       showErrorToast: true,
       showSuccessToast: true,
+    );
+  }
+
+  Future<ResultValue<TransactionHistoryResponse>>
+      fetchTransactionHistory() async {
+    final String accessToken = await box.get('accessToken');
+
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.get(
+        'payments/transactions',
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+        },
+      ),
+      parser: (data) {
+        return TransactionHistoryResponse.fromMap(data);
+      },
+      showErrorToast: true,
+      showSuccessToast: false,
     );
   }
 }

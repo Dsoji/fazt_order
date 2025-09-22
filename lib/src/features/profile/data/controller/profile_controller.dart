@@ -449,4 +449,25 @@ class ProfileController extends StateNotifier<ProfileState> {
       },
     );
   }
+
+  Future<bool> fetchTransactionHistory() async {
+    state = state.copyWith(transactionHistory: const AsyncValue.loading());
+
+    final result = await _authenticationRepository.fetchTransactionHistory();
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+          transactionHistory: AsyncValue.error(error, StackTrace.current),
+        );
+        return false;
+      },
+      (success) {
+        state = state.copyWith(
+          transactionHistory: AsyncValue.data(success),
+        );
+        return true;
+      },
+    );
+  }
 }

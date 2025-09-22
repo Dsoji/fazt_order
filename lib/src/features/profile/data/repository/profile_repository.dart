@@ -1,5 +1,6 @@
 import 'package:fazt_order/src/features/profile/data/model/response/image_upload_response.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/store_details/store_details.dart';
+import 'package:fazt_order/src/features/profile/data/model/response/transaction_history.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -512,6 +513,28 @@ class ProfileRepository {
                 message: 'Failed to verify payment',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to verify payment'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, TransactionHistoryResponse>>
+      fetchTransactionHistory() async {
+    try {
+      final data = await authService.fetchTransactionHistory();
+
+      if (data.isSuccess) {
+        return Success(data.value ?? TransactionHistoryResponse());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to fetch transaction history',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to fetch transaction history'),
               ),
         );
       }

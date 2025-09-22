@@ -1,3 +1,4 @@
+import 'package:fazt_order/src/features/courier/data/model/courier_list.dart';
 import 'package:fazt_order/src/features/home/data/model/response/meal_details/meal_details.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -291,6 +292,16 @@ class ShopService {
         },
       ),
       parser: (data) => MealDetails.fromMap(data),
+    );
+  }
+
+  Future<ResultValue<CourierListResponse>> fetchCourierList() async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.get(
+        'couriers',
+        headers: {'Authorization': 'Bearer $accessToken'},
+      ),
+      parser: (data) => CourierListResponse.fromMap(data),
     );
   }
 }
