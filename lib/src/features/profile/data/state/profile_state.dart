@@ -1,4 +1,5 @@
 // import 'package:fazt_order/src/features/manage_users/data/model/response/manager_list/manager_list.dart';
+import 'package:fazt_order/src/features/profile/data/model/response/favourites_list.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/image_upload_response.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/store_details/store_details.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/user_wallet/user_wallet.dart';
@@ -19,17 +20,20 @@ class ProfileState {
   final AsyncValue<String> addManager;
   final AsyncValue<StoreDetails> storeInfo;
   final AsyncValue<TransactionHistoryResponse> transactionHistory;
-
+  final AsyncValue<FavouritesListResponse> favouritesList;
   final AsyncValue<String> forgotPassword;
   final AsyncValue<ImageUploadResponse> imageUpload;
   final AsyncValue<String> feedBack;
   final AsyncValue<SchedulePayload> scheduleTime;
+  final AsyncValue<String> addToFavorites;
   // final AsyncValue<ManagerList> managerList;
   final AsyncValue<String> addShop;
   final AsyncValue<String> loader;
   final AsyncValue<String> addMeal;
   final AsyncValue<UserWallet> wallet;
+
   const ProfileState({
+    required this.favouritesList,
     required this.profilePayload,
     required this.userDetails,
     required this.storeDetails,
@@ -41,6 +45,7 @@ class ProfileState {
     required this.scheduleTime,
     required this.shopSchedule,
     required this.addManager,
+    required this.addToFavorites,
     // required this.managerList,
     required this.addShop,
     required this.loader,
@@ -63,6 +68,9 @@ class ProfileState {
       scheduleTime: AsyncValue.data(SchedulePayload()),
       shopSchedule: const AsyncValue.data(''),
       addManager: const AsyncValue.data(''),
+      addToFavorites: const AsyncValue.data(''),
+      favouritesList: AsyncValue.data(FavouritesListResponse()),
+      // managerList: AsyncValue.data(ManagerList()),
       // managerList: AsyncValue.data(ManagerList()),
       addShop: const AsyncValue.data(''),
       loader: const AsyncValue.data(''),
@@ -88,6 +96,8 @@ class ProfileState {
     AsyncValue<SchedulePayload>? scheduleTime,
     AsyncValue<String>? shopSchedule,
     AsyncValue<String>? addManager,
+    AsyncValue<String>? addToFavorites,
+    AsyncValue<FavouritesListResponse>? favouritesList,
     // AsyncValue<ManagerList>? managerList,
     AsyncValue<String>? addShop,
     AsyncValue<String>? loader,
@@ -108,6 +118,8 @@ class ProfileState {
       scheduleTime: scheduleTime ?? this.scheduleTime,
       shopSchedule: shopSchedule ?? this.shopSchedule,
       addManager: addManager ?? this.addManager,
+      addToFavorites: addToFavorites ?? this.addToFavorites,
+      favouritesList: favouritesList ?? this.favouritesList,
       // managerList: managerList ?? this.managerList,
       addShop: addShop ?? this.addShop,
       loader: loader ?? this.loader,

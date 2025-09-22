@@ -1,5 +1,6 @@
 import 'package:fazt_order/src/common/app_colors.dart';
 import 'package:fazt_order/src/features/home/presentation/restaurant_details.dart';
+import 'package:fazt_order/src/features/profile/data/controller/profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
@@ -73,10 +74,13 @@ class RestaurantCard extends ConsumerWidget {
                       ),
                       GestureDetector(
                         behavior: HitTestBehavior.translucent,
-                        onTap: () {
-                          ref
-                              .read(restaurantProvider.notifier)
-                              .toggleFavorite(index);
+                        onTap: () async {
+                          await ref
+                              .read(profileControllerProvider.notifier)
+                              .addToFavorites(shopId: restaurant.id ?? '');
+                          await ref
+                              .read(profileControllerProvider.notifier)
+                              .fetchFavouritesList();
                         },
                         child: const Icon(Iconsax.heart,
                             color: kcPrimaryNeutral200, size: 24),

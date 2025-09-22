@@ -2,6 +2,7 @@ import 'dart:async'; // Add this import for Timer
 import 'dart:convert';
 
 import 'package:animated_segmented_tab_control/animated_segmented_tab_control.dart';
+import 'package:fazt_order/src/features/courier/parcel_confirm_details.dart';
 import 'package:fazt_order/src/common/widgets/custom_textfield.dart';
 import 'package:fazt_order/src/common/widgets/reusbale_dropdown_widget.dart';
 import 'package:flutter/material.dart';
@@ -677,6 +678,13 @@ class CourierView extends HookConsumerWidget {
                 pickUpState.value = '';
                 deliveryCity.value = '';
                 deliveryState.value = '';
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ParcelConfirmDetails(),
+                  ),
+                );
               }
             },
             color: AppColors.brand400,

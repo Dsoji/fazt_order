@@ -1,3 +1,4 @@
+import 'package:fazt_order/src/features/profile/data/model/response/favourites_list.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/image_upload_response.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/store_details/store_details.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/transaction_history.dart';
@@ -535,6 +536,51 @@ class ProfileRepository {
                 message: 'Failed to fetch transaction history',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to fetch transaction history'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, String>> addToFavorites({
+    required String shopId,
+  }) async {
+    try {
+      final data = await authService.addToFavorites(shopId: shopId);
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to add to favorites',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to add to favorites'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, FavouritesListResponse>>
+      fetchFavouritesList() async {
+    try {
+      final data = await authService.fetchFavouritesList();
+
+      if (data.isSuccess) {
+        return Success(data.value ?? FavouritesListResponse());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to fetch favourites list',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to fetch favourites list'),
               ),
         );
       }

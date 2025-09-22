@@ -1,3 +1,4 @@
+import 'package:fazt_order/src/features/profile/data/model/response/favourites_list.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/image_upload_response.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/transaction_history.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/store_details/store_details.dart';
@@ -454,6 +455,47 @@ class ProfileeService {
       },
       showErrorToast: true,
       showSuccessToast: false,
+    );
+  }
+
+  Future<ResultValue<String>> addToFavorites({
+    required String shopId,
+  }) async {
+    final String accessToken = await box.get('accessToken');
+
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'users/favorite-shops',
+        header: {
+          'Authorization': 'Bearer $accessToken',
+        },
+        data: {
+          "shop": shopId,
+        },
+      ),
+      parser: (data) {
+        return BaseModel.toRawString(data);
+      },
+      showErrorToast: true,
+      showSuccessToast: true,
+    );
+  }
+
+  Future<ResultValue<FavouritesListResponse>> fetchFavouritesList() async {
+    final String accessToken = await box.get('accessToken');
+
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.get(
+        'users/favorite-shops',
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+        },
+      ),
+      parser: (data) {
+        return FavouritesListResponse.fromMap(data);
+      },
+      showErrorToast: true,
+      showSuccessToast: true,
     );
   }
 }

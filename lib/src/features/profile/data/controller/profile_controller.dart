@@ -470,4 +470,47 @@ class ProfileController extends StateNotifier<ProfileState> {
       },
     );
   }
+
+  Future<bool> addToFavorites({required String shopId}) async {
+    state = state.copyWith(addToFavorites: const AsyncValue.loading());
+
+    final result =
+        await _authenticationRepository.addToFavorites(shopId: shopId);
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+          addToFavorites: AsyncValue.error(error, StackTrace.current),
+        );
+        return false;
+      },
+      (success) {
+        state = state.copyWith(
+          addToFavorites: AsyncValue.data(success),
+        );
+        return true;
+      },
+    );
+  }
+
+  Future<bool> fetchFavouritesList() async {
+    state = state.copyWith(favouritesList: const AsyncValue.loading());
+
+    final result = await _authenticationRepository.fetchFavouritesList();
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+          favouritesList: AsyncValue.error(error, StackTrace.current),
+        );
+        return false;
+      },
+      (success) {
+        state = state.copyWith(
+          favouritesList: AsyncValue.data(success),
+        );
+        return true;
+      },
+    );
+  }
 }
