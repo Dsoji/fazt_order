@@ -147,7 +147,7 @@ class OrderView extends HookConsumerWidget {
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          item.shop?.shopName ?? "Unknown Item",
+                                          item.shop?.shopName ?? "Courier Item",
                                           style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w500),

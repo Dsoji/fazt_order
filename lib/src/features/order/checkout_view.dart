@@ -262,7 +262,7 @@ class CheckoutScreen extends HookConsumerWidget {
                                       ),
                                       verticalSpaceSmall,
                                       Text(item.mealVariant?.meal?.mealName ??
-                                          "Unknown Item"),
+                                          "Courier Item"),
                                       verticalSpaceTiny,
                                       Text(
                                           "₦${(item.mealVariant?.meal?.price ?? 0).toStringAsFixed(0)}"),

@@ -132,7 +132,7 @@ class MyOrders extends HookConsumerWidget {
                                       Text(
                                         firstItem
                                                 ?.mealVariant?.meal?.mealName ??
-                                            "Unknown Item",
+                                            "Courier Item",
                                         style: const TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold),
