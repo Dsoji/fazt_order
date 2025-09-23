@@ -1,4 +1,6 @@
 import 'package:fazt_order/src/features/courier/data/model/courier_list.dart';
+import 'package:fazt_order/src/features/courier/data/model/parcel_payment_details.dart';
+import 'package:fazt_order/src/features/courier/data/model/parcel_request.dart';
 import 'package:fazt_order/src/features/home/data/model/response/meal_details/meal_details.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -270,14 +272,32 @@ class ShopService {
     );
   }
 
-  Future<ResultValue<String>> bookCourier(CourierPayload payload) async {
+  Future<ResultValue<ParcelRequest>> bookCourier(CourierPayload payload) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.post(
         'parcels/',
         header: {'Authorization': 'Bearer $accessToken'},
         data: payload,
       ),
-      parser: (data) => BaseModel.toRawString(data),
+      parser: (data) => ParcelRequest.fromMap(data),
+      showErrorToast: true,
+      showSuccessToast: true,
+    );
+  }
+
+  Future<ResultValue<ParcelPaymentDetails>> makeParcelPayment(
+      String parcelId, String paymentMethod, String deliveryType) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'orders/parcel',
+        header: {'Authorization': 'Bearer $accessToken'},
+        data: {
+          'parcelId': parcelId,
+          "paymentMethod": paymentMethod,
+          "deliveryType": deliveryType,
+        },
+      ),
+      parser: (data) => ParcelPaymentDetails.fromMap(data),
       showErrorToast: true,
       showSuccessToast: true,
     );

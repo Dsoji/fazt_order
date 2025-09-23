@@ -49,13 +49,14 @@ class FaztWebViewScreen extends HookConsumerWidget {
           icon: const Icon(Icons.arrow_back),
         ),
         title: Text(
-          title ?? 'Customer Support',
+          title ?? 'Payment',
           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
       body: WebViewStack(
         controller: controller,
         reference: reference,
+        title: title,
       ),
     );
   }
@@ -64,17 +65,19 @@ class FaztWebViewScreen extends HookConsumerWidget {
 //
 
 class WebViewStack extends HookConsumerWidget {
-  const WebViewStack({required this.controller, this.reference, super.key});
+  const WebViewStack(
+      {required this.controller, this.reference, super.key, this.title});
 
   final WebViewController controller;
   final String? reference;
-
+  final String? title;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final loadingPercentage = useState<int>(0);
     final isLoading = useState(true);
     final hasError = useState(false);
     final currentUrl = useState<String>("");
+    logger.d("title: $title");
 
     useEffect(() {
       controller.setNavigationDelegate(
@@ -105,14 +108,26 @@ class WebViewStack extends HookConsumerWidget {
             if (url.contains('dev.com')) {
               debugPrint("🚨 Blocked navigation to dev.com, closing WebView");
               if (context.mounted) {
-                ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
-                ref.read(shopControllerProvider.notifier).fetchCart();
-                ref
-                    .read(profileControllerProvider.notifier)
-                    .verifyPayment(paymentId: reference ?? '');
-                Navigator.pop(context);
-                Navigator.pop(context);
-                Navigator.pop(context);
+                if (title == 'Parcel Payment') {
+                  ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+                  ref.read(shopControllerProvider.notifier).fetchCart();
+                  ref
+                      .read(profileControllerProvider.notifier)
+                      .verifyPayment(paymentId: reference ?? '');
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  logger.d("Lalalalalalalal");
+                } else {
+                  ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+                  ref.read(shopControllerProvider.notifier).fetchCart();
+                  ref
+                      .read(profileControllerProvider.notifier)
+                      .verifyPayment(paymentId: reference ?? '');
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  logger.d("zeeeeeee");
+                }
               }
             }
           },
@@ -124,14 +139,26 @@ class WebViewStack extends HookConsumerWidget {
             if (host.contains('dev.com')) {
               debugPrint("🚨 Blocked navigation to dev.com");
               if (context.mounted) {
-                ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
-                ref.read(shopControllerProvider.notifier).fetchCart();
-                ref
-                    .read(profileControllerProvider.notifier)
-                    .verifyPayment(paymentId: reference ?? '');
-                Navigator.pop(context);
-                Navigator.pop(context);
-                Navigator.pop(context);
+                if (title == 'Parcel Payment') {
+                  ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+                  ref.read(shopControllerProvider.notifier).fetchCart();
+                  ref
+                      .read(profileControllerProvider.notifier)
+                      .verifyPayment(paymentId: reference ?? '');
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  logger.d("Lalalalalalalal");
+                } else {
+                  ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+                  ref.read(shopControllerProvider.notifier).fetchCart();
+                  ref
+                      .read(profileControllerProvider.notifier)
+                      .verifyPayment(paymentId: reference ?? '');
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  logger.d("zeeeeeee");
+                }
               }
               return NavigationDecision.prevent;
             }
@@ -153,14 +180,26 @@ class WebViewStack extends HookConsumerWidget {
             isLoading.value = false;
             debugPrint("❌ Web resource error: ${error.description}");
             Future.delayed(const Duration(seconds: 2), () {
-              ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
-              ref.read(shopControllerProvider.notifier).fetchCart();
-              ref
-                  .read(profileControllerProvider.notifier)
-                  .verifyPayment(paymentId: reference ?? '');
-              Navigator.pop(context);
-              Navigator.pop(context);
-              Navigator.pop(context);
+              if (title == 'Parcel Payment') {
+                ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+                ref.read(shopControllerProvider.notifier).fetchCart();
+                ref
+                    .read(profileControllerProvider.notifier)
+                    .verifyPayment(paymentId: reference ?? '');
+                Navigator.pop(context);
+                Navigator.pop(context);
+                logger.d("Lalalalalalalal");
+              } else {
+                ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+                ref.read(shopControllerProvider.notifier).fetchCart();
+                ref
+                    .read(profileControllerProvider.notifier)
+                    .verifyPayment(paymentId: reference ?? '');
+                Navigator.pop(context);
+                Navigator.pop(context);
+                Navigator.pop(context);
+                logger.d("zeeeeeee");
+              }
             });
           },
         ),

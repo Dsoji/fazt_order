@@ -1,8 +1,13 @@
+import 'package:fazt_order/src/common/res/app_colors.dart';
+import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
+import 'package:fazt_order/src/features/home/data/controller/shop_controller.dart';
+import 'package:fazt_order/webview_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:gap/gap.dart';
+import 'package:timelines_plus/timelines_plus.dart';
 
 import '../../common/app_colors.dart';
 import '../../common/widgets/text_styles.dart';
@@ -13,10 +18,8 @@ class ParcelConfirmDetails extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDeliveryType = useState('Standard');
-    final otpCode = useState('0987');
-
+    final parcelAsync = ref.watch(shopControllerProvider).bookCourier;
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_left_2, color: Colors.black),
@@ -33,38 +36,153 @@ class ParcelConfirmDetails extends HookConsumerWidget {
         backgroundColor: Colors.white,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Delivery Time Section
-            _buildDeliveryTimeSection(selectedDeliveryType),
-            const Gap(24),
+      body: parcelAsync.when(
+        data: (req) {
+          final p = req.parcel;
+          final pickupAddress = _formatAddress(
+            p?.pickUpAddress?.address,
+            p?.pickUpAddress?.city,
+            p?.pickUpAddress?.state,
+          );
+          final deliveryAddress = _formatAddress(
+            p?.deliveryAddress?.address,
+            p?.deliveryAddress?.city,
+            p?.deliveryAddress?.state,
+          );
 
-            // Pick Up Details Section
-            _buildPickUpDetailsSection(),
-            const Gap(24),
-
-            // Delivery Details Section
-            _buildDeliveryDetailsSection(),
-            const Gap(24),
-
-            // Parcel Type Section
-            _buildParcelTypeSection(),
-            const Gap(24),
-
-            // OTP and Note Section
-            _buildOTPAndNoteSection(otpCode.value),
-            const Gap(24),
-
-            // Payment Details Section
-            _buildPaymentDetailsSection(),
-            const Gap(32),
-
-            // Make Payment Button
-            _buildMakePaymentButton(context),
-          ],
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDeliveryTimeSection(selectedDeliveryType),
+                const Gap(24),
+                FixedTimeline.tileBuilder(
+                  theme: TimelineThemeData(
+                    nodePosition: 0,
+                    indicatorTheme: const IndicatorThemeData(
+                      position: 0,
+                      size: 20.0,
+                    ),
+                    connectorTheme: const ConnectorThemeData(
+                      thickness: 2.0,
+                      color: AppColors.green400,
+                    ),
+                  ),
+                  builder: TimelineTileBuilder.connected(
+                    itemCount: 2,
+                    connectorBuilder: (context, index, type) {
+                      return const DashedLineConnector(
+                        color: AppColors.green400,
+                        gap: 2.0,
+                        dash: 4.0,
+                      );
+                    },
+                    indicatorBuilder: (context, index) {
+                      return index == 0
+                          ? const DotIndicator(
+                              color: AppColors.green400,
+                              child: Icon(Icons.check,
+                                  color: Colors.white, size: 12),
+                            )
+                          : const OutlinedDotIndicator(
+                              borderWidth: 2.0,
+                              color: AppColors.orange800,
+                            );
+                    },
+                    contentsBuilder: (context, index) {
+                      if (index == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 24.0),
+                          child: _buildDetailsSection(
+                            title: "Pick Up Details",
+                            icon: Iconsax.tick_circle,
+                            iconColor: kcPrimaryGreen500,
+                            name: p?.senderInfo?.name ?? '-',
+                            phone: p?.senderInfo?.phone ?? '-',
+                            address: pickupAddress,
+                          ),
+                        );
+                      }
+                      return _buildDetailsSection(
+                        title: "Delivery Details",
+                        icon: Iconsax.location,
+                        iconColor: kcPrimaryGreen500,
+                        name: p?.receiverInfo?.name ?? '-',
+                        phone: p?.receiverInfo?.phone ?? '-',
+                        address: deliveryAddress,
+                      );
+                    },
+                  ),
+                ),
+                const Gap(24),
+                _buildParcelTypeSection(p?.parcelType ?? '-'),
+                const Gap(24),
+                _buildOTPAndNoteSection(
+                    (p?.riderOTP ?? 0).toString().padLeft(4, '0')),
+                const Gap(24),
+                _buildPaymentDetailsSection(
+                  deliveryFee: p?.deliveryFee,
+                  serviceFee: p?.serviceFee,
+                ),
+                const Gap(32),
+                FullButton(
+                    isLoading: ref
+                        .watch(shopControllerProvider)
+                        .makeParcelPayment
+                        .isLoading,
+                    text: 'Make Payment',
+                    width: double.infinity,
+                    height: 48,
+                    onPressed: () async {
+                      final result = await ref
+                          .read(shopControllerProvider.notifier)
+                          .makeParcelPayment(
+                            p?.id ?? '',
+                            'paystack',
+                            selectedDeliveryType.value,
+                          );
+                      if (result) {
+                        final paymentUrl = ref
+                            .read(shopControllerProvider)
+                            .makeParcelPayment
+                            .valueOrNull
+                            ?.payment
+                            ?.paymentUrl;
+                        final reference = ref
+                            .read(shopControllerProvider)
+                            .makeParcelPayment
+                            .valueOrNull
+                            ?.payment
+                            ?.reference;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FaztWebViewScreen(
+                              uri: paymentUrl ?? '',
+                              reference: reference ?? '',
+                              title: 'Parcel Payment',
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    color: AppColors.brand400,
+                    textColor: kcWhite),
+                Gap(25),
+              ],
+            ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Failed to load parcel details',
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
         ),
       ),
     );
@@ -93,16 +211,6 @@ class ParcelConfirmDetails extends HookConsumerWidget {
                 () => selectedDeliveryType.value = 'Standard',
               ),
             ),
-            const Gap(12),
-            Expanded(
-              child: _buildDeliveryOption(
-                'Schedule',
-                'Select Time',
-                Iconsax.calendar_1,
-                selectedDeliveryType.value == 'Schedule',
-                () => selectedDeliveryType.value = 'Schedule',
-              ),
-            ),
           ],
         ),
       ],
@@ -119,21 +227,19 @@ class ParcelConfirmDetails extends HookConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color:
-              isSelected ? kcPrimaryGreen500.withOpacity(0.1) : Colors.grey[50],
-          border: Border.all(
-            color: isSelected ? kcPrimaryGreen500 : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
-          ),
+          color: AppColors.brand980,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.brand400,
+          ),
         ),
         child: Column(
           children: [
             Icon(
               icon,
-              color: isSelected ? kcPrimaryGreen500 : Colors.grey[600],
+              color: AppColors.brand400,
               size: 24,
             ),
             const Gap(8),
@@ -142,7 +248,7 @@ class ParcelConfirmDetails extends HookConsumerWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? kcPrimaryGreen700 : Colors.grey[700],
+                color: AppColors.brand400,
               ),
             ),
             const Gap(4),
@@ -150,34 +256,12 @@ class ParcelConfirmDetails extends HookConsumerWidget {
               subtitle,
               style: TextStyle(
                 fontSize: 14,
-                color: isSelected ? kcPrimaryGreen600 : Colors.grey[500],
+                color: AppColors.brand400,
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildPickUpDetailsSection() {
-    return _buildDetailsSection(
-      title: "Pick Up Details",
-      icon: Iconsax.tick_circle,
-      iconColor: kcPrimaryGreen500,
-      name: "Ridwan",
-      phone: "08023456776",
-      address: "12, Oritshe street, ikeja, Lagos State",
-    );
-  }
-
-  Widget _buildDeliveryDetailsSection() {
-    return _buildDetailsSection(
-      title: "Delivery Details",
-      icon: Iconsax.location,
-      iconColor: kcPrimaryGreen500,
-      name: "Ridwan",
-      phone: "08023456776",
-      address: "12, Oritshe street, ikeja, Lagos State",
     );
   }
 
@@ -189,20 +273,13 @@ class ParcelConfirmDetails extends HookConsumerWidget {
     required String phone,
     required String address,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(left: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: iconColor, size: 20),
-              const Gap(8),
               Text(
                 title,
                 style: ktBodySemiBoldSize20.copyWith(
@@ -244,109 +321,94 @@ class ParcelConfirmDetails extends HookConsumerWidget {
     );
   }
 
-  Widget _buildParcelTypeSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          Icon(Iconsax.box, color: kcPrimaryGreen500, size: 20),
-          const Gap(12),
-          Text(
-            "Parcel Type",
-            style: ktBodySemiBoldSize20.copyWith(
-              fontSize: 16,
-              color: Colors.black,
+  Widget _buildParcelTypeSection(String parcelType) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Iconsax.box, color: kcPrimaryGreen500, size: 20),
+            const Gap(12),
+            Text(
+              "Parcel Type",
+              style: ktBodySemiBoldSize20.copyWith(
+                fontSize: 16,
+                color: Colors.black,
+              ),
             ),
+          ],
+        ),
+        Gap(4),
+        Text(
+          parcelType,
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey[600],
           ),
-          const Spacer(),
-          Text(
-            "Food",
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
+        ),
+        const Divider(
+          color: Colors.grey,
+          thickness: 0.5,
+        ),
+      ],
     );
   }
 
   Widget _buildOTPAndNoteSection(String otpCode) {
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
-          child: Row(
-            children: [
-              Icon(Iconsax.message_text, color: kcPrimaryGreen500, size: 20),
-              const Gap(12),
-              Expanded(
-                child: Text(
-                  "OTP receiver shares with the rider",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
+        Row(
+          children: [
+            Icon(Iconsax.message_text, color: kcPrimaryGreen500, size: 20),
+            const Gap(12),
+            Expanded(
+              child: Text(
+                "OTP receiver shares with the rider",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: kcPrimaryGreen500,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  otpCode,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+            ),
+            Text(
+              otpCode,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         const Gap(12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
-          ),
-          child: Row(
-            children: [
-              Icon(Iconsax.clipboard_text, color: kcPrimaryGreen500, size: 20),
-              const Gap(12),
-              Expanded(
-                child: Text(
-                  "Kindly leave at the shop with the sales person",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
+        const Divider(
+          color: Colors.grey,
+          thickness: 0.5,
+        ),
+        const Gap(12),
+        Row(
+          children: [
+            Icon(Iconsax.clipboard_text, color: kcPrimaryGreen500, size: 20),
+            const Gap(12),
+            Expanded(
+              child: Text(
+                "Kindly leave at the shop with the sales person",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildPaymentDetailsSection() {
+  Widget _buildPaymentDetailsSection({num? deliveryFee, num? serviceFee}) {
+    final num dFee = deliveryFee ?? 0;
+    final num sFee = serviceFee ?? 0;
+    final num total = dFee + sFee;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -365,12 +427,13 @@ class ParcelConfirmDetails extends HookConsumerWidget {
             ),
           ),
           const Gap(16),
-          _buildPaymentRow("Delivery Fee", "N 1000"),
+          _buildPaymentRow("Delivery Fee", "N ${dFee.toStringAsFixed(0)}"),
           const Gap(8),
-          _buildPaymentRow("Tax and other fees", "N 1000"),
-          const Divider(color: Colors.grey),
+          _buildPaymentRow(
+              "Tax and other fees", "N ${sFee.toStringAsFixed(0)}"),
           const Gap(8),
-          _buildPaymentRow("Total", "N 3000", isTotal: true),
+          _buildPaymentRow("Total", "N ${total.toStringAsFixed(0)}",
+              isTotal: true),
         ],
       ),
     );
@@ -383,7 +446,7 @@ class ParcelConfirmDetails extends HookConsumerWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: isTotal ? 16 : 14,
+            fontSize: 14,
             fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
             color: isTotal ? Colors.black : Colors.grey[700],
           ),
@@ -391,7 +454,7 @@ class ParcelConfirmDetails extends HookConsumerWidget {
         Text(
           amount,
           style: TextStyle(
-            fontSize: isTotal ? 18 : 14,
+            fontSize: 14,
             fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
             color: isTotal ? Colors.black : Colors.grey[700],
           ),
@@ -428,4 +491,11 @@ class ParcelConfirmDetails extends HookConsumerWidget {
       ),
     );
   }
+}
+
+String _formatAddress(String? address, String? city, String? state) {
+  final parts =
+      [address, city, state].where((e) => (e ?? '').isNotEmpty).toList();
+  if (parts.isEmpty) return '-';
+  return parts.join(', ');
 }

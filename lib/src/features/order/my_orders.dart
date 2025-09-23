@@ -71,10 +71,9 @@ class MyOrders extends HookConsumerWidget {
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: ongoingOrders.length + (ongoingOrders.length ~/ 2),
+                  itemCount: ongoingOrders.length,
                   itemBuilder: (context, index) {
-                    final itemIndex = index - (index ~/ 3);
-                    final order = ongoingOrders[itemIndex];
+                    final order = ongoingOrders[index];
                     final firstItem = order.items?.isNotEmpty == true
                         ? order.items!.first
                         : null;

@@ -1,3 +1,5 @@
+import 'package:fazt_order/src/features/courier/data/model/parcel_payment_details.dart';
+import 'package:fazt_order/src/features/courier/data/model/parcel_request.dart';
 import 'package:fazt_order/src/features/home/data/model/response/store_meals/store_meals.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -372,13 +374,13 @@ class ShopRepository {
     }
   }
 
-  Future<Result<FailureHandler, String>> bookCourier(
+  Future<Result<FailureHandler, ParcelRequest>> bookCourier(
       CourierPayload payload) async {
     try {
       final data = await authService.bookCourier(payload);
 
       if (data.isSuccess) {
-        return Success(data.value ?? '');
+        return Success(data.value ?? ParcelRequest());
       } else {
         return Error(
           data.error ??
@@ -429,6 +431,29 @@ class ShopRepository {
                 message: 'Failed to fetch courier list',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to fetch courier list'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, ParcelPaymentDetails>> makeParcelPayment(
+      String parcelId, String paymentMethod, String deliveryType) async {
+    try {
+      final data = await authService.makeParcelPayment(
+          parcelId, paymentMethod, deliveryType);
+
+      if (data.isSuccess) {
+        return Success(data.value ?? const ParcelPaymentDetails());
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to make parcel payment',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to make parcel payment'),
               ),
         );
       }

@@ -1,4 +1,6 @@
 import 'package:fazt_order/src/features/courier/data/model/courier_list.dart';
+import 'package:fazt_order/src/features/courier/data/model/parcel_payment_details.dart';
+import 'package:fazt_order/src/features/courier/data/model/parcel_request.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../model/response/cartlsit/cartlsit.dart';
@@ -26,7 +28,8 @@ class ShopState {
   final AsyncValue<MealVariantMenu> mealVariantMenu;
   final AsyncValue<String> addAddress;
   final AsyncValue<String> clearCart;
-  final AsyncValue<String> bookCourier;
+  final AsyncValue<ParcelRequest> bookCourier;
+  final AsyncValue<ParcelPaymentDetails> makeParcelPayment;
   final AsyncValue<MealDetails> mealDetails;
   final AsyncValue<CourierListResponse> courierList;
   const ShopState({
@@ -45,6 +48,7 @@ class ShopState {
     required this.addAddress,
     required this.clearCart,
     required this.bookCourier,
+    required this.makeParcelPayment,
     required this.mealDetails,
   });
 
@@ -64,7 +68,8 @@ class ShopState {
       mealVariantMenu: AsyncValue.data(MealVariantMenu()),
       addAddress: const AsyncValue.data(''),
       clearCart: const AsyncValue.data(''),
-      bookCourier: const AsyncValue.data(''),
+      bookCourier: const AsyncValue.data(ParcelRequest()),
+      makeParcelPayment: const AsyncValue.data(ParcelPaymentDetails()),
       mealDetails: AsyncValue.data(MealDetails()),
     );
   }
@@ -84,7 +89,8 @@ class ShopState {
     AsyncValue<MealVariantMenu>? mealVariantMenu,
     AsyncValue<String>? addAddress,
     AsyncValue<String>? clearCart,
-    AsyncValue<String>? bookCourier,
+    AsyncValue<ParcelRequest>? bookCourier,
+    AsyncValue<ParcelPaymentDetails>? makeParcelPayment,
     AsyncValue<MealDetails>? mealDetails,
   }) {
     return ShopState(
@@ -103,6 +109,7 @@ class ShopState {
       addAddress: addAddress ?? this.addAddress,
       clearCart: clearCart ?? this.clearCart,
       bookCourier: bookCourier ?? this.bookCourier,
+      makeParcelPayment: makeParcelPayment ?? this.makeParcelPayment,
       mealDetails: mealDetails ?? this.mealDetails,
     );
   }

@@ -374,4 +374,23 @@ class ShopController extends StateNotifier<ShopState> {
       },
     );
   }
+
+  Future<bool> makeParcelPayment(
+      String parcelId, String paymentMethod, String deliveryType) async {
+    state = state.copyWith(makeParcelPayment: const AsyncValue.loading());
+    final result = await _authenticationRepository.makeParcelPayment(
+        parcelId, paymentMethod, deliveryType);
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            makeParcelPayment: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(makeParcelPayment: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
 }

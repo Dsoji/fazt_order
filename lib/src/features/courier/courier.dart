@@ -573,35 +573,7 @@ class CourierView extends HookConsumerWidget {
             onChanged: (value) {},
             validator: (val) => Validators.requiredField(val, 'email'),
           ),
-          const Gap(24),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.brand950, // Light lime green background
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Delivery Fee",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF424242), // Dark grey text
-                  ),
-                ),
-                Text(
-                  "₦ 1,000",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF424242), // Dark grey text
-                  ),
-                ),
-              ],
-            ),
-          ),
+
           const Gap(40),
           FullButton(
             text: 'Continue',
