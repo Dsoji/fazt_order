@@ -56,7 +56,7 @@ class LocationBottomSheet extends HookConsumerWidget {
       isLoading.value = true;
 
       final url =
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=$apiKey&types=geocode';
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=$apiKey&types=geocode&components=country:ng';
       try {
         final response = await http.get(Uri.parse(url));
         final json = jsonDecode(response.body);
