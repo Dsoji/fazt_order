@@ -1,13 +1,9 @@
 import 'package:fazt_order/src/common/widgets/shimmer_restaurant_card.dart';
-import 'package:fazt_order/src/features/home/data/model/response/shops_model/result.dart';
-import 'package:fazt_order/src/features/home/data/model/response/shops_model/location.dart'
-    as shops_location;
-import 'package:fazt_order/src/features/home/data/model/response/shops_model/store.dart'
-    as shops_store;
+import 'package:fazt_order/src/features/home/data/controller/shop_controller.dart';
 import 'package:fazt_order/src/features/profile/data/controller/profile_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../common/app_colors.dart';
@@ -32,6 +28,7 @@ class FavoritesView extends HookConsumerWidget {
       });
       return null;
     }, const []);
+    final shops = ref.watch(shopControllerProvider).shops;
 
     return Scaffold(
       backgroundColor: kcPrimaryNeutral950,
@@ -53,60 +50,111 @@ class FavoritesView extends HookConsumerWidget {
         backgroundColor: kcPrimaryNeutral950,
         elevation: 0,
       ),
-      body: favouritesAsync.when(
-        data: (resp) {
-          final shops = resp.shops ?? [];
-          if (shops.isEmpty) {
-            return const Center(child: Text('No favorites yet'));
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16.0),
-            itemCount: shops.length,
-            itemBuilder: (context, index) {
-              final fav = shops[index];
-              final shopResult = ShopResult(
-                id: fav.id,
-                shopName: fav.shopName,
-                manager: fav.manager,
-                phone: fav.phone,
-                numberOfFavorites: fav.numberOfFavorites,
-                rating: (fav.rating is int)
-                    ? fav.rating as int
-                    : (fav.rating?.toInt()),
-                deliveryFee: (fav.deliveryFee is int)
-                    ? fav.deliveryFee as int
-                    : (fav.deliveryFee?.toInt()),
-                createdAt: fav.createdAt,
-                updatedAt: fav.updatedAt,
-                location: shops_location.Location(
-                  type: fav.location?.type,
-                  coordinates: fav.location?.coordinates,
-                  address: fav.location?.address,
-                  state: fav.location?.state,
-                  city: fav.location?.city,
-                ),
-                store: shops_store.Store(
-                  storeDisplayImage: fav.store?.storeDisplayImage,
-                  storeName: fav.store?.storeName,
-                  id: fav.store?.id,
-                ),
-              );
-              return RestaurantCard(
-                restaurant: shopResult,
-                index: index,
+      body: Expanded(
+        child: shops.when(
+          loading: () => shops.maybeWhen(
+            data: (data) {
+              final likedShops = data.results?.where((shop) => shop.isLiked == true).toList() ?? [];
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                itemCount: likedShops.length,
+                itemBuilder: (context, index) {
+                  final shop = likedShops[index];
+                  return RestaurantCard(
+                    restaurant: shop,
+                    index: index,
+                  );
+                },
               );
             },
-          );
-        },
-        loading: () => ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          itemCount: 10,
-          itemBuilder: (context, index) => const ShimmerRestaurantCard(),
-        ),
-        error: (e, _) => Center(
-          child: Text(
-            'Failed to load favorites',
-            style: ktBodySemiBoldSize20,
+            orElse: () => ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              itemCount: 10,
+              itemBuilder: (context, index) => const ShimmerRestaurantCard(),
+            ),
+          ),
+          error: (error, stackTrace) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading shops: ${error.toString()}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.red),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    ref.read(shopControllerProvider.notifier).fetchShops();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+          data: (shops) => RefreshIndicator(
+            onRefresh: () async {
+              await ref.read(profileControllerProvider.notifier).fetchProfile();
+              await ref.read(shopControllerProvider.notifier).fetchShops();
+              await ref.read(shopControllerProvider.notifier).fetchCart();
+              await ref
+                  .read(shopControllerProvider.notifier)
+                  .fetchMyOrdersList();
+              await ref.read(profileControllerProvider.notifier).fetchWallet();
+              await ref
+                  .read(profileControllerProvider.notifier)
+                  .fetchFavouritesList();
+              await ref.read(shopControllerProvider.notifier).fetchShops();
+            },
+            child: shops.results?.where((shop) => shop.isLiked == true).isEmpty == true
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.favorite_border,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'No favorites yet',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Tap the heart icon on restaurants to add them to favorites',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    itemCount: shops.results?.where((shop) => shop.isLiked == true).length ?? 0,
+                    itemBuilder: (context, index) {
+                      final likedShops = shops.results?.where((shop) => shop.isLiked == true).toList() ?? [];
+                      final shop = likedShops[index];
+                      return RestaurantCard(
+                        restaurant: shop,
+                        index: index,
+                      );
+                    },
+                  ),
           ),
         ),
       ),

@@ -2,9 +2,9 @@ import 'dart:async'; // Add this import for Timer
 import 'dart:convert';
 
 import 'package:animated_segmented_tab_control/animated_segmented_tab_control.dart';
-import 'package:fazt_order/src/features/courier/parcel_confirm_details.dart';
 import 'package:fazt_order/src/common/widgets/custom_textfield.dart';
 import 'package:fazt_order/src/common/widgets/reusbale_dropdown_widget.dart';
+import 'package:fazt_order/src/features/courier/parcel_confirm_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -220,6 +220,8 @@ class CourierView extends HookConsumerWidget {
         isLoading.value = false;
       }
     }
+
+    final selectedPackageType = useState<String?>(null);
 
     return Scaffold(
       appBar: PreferredSize(
@@ -482,10 +484,16 @@ class CourierView extends HookConsumerWidget {
           ),
           const Gap(16), // Reduced gap after timeline
           ReusableDropdown(
-              label: 'Parcel Type',
-              hintText: 'Parcel Type',
-              items: const ['Parcel', 'Box', 'Envelope'],
-              onChanged: (value) {}),
+              label: 'Standard Package',
+              hintText: 'Standard Package',
+              selectedValue: selectedPackageType.value,
+              items: const [
+                'Standard Package',
+                'Fragile Package',
+              ],
+              onChanged: (value) {
+                selectedPackageType.value = value;
+              }),
           const Gap(16),
           CustomFormTextField(
             hintText: 'Instructions',

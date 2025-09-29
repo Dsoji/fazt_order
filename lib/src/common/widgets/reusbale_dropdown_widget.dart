@@ -1,3 +1,4 @@
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 
@@ -49,7 +50,7 @@ class ReusableDropdown extends StatelessWidget {
             ),
           ),
           child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
+            child: DropdownButton2<String>(
               isExpanded: true,
               value: selectedValue,
               hint: Text(
@@ -63,7 +64,15 @@ class ReusableDropdown extends StatelessWidget {
                 );
               }).toList(),
               onChanged: onChanged,
-              dropdownColor: Colors.white, // Dropdown background color
+              // Force dropdown to appear below the field
+
+              dropdownStyleData: DropdownStyleData(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                ),
+                maxHeight: 200,
+              ),
             ),
           ),
         ),
