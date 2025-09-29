@@ -1,11 +1,11 @@
 import 'package:fazt_order/src/common/app_colors.dart';
+import 'package:fazt_order/src/common/res/app_colors.dart';
 import 'package:fazt_order/src/features/home/presentation/restaurant_details.dart';
 import 'package:fazt_order/src/features/profile/data/controller/profile_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 
-import '../../../providers/restaurant_provider.dart';
 import '../../features/home/data/model/response/shops_model/result.dart';
 
 class RestaurantCard extends ConsumerWidget {
@@ -82,8 +82,11 @@ class RestaurantCard extends ConsumerWidget {
                               .read(profileControllerProvider.notifier)
                               .fetchFavouritesList();
                         },
-                        child: const Icon(Iconsax.heart,
-                            color: kcPrimaryNeutral200, size: 24),
+                        child: restaurant.isLiked == true
+                            ? const Icon(Iconsax.heart5,
+                                color: AppColors.green800, size: 24)
+                            : const Icon(Iconsax.heart,
+                                color: kcPrimaryNeutral200, size: 24),
                       ),
                     ],
                   ),
@@ -106,7 +109,7 @@ class RestaurantCard extends ConsumerWidget {
                               color: kcPrimaryOrange700, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            "${restaurant.rating} (${restaurant.numberOfFavorites})",
+                            "${restaurant.rating} (${restaurant.numberOfFavorites.toString()})",
                             style: const TextStyle(fontSize: 14),
                           ),
                         ],

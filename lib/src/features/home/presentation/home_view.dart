@@ -59,6 +59,7 @@ class HomeView extends HookConsumerWidget {
         ref.read(profileControllerProvider.notifier).fetchWallet();
         ref.read(profileControllerProvider.notifier).fetchTransactionHistory();
         ref.read(profileControllerProvider.notifier).fetchFavouritesList();
+        ref.read(shopControllerProvider.notifier).fetchShops();
         // ref.read(profileControllerProvider.notifier).fetchStoreDetails();
         // ref.read(profileControllerProvider.notifier).listManager();
         // ref.read(mealControllerProvider.notifier).fetchMealCategory();
@@ -271,6 +272,7 @@ class HomeView extends HookConsumerWidget {
                   await ref
                       .read(profileControllerProvider.notifier)
                       .fetchFavouritesList();
+                  await ref.read(shopControllerProvider.notifier).fetchShops();
                 },
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
