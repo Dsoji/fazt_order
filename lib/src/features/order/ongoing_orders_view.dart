@@ -5,12 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:logger/logger.dart';
 import 'package:lottie/lottie.dart';
 
 import '../../common/components/vertical_stripe_pattern.dart';
 import '../../common/widgets/reusable_buttons.dart';
 import '../../common/widgets/text_styles.dart';
 import '../home/data/model/response/my_orders_list/result.dart';
+
+final logger = Logger();
 
 class OngoingOrderView extends HookConsumerWidget {
   final OrderResult orderItems;
@@ -54,6 +57,8 @@ class OngoingOrderView extends HookConsumerWidget {
         ? "Waiting for vendor to confirm your order. You can still cancel this order at the moment."
         : "You can not cancel this order at this moment.";
     final isCompleted = orderItems.status == 'completed';
+
+    logger.d('Order Items: ${orderItems.status}');
 
     return Scaffold(
       appBar: AppBar(
@@ -140,9 +145,9 @@ class OngoingOrderView extends HookConsumerWidget {
                     // ),
                     verticalSpaceSmall,
                     DashProgressBar(
-                        currentStep: orderItems.status == 'recieved'
+                        currentStep: orderItems.status == 'paid'
                             ? 1
-                            : orderItems.status == 'preparing'
+                            : orderItems.status == 'accepted'
                                 ? 2
                                 : orderItems.status == 'ready'
                                     ? 3
