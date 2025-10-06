@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../features/home/data/controller/shop_controller.dart';
 import '../../features/home/data/model/response/shops_model/result.dart';
 
 class RestaurantCard extends ConsumerWidget {
@@ -81,6 +82,9 @@ class RestaurantCard extends ConsumerWidget {
                           await ref
                               .read(profileControllerProvider.notifier)
                               .fetchFavouritesList();
+                          await ref
+                              .read(shopControllerProvider.notifier)
+                              .revalidateShops();
                         },
                         child: restaurant.isLiked == true
                             ? const Icon(Iconsax.heart5,

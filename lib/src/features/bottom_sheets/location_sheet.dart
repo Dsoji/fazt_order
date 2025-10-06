@@ -55,16 +55,29 @@ class LocationBottomSheet extends HookConsumerWidget {
 
       isLoading.value = true;
 
-      final url =
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=$apiKey&types=geocode&components=country:ng';
+      const url = 'https://places.googleapis.com/v1/places:autocomplete';
       try {
-        final response = await http.get(Uri.parse(url));
-        final json = jsonDecode(response.body);
+        final response = await http.post(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey ?? '',
+            'X-Goog-FieldMask':
+                'suggestions.placePrediction.placeId,suggestions.placePrediction.text',
+          },
+          body: jsonEncode({
+            'input': query,
+            'regionCode': 'NG',
+            'languageCode': 'en',
+          }),
+        );
 
-        if (json['status'] == 'OK') {
-          places.value = json['predictions'];
+        final json = jsonDecode(response.body);
+        if (response.statusCode == 200 && json['suggestions'] != null) {
+          places.value = List<dynamic>.from(json['suggestions']);
         } else {
-          print('Error fetching places: ${json['status']}');
+          print(
+              'Error fetching places: ${response.statusCode} ${response.body}');
         }
       } catch (e) {
         print('Error: $e');
@@ -77,53 +90,55 @@ class LocationBottomSheet extends HookConsumerWidget {
       isLoading.value = true;
 
       final url =
-          'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$apiKey';
+          'https://places.googleapis.com/v1/places/$placeId?languageCode=en&regionCode=NG';
 
       try {
-        final response = await http.get(Uri.parse(url));
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {
+            'X-Goog-Api-Key': apiKey ?? '',
+            'X-Goog-FieldMask':
+                'id,displayName,formattedAddress,location,addressComponents',
+          },
+        );
+
         final json = jsonDecode(response.body);
 
-        if (json['status'] == 'OK') {
-          final result = json['result'];
-          final location = result['geometry']['location'];
+        if (response.statusCode == 200) {
+          final result = json;
 
+          final location = result['location'];
           String? foundCity;
           String? foundState;
-          String? streetNumber;
-          String? route;
 
-          for (var component in result['address_components']) {
-            final List types = component['types'];
-            if (types.contains('locality')) {
-              foundCity = component['long_name'];
-            }
-            if (types.contains('administrative_area_level_1')) {
-              foundState = component['long_name'];
-            }
-            if (types.contains('street_number')) {
-              streetNumber = component['long_name'];
-            }
-            if (types.contains('route')) {
-              route = component['long_name'];
+          if (result['addressComponents'] is List) {
+            for (var component in result['addressComponents']) {
+              final List types = (component['types'] ?? []) as List;
+              if (types.contains('locality')) {
+                foundCity = component['longText'] ?? component['shortText'];
+              }
+              if (types.contains('administrative_area_level_1')) {
+                foundState = component['longText'] ?? component['shortText'];
+              }
             }
           }
 
-          lat.value = location['lat'].toString();
-          long.value = location['lng'].toString();
+          lat.value = (location?['latitude'] ?? '').toString();
+          long.value = (location?['longitude'] ?? '').toString();
           city.value = foundCity ?? '';
           state.value = foundState ?? '';
 
-          // Save selected address
           selectedAddress.value = {
             'title': description.split(',').first,
-            'address': result['formatted_address'] ?? description,
+            'address': result['formattedAddress'] ?? description,
             'lat': lat.value,
             'lng': long.value,
             'city': city.value,
             'state': state.value,
           };
         } else {
-          print('Error fetching place details: ${json['status']}');
+          print(
+              'Error fetching place details: ${response.statusCode} ${response.body}');
         }
       } catch (e) {
         print('Error: $e');
@@ -207,12 +222,13 @@ class LocationBottomSheet extends HookConsumerWidget {
                     itemCount: places.value.length,
                     itemBuilder: (context, index) {
                       final place = places.value[index];
+                      final pp = place['placePrediction'];
                       return ListTile(
-                        title: Text(place['description']),
+                        title: Text(pp?['text']?['text'] ?? ''),
                         onTap: () async {
                           await getPlaceDetails(
-                            place['place_id'],
-                            place['description'],
+                            pp?['placeId'],
+                            pp?['text']?['text'] ?? '',
                           );
                           places.value = [];
                         },

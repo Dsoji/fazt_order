@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -55,18 +56,24 @@ class CheckoutScreen extends HookConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(Iconsax.location,
-                        color: kcPrimaryNeutral200, size: 18),
-                    Text(
-                      userDetails?.user?.location?.address ?? "No Address",
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: ktBodyRegularSize12.copyWith(
-                          color: kcPrimaryNeutral500),
-                    ),
-                  ],
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Icon(Iconsax.location,
+                          color: kcPrimaryNeutral200, size: 18),
+                      const Gap(2),
+                      Expanded(
+                        child: Text(
+                          userDetails?.user?.location?.address ?? "No Address",
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: true,
+                          maxLines: 2,
+                          style: ktBodyRegularSize12.copyWith(
+                              color: kcPrimaryNeutral500),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 GestureDetector(
                   behavior: HitTestBehavior.translucent,
@@ -267,6 +274,51 @@ class CheckoutScreen extends HookConsumerWidget {
                                       Text(
                                           "₦${(item.mealVariant?.meal?.price ?? 0).toStringAsFixed(0)}"),
                                       verticalSpace(15),
+                                      if (item.options != null &&
+                                          item.options!.isNotEmpty) ...[
+                                        Text(
+                                          "Options:",
+                                          style: ktBodyRegularSize12.copyWith(
+                                            color: kcPrimaryNeutral300,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        verticalSpaceTiny,
+                                        ...item.options!.map((option) {
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                                left: 8.0, bottom: 4.0),
+                                            child: Row(
+                                              children: [
+                                                Container(
+                                                  width: 4,
+                                                  height: 4,
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                    color: kcPrimaryNeutral400,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                ),
+                                                horizontalSpaceTiny,
+                                                Expanded(
+                                                  child: Text(
+                                                    option
+                                                            .optionItemVariant
+                                                            ?.optionItem
+                                                            ?.item ??
+                                                        "",
+                                                    style: ktBodyRegularSize12
+                                                        .copyWith(
+                                                      color:
+                                                          kcPrimaryNeutral400,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }),
+                                      ],
                                       // Row(
                                       //   children: [
                                       //     const Text("Your menu",

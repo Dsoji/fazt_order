@@ -2,18 +2,25 @@ import 'dart:convert';
 
 class Store {
   String? id;
+  String? storeDisplayImage;
+  String? storeName;
 
-  Store({this.id});
+  Store({this.id, this.storeDisplayImage, this.storeName});
 
   @override
-  String toString() => 'Store(id: $id)';
+  String toString() =>
+      'Store(id: $id, storeDisplayImage: $storeDisplayImage, storeName: $storeName)';
 
   factory Store.fromMap(Map<String, dynamic> data) => Store(
         id: data['id'] as String?,
+        storeDisplayImage: data['storeDisplayImage'] as String?,
+        storeName: data['storeName'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
         'id': id,
+        'storeDisplayImage': storeDisplayImage,
+        'storeName': storeName,
       };
 
   /// `dart:convert`
@@ -30,9 +37,13 @@ class Store {
 
   Store copyWith({
     String? id,
+    String? storeDisplayImage,
+    String? storeName,
   }) {
     return Store(
       id: id ?? this.id,
+      storeDisplayImage: storeDisplayImage ?? this.storeDisplayImage,
+      storeName: storeName ?? this.storeName,
     );
   }
 }

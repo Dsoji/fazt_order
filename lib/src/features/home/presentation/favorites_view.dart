@@ -19,6 +19,8 @@ class FavoritesView extends HookConsumerWidget {
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(shopControllerProvider.notifier).revalidateShops();
+
         final value = ref.read(profileControllerProvider).favouritesList;
         final hasData =
             value.hasValue && (value.value?.shops?.isNotEmpty ?? false);
@@ -28,6 +30,7 @@ class FavoritesView extends HookConsumerWidget {
       });
       return null;
     }, const []);
+
     final shops = ref.watch(shopControllerProvider).shops;
 
     return Scaffold(
@@ -50,112 +53,117 @@ class FavoritesView extends HookConsumerWidget {
         backgroundColor: kcPrimaryNeutral950,
         elevation: 0,
       ),
-      body: Expanded(
-        child: shops.when(
-          loading: () => shops.maybeWhen(
-            data: (data) {
-              final likedShops = data.results?.where((shop) => shop.isLiked == true).toList() ?? [];
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                itemCount: likedShops.length,
-                itemBuilder: (context, index) {
-                  final shop = likedShops[index];
-                  return RestaurantCard(
-                    restaurant: shop,
-                    index: index,
-                  );
-                },
-              );
-            },
-            orElse: () => ListView.builder(
+      body: shops.when(
+        loading: () => shops.maybeWhen(
+          data: (data) {
+            final likedShops =
+                data.results?.where((shop) => shop.isLiked == true).toList() ??
+                    [];
+            return ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              itemCount: 10,
-              itemBuilder: (context, index) => const ShimmerRestaurantCard(),
-            ),
+              itemCount: likedShops.length,
+              itemBuilder: (context, index) {
+                final shop = likedShops[index];
+                return RestaurantCard(
+                  restaurant: shop,
+                  index: index,
+                );
+              },
+            );
+          },
+          orElse: () => ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            itemCount: 10,
+            itemBuilder: (context, index) => const ShimmerRestaurantCard(),
           ),
-          error: (error, stackTrace) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  color: Colors.red,
-                  size: 48,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Error loading shops: ${error.toString()}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.red),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {
-                    ref.read(shopControllerProvider.notifier).fetchShops();
-                  },
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+        ),
+        error: (error, stackTrace) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Error loading shops: ${error.toString()}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.red),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(shopControllerProvider.notifier).revalidateShops();
+                },
+                child: const Text('Retry'),
+              ),
+            ],
           ),
-          data: (shops) => RefreshIndicator(
-            onRefresh: () async {
-              await ref.read(profileControllerProvider.notifier).fetchProfile();
-              await ref.read(shopControllerProvider.notifier).fetchShops();
-              await ref.read(shopControllerProvider.notifier).fetchCart();
-              await ref
-                  .read(shopControllerProvider.notifier)
-                  .fetchMyOrdersList();
-              await ref.read(profileControllerProvider.notifier).fetchWallet();
-              await ref
-                  .read(profileControllerProvider.notifier)
-                  .fetchFavouritesList();
-              await ref.read(shopControllerProvider.notifier).fetchShops();
-            },
-            child: shops.results?.where((shop) => shop.isLiked == true).isEmpty == true
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.favorite_border,
-                          size: 64,
+        ),
+        data: (shops) => RefreshIndicator(
+          onRefresh: () async {
+            await ref.read(profileControllerProvider.notifier).fetchProfile();
+            await ref.read(shopControllerProvider.notifier).revalidateShops();
+            await ref.read(shopControllerProvider.notifier).fetchCart();
+            await ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+            await ref.read(profileControllerProvider.notifier).fetchWallet();
+            await ref
+                .read(profileControllerProvider.notifier)
+                .fetchFavouritesList();
+            await ref.read(shopControllerProvider.notifier).revalidateShops();
+          },
+          child: shops.results?.where((shop) => shop.isLiked == true).isEmpty ==
+                  true
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.favorite_border,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'No favorites yet',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Tap the heart icon on restaurants to add them to favorites',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
                           color: Colors.grey,
                         ),
-                        SizedBox(height: 16),
-                        Text(
-                          'No favorites yet',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Tap the heart icon on restaurants to add them to favorites',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    itemCount: shops.results?.where((shop) => shop.isLiked == true).length ?? 0,
-                    itemBuilder: (context, index) {
-                      final likedShops = shops.results?.where((shop) => shop.isLiked == true).toList() ?? [];
-                      final shop = likedShops[index];
-                      return RestaurantCard(
-                        restaurant: shop,
-                        index: index,
-                      );
-                    },
+                      ),
+                    ],
                   ),
-          ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  itemCount: shops.results
+                          ?.where((shop) => shop.isLiked == true)
+                          .length ??
+                      0,
+                  itemBuilder: (context, index) {
+                    final likedShops = shops.results
+                            ?.where((shop) => shop.isLiked == true)
+                            .toList() ??
+                        [];
+                    final shop = likedShops[index];
+                    return RestaurantCard(
+                      restaurant: shop,
+                      index: index,
+                    );
+                  },
+                ),
         ),
       ),
     );

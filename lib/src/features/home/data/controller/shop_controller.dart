@@ -46,9 +46,34 @@ class ShopController extends StateNotifier<ShopState> {
   final ShopRepository _authenticationRepository;
   final Ref ref;
 
-  Future<bool> fetchShops() async {
+  Future<bool> revalidateShops() async {
+    final cached = _authenticationRepository.readCachedShops();
+    if (cached != null) {
+      state = state.copyWith(shops: AsyncValue.data(cached));
+    }
+    // Fetch fresh data in background, do not set loading so cached remains visible
+    final result =
+        await _authenticationRepository.fetchShops(forceRefresh: true);
+    return result.when(
+      (error) {
+        // Keep showing cached data on error
+        if (!state.shops.hasValue) {
+          state = state.copyWith(
+              shops: AsyncValue.error(error, StackTrace.current));
+        }
+        return false;
+      },
+      (success) {
+        state = state.copyWith(shops: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
+
+  Future<bool> fetchShops({bool forceRefresh = false}) async {
     state = state.copyWith(shops: const AsyncValue.loading());
-    final result = await _authenticationRepository.fetchShops();
+    final result =
+        await _authenticationRepository.fetchShops(forceRefresh: forceRefresh);
 
     return result.when(
       (error) {

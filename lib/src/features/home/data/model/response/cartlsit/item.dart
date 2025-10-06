@@ -1,11 +1,12 @@
 import 'dart:convert';
 
+import 'item_options.dart';
 import 'meal_variant.dart';
 
 class Item {
   MealVariant? mealVariant;
   int? mealQuantity;
-  List<dynamic>? options;
+  List<ItemOption>? options;
   int? packNumber;
   String? id;
 
@@ -27,7 +28,9 @@ class Item {
             ? null
             : MealVariant.fromMap(data['mealVariant'] as Map<String, dynamic>),
         mealQuantity: data['mealQuantity'] as int?,
-        options: data['options'] as List<dynamic>?,
+        options: (data['options'] as List<dynamic>?)
+            ?.map((e) => ItemOption.fromMap(e as Map<String, dynamic>))
+            .toList(),
         packNumber: data['packNumber'] as int?,
         id: data['_id'] as String?,
       );
@@ -35,7 +38,7 @@ class Item {
   Map<String, dynamic> toMap() => {
         'mealVariant': mealVariant?.toMap(),
         'mealQuantity': mealQuantity,
-        'options': options,
+        'options': options?.map((e) => e.toMap()).toList(),
         'packNumber': packNumber,
         '_id': id,
       };
@@ -55,7 +58,7 @@ class Item {
   Item copyWith({
     MealVariant? mealVariant,
     int? mealQuantity,
-    List<dynamic>? options,
+    List<ItemOption>? options,
     int? packNumber,
     String? id,
   }) {

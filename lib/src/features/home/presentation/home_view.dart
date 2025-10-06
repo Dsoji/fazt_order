@@ -53,13 +53,12 @@ class HomeView extends HookConsumerWidget {
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref.read(profileControllerProvider.notifier).fetchProfile();
-        ref.read(shopControllerProvider.notifier).fetchShops();
+        ref.read(shopControllerProvider.notifier).revalidateShops();
         ref.read(shopControllerProvider.notifier).fetchCart();
         ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
         ref.read(profileControllerProvider.notifier).fetchWallet();
         ref.read(profileControllerProvider.notifier).fetchTransactionHistory();
         ref.read(profileControllerProvider.notifier).fetchFavouritesList();
-        ref.read(shopControllerProvider.notifier).fetchShops();
         // ref.read(profileControllerProvider.notifier).fetchStoreDetails();
         // ref.read(profileControllerProvider.notifier).listManager();
         // ref.read(mealControllerProvider.notifier).fetchMealCategory();
@@ -249,7 +248,9 @@ class HomeView extends HookConsumerWidget {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        ref.read(shopControllerProvider.notifier).fetchShops();
+                        ref
+                            .read(shopControllerProvider.notifier)
+                            .revalidateShops();
                       },
                       child: const Text('Retry'),
                     ),
@@ -261,7 +262,10 @@ class HomeView extends HookConsumerWidget {
                   await ref
                       .read(profileControllerProvider.notifier)
                       .fetchProfile();
-                  await ref.read(shopControllerProvider.notifier).fetchShops();
+                  await ref
+                      .read(shopControllerProvider.notifier)
+                      .revalidateShops();
+
                   await ref.read(shopControllerProvider.notifier).fetchCart();
                   await ref
                       .read(shopControllerProvider.notifier)
@@ -272,7 +276,9 @@ class HomeView extends HookConsumerWidget {
                   await ref
                       .read(profileControllerProvider.notifier)
                       .fetchFavouritesList();
-                  await ref.read(shopControllerProvider.notifier).fetchShops();
+                  await ref
+                      .read(shopControllerProvider.notifier)
+                      .revalidateShops();
                 },
                 child: ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),

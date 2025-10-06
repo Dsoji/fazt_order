@@ -30,24 +30,28 @@ class ShopRepository {
   ShopRepository(
     this.authService,
   );
-
   final ShopService authService;
 
-  Future<Result<FailureHandler, ShopsModel>> fetchShops() async {
+  ShopsModel? readCachedShops() {
+    final box = Hive.box('data');
+    final cachedData = box.get('shops');
+    if (cachedData == null) return null;
+    return ShopsModel.fromJson(cachedData);
+  }
+
+  Future<Result<FailureHandler, ShopsModel>> fetchShops(
+      {bool forceRefresh = false}) async {
     try {
-      // Try to get data from Hive cache first
       final box = Hive.box('data');
-      final cachedData = box.get('shops');
+      final cachedData = forceRefresh ? null : box.get('shops');
 
       if (cachedData != null) {
         return Success(ShopsModel.fromJson(cachedData));
       }
 
-      // If no cache, fetch from API
       final data = await authService.fetchShops();
 
       if (data.isSuccess) {
-        // Store successful response in Hive
         final shopsData = data.value ?? ShopsModel();
         await box.put('shops', shopsData.toJson());
         return Success(shopsData);
@@ -380,7 +384,7 @@ class ShopRepository {
       final data = await authService.bookCourier(payload);
 
       if (data.isSuccess) {
-        return Success(data.value ?? ParcelRequest());
+        return Success(data.value ?? const ParcelRequest());
       } else {
         return Error(
           data.error ??

@@ -129,8 +129,8 @@ class OrderView extends HookConsumerWidget {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
                                 child: Image.network(
-                                  // item.shop?.store ??
-                                  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzeuH3XltMkc-nh4I-2mYGRK5WvvqqILiEJA&s",
+                                  item.shop?.store?.storeDisplayImage ??
+                                      "asset/images/placeholder.png",
                                   width: 80,
                                   height: 80,
                                   fit: BoxFit.cover,

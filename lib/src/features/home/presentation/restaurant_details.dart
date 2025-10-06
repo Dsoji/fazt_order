@@ -14,6 +14,7 @@ import '../../../common/app_colors.dart';
 import '../../../common/res/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
+import '../../profile/data/controller/profile_controller.dart';
 import '../data/controller/shop_controller.dart';
 import '../data/model/response/meal_details/item.dart' as meal_details;
 import '../data/model/response/meal_variant_menu/result.dart';
@@ -69,7 +70,6 @@ class RestaurantDetailsView extends HookConsumerWidget {
       }
     }
 
-    final meals = ref.watch(shopControllerProvider).storeMeals;
     final mealVariants = ref.watch(shopControllerProvider).mealVariantMenu;
 
     return Scaffold(
@@ -139,14 +139,26 @@ class RestaurantDetailsView extends HookConsumerWidget {
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(
-                        Iconsax.heart5,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        // Implement favorite functionality
+                    GestureDetector(
+                      onTap: () async {
+                        await ref
+                            .read(profileControllerProvider.notifier)
+                            .addToFavorites(shopId: restaurant.id ?? '');
+                        await ref
+                            .read(profileControllerProvider.notifier)
+                            .fetchFavouritesList();
+                        await ref
+                            .read(shopControllerProvider.notifier)
+                            .revalidateShops();
                       },
+                      child: Icon(
+                          restaurant.isLiked == true
+                              ? Iconsax.heart5
+                              : Iconsax.heart,
+                          color: restaurant.isLiked == true
+                              ? AppColors.green800
+                              : kcPrimaryNeutral200,
+                          size: 24),
                     ),
                   ],
                 ),
@@ -155,19 +167,27 @@ class RestaurantDetailsView extends HookConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Iconsax.location,
-                          color: kcPrimaryNeutral500,
-                        ),
-                        Text(
-                          restaurant.location?.address ?? '',
-                          style: ktBodyRegularSize12.copyWith(
-                              color: kcPrimaryNeutral500),
-                        ),
-                      ],
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Iconsax.location,
+                            color: kcPrimaryNeutral500,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              restaurant.location?.address ?? '',
+                              style: ktBodyRegularSize12.copyWith(
+                                  color: kcPrimaryNeutral500),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Row(
                       children: [
                         const Icon(
@@ -1202,8 +1222,10 @@ class AddToCartBottomSheet extends HookConsumerWidget {
           final option = entry.value;
           final item = items[index];
           final itemId = item.id ?? '';
-          final isSelected = selectedItemIdsWithQuantity.containsKey(itemId);
-          final quantity = selectedItemIdsWithQuantity[itemId] ?? 0;
+          final itemVariantId = item.variant?.id ?? '';
+          final isSelected =
+              selectedItemIdsWithQuantity.containsKey(itemVariantId);
+          final quantity = selectedItemIdsWithQuantity[itemVariantId] ?? 0;
 
           // Add debug print
           print('Item: $itemId, isSelected: $isSelected, quantity: $quantity');
@@ -1223,15 +1245,15 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                   newSelection.clear();
                 } else {
                   newSelection.clear();
-                  newSelection[itemId] = 1;
+                  newSelection[itemVariantId] = 1;
                 }
               } else {
                 // Multiple selection with quantity
                 if (isSelected) {
-                  newSelection.remove(itemId);
+                  newSelection.remove(itemVariantId);
                 } else {
                   if (newSelection.length < maxSelection) {
-                    newSelection[itemId] = 1;
+                    newSelection[itemVariantId] = 1;
                   }
                 }
               }
@@ -1243,9 +1265,9 @@ class AddToCartBottomSheet extends HookConsumerWidget {
               Map<String, int> newSelection =
                   Map.from(selectedItemIdsWithQuantity);
               if (newQuantity > 0) {
-                newSelection[itemId] = newQuantity;
+                newSelection[itemVariantId] = newQuantity;
               } else {
-                newSelection.remove(itemId);
+                newSelection.remove(itemVariantId);
               }
               print('Quantity changed: $newSelection');
               onSelectionChanged(newSelection);
