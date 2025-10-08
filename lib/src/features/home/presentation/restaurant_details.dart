@@ -1,3 +1,4 @@
+import 'package:fazt_order/providers/navigation_provider.dart';
 import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -52,6 +53,8 @@ class RestaurantDetailsView extends HookConsumerWidget {
 
     final selectedItems =
         ref.watch(shopControllerProvider).shopFoodCategory.valueOrNull?.results;
+    final cartItemAsync = ref.watch(shopControllerProvider).fetchCart;
+    final cartItem = cartItemAsync.valueOrNull?.carts ?? [];
 
     // Add this state for selected category ID
     final selectedCategoryId = useState<String?>(null);
@@ -74,6 +77,55 @@ class RestaurantDetailsView extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: kcWhite,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: cartItem.isNotEmpty
+          ? Container(
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.brand900,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(28),
+                  onTap: () {
+                    // Navigate to Order tab (index 1) in the bottom navigation
+                    ref.read(navigationProvider.notifier).state = 1;
+                    Navigator.pop(context);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Iconsax.shopping_cart,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${cartItem.length} items in cart, tap to view',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : null,
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
