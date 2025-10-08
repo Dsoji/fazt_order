@@ -11,6 +11,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
+import 'package:logger/logger.dart';
 import 'package:timelines_plus/timelines_plus.dart';
 
 import '../../common/res/app_colors.dart';
@@ -18,6 +19,8 @@ import '../../common/utils/validator.dart';
 import '../../common/widgets/reusable_buttons.dart';
 import '../home/data/controller/shop_controller.dart';
 import '../home/data/model/payload/courier_payload.dart';
+
+final logger = Logger();
 
 class CourierView extends HookConsumerWidget {
   const CourierView({super.key});
@@ -46,6 +49,7 @@ class CourierView extends HookConsumerWidget {
     final nameController2 = useTextEditingController();
     final phoneNumberController2 = useTextEditingController();
     final emailController2 = useTextEditingController();
+
     // Place Details
     final pickUpLat = useState('');
     final pickUpLong = useState('');
@@ -57,21 +61,23 @@ class CourierView extends HookConsumerWidget {
     final deliveryCity = useState('');
     final deliveryState = useState('');
 
-    // For debouncing search input
-    // For debouncing search input
+    // For debouncing search input - improved approach
     final debounceTimer = useRef<Timer?>(null);
 
-    // For safer dotenv access
-    String getApiKey() {
-      try {
-        return dotenv.env['MAP_KEY'] ?? '';
-      } catch (e) {
-        print('Error accessing MAP_KEY: $e');
-        return '';
-      }
+    // Improved API key access
+    final String? apiKey = dotenv.env['MAP_KEY'];
+
+    // Add null check for API key
+    if (apiKey == null) {
+      print('Error: MAP_KEY not found in environment variables');
     }
 
-    final String apiKey = getApiKey();
+    // Cleanup timer on dispose
+    useEffect(() {
+      return () {
+        debounceTimer.value?.cancel();
+      };
+    }, []);
 
     Future<void> searchPickUpPlaces(String query) async {
       if (query.isEmpty) {
@@ -81,21 +87,32 @@ class CourierView extends HookConsumerWidget {
 
       isLoading.value = true;
 
-      final url =
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=AIzaSyCZfDAROgHIb5FhQP863pKus-bJ3pKCgvo&types=geocode';
+      const url = 'https://places.googleapis.com/v1/places:autocomplete';
       try {
-        final response = await http.get(Uri.parse(url));
-        final json = jsonDecode(response.body);
+        final response = await http.post(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey ?? '',
+            'X-Goog-FieldMask':
+                'suggestions.placePrediction.placeId,suggestions.placePrediction.text',
+          },
+          body: jsonEncode({
+            'input': query,
+            'regionCode': 'NG',
+            'languageCode': 'en',
+          }),
+        );
 
-        if (json['status'] == 'OK') {
-          pickUpPlaces.value = json['predictions'];
+        final json = jsonDecode(response.body);
+        if (response.statusCode == 200 && json['suggestions'] != null) {
+          pickUpPlaces.value = List<dynamic>.from(json['suggestions']);
         } else {
-          print('Error fetching places: ${json['status']}');
-          pickUpPlaces.value = [];
+          print(
+              'Error fetching places: ${response.statusCode} ${response.body}');
         }
       } catch (e) {
         print('Error: $e');
-        pickUpPlaces.value = [];
       } finally {
         isLoading.value = false;
       }
@@ -109,21 +126,32 @@ class CourierView extends HookConsumerWidget {
 
       isLoading.value = true;
 
-      final url =
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=AIzaSyCZfDAROgHIb5FhQP863pKus-bJ3pKCgvo&types=geocode';
+      const url = 'https://places.googleapis.com/v1/places:autocomplete';
       try {
-        final response = await http.get(Uri.parse(url));
-        final json = jsonDecode(response.body);
+        final response = await http.post(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey ?? '',
+            'X-Goog-FieldMask':
+                'suggestions.placePrediction.placeId,suggestions.placePrediction.text',
+          },
+          body: jsonEncode({
+            'input': query,
+            'regionCode': 'NG',
+            'languageCode': 'en',
+          }),
+        );
 
-        if (json['status'] == 'OK') {
-          deliveryPlaces.value = json['predictions'];
+        final json = jsonDecode(response.body);
+        if (response.statusCode == 200 && json['suggestions'] != null) {
+          deliveryPlaces.value = List<dynamic>.from(json['suggestions']);
         } else {
-          print('Error fetching places: ${json['status']}');
-          deliveryPlaces.value = [];
+          print(
+              'Error fetching places: ${response.statusCode} ${response.body}');
         }
       } catch (e) {
         print('Error: $e');
-        deliveryPlaces.value = [];
       } finally {
         isLoading.value = false;
       }
@@ -133,43 +161,53 @@ class CourierView extends HookConsumerWidget {
       isLoading.value = true;
 
       final url =
-          'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=AIzaSyCZfDAROgHIb5FhQP863pKus-bJ3pKCgvo';
+          'https://places.googleapis.com/v1/places/$placeId?languageCode=en&regionCode=NG';
 
       try {
-        final response = await http.get(Uri.parse(url));
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {
+            'X-Goog-Api-Key': apiKey ?? '',
+            'X-Goog-FieldMask':
+                'id,displayName,formattedAddress,location,addressComponents',
+          },
+        );
+
         final json = jsonDecode(response.body);
 
-        if (json['status'] == 'OK') {
-          final result = json['result'];
-          final location = result['geometry']['location'];
-
+        if (response.statusCode == 200) {
+          final result = json;
+          final location = result['location'];
           String? foundCity;
           String? foundState;
 
-          for (var component in result['address_components']) {
-            final List types = component['types'];
-            if (types.contains('locality')) {
-              foundCity = component['long_name'];
-            }
-            if (types.contains('administrative_area_level_1')) {
-              foundState = component['long_name'];
+          if (result['addressComponents'] is List) {
+            for (var component in result['addressComponents']) {
+              final List types = (component['types'] ?? []) as List;
+              if (types.contains('locality')) {
+                foundCity = component['longText'] ?? component['shortText'];
+              }
+              if (types.contains('administrative_area_level_1')) {
+                foundState = component['longText'] ?? component['shortText'];
+              }
             }
           }
 
-          pickUpLat.value = location['lat'].toString();
-          pickUpLong.value = location['lng'].toString();
+          pickUpLat.value = (location?['latitude'] ?? '').toString();
+          pickUpLong.value = (location?['longitude'] ?? '').toString();
           pickUpCity.value = foundCity ?? '';
           pickUpState.value = foundState ?? '';
 
-          print('Latitude: ${pickUpLat.value}');
-          print('Longitude: ${pickUpLong.value}');
-          print('City: ${pickUpCity.value}');
-          print('State: ${pickUpState.value}');
+          logger.i('Pickup - Latitude: ${pickUpLat.value}');
+          logger.i('Pickup - Longitude: ${pickUpLong.value}');
+          logger.i('Pickup - City: ${pickUpCity.value}');
+          logger.i('Pickup - State: ${pickUpState.value}');
         } else {
-          print('Error fetching place details: ${json['status']}');
+          print(
+              'Error fetching pickup place details: ${response.statusCode} ${response.body}');
         }
       } catch (e) {
-        print('Error: $e');
+        print('Error fetching pickup place details: $e');
       } finally {
         isLoading.value = false;
       }
@@ -179,43 +217,53 @@ class CourierView extends HookConsumerWidget {
       isLoading.value = true;
 
       final url =
-          'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=AIzaSyCZfDAROgHIb5FhQP863pKus-bJ3pKCgvo';
+          'https://places.googleapis.com/v1/places/$placeId?languageCode=en&regionCode=NG';
 
       try {
-        final response = await http.get(Uri.parse(url));
+        final response = await http.get(
+          Uri.parse(url),
+          headers: {
+            'X-Goog-Api-Key': apiKey ?? '',
+            'X-Goog-FieldMask':
+                'id,displayName,formattedAddress,location,addressComponents',
+          },
+        );
+
         final json = jsonDecode(response.body);
 
-        if (json['status'] == 'OK') {
-          final result = json['result'];
-          final location = result['geometry']['location'];
-
+        if (response.statusCode == 200) {
+          final result = json;
+          final location = result['location'];
           String? foundCity;
           String? foundState;
 
-          for (var component in result['address_components']) {
-            final List types = component['types'];
-            if (types.contains('locality')) {
-              foundCity = component['long_name'];
-            }
-            if (types.contains('administrative_area_level_1')) {
-              foundState = component['long_name'];
+          if (result['addressComponents'] is List) {
+            for (var component in result['addressComponents']) {
+              final List types = (component['types'] ?? []) as List;
+              if (types.contains('locality')) {
+                foundCity = component['longText'] ?? component['shortText'];
+              }
+              if (types.contains('administrative_area_level_1')) {
+                foundState = component['longText'] ?? component['shortText'];
+              }
             }
           }
 
-          deliveryLat.value = location['lat'].toString();
-          deliveryLong.value = location['lng'].toString();
+          deliveryLat.value = (location?['latitude'] ?? '').toString();
+          deliveryLong.value = (location?['longitude'] ?? '').toString();
           deliveryCity.value = foundCity ?? '';
           deliveryState.value = foundState ?? '';
 
-          print('Latitude: ${deliveryLat.value}');
-          print('Longitude: ${deliveryLong.value}');
-          print('City: ${deliveryCity.value}');
-          print('State: ${deliveryState.value}');
+          logger.i('Delivery - Latitude: ${deliveryLat.value}');
+          logger.i('Delivery - Longitude: ${deliveryLong.value}');
+          logger.i('Delivery - City: ${deliveryCity.value}');
+          logger.i('Delivery - State: ${deliveryState.value}');
         } else {
-          print('Error fetching place details: ${json['status']}');
+          print(
+              'Error fetching delivery place details: ${response.statusCode} ${response.body}');
         }
       } catch (e) {
-        print('Error: $e');
+        print('Error fetching delivery place details: $e');
       } finally {
         isLoading.value = false;
       }
@@ -376,14 +424,27 @@ class CourierView extends HookConsumerWidget {
                               }
                             });
                           },
-                          validator: (val) =>
-                              Validators.requiredField(val, 'pickup_address'),
+                          validator: (val) {
+                            if (val is String) {
+                              return Validators.requiredField(
+                                  val, 'pickup_address');
+                            }
+                            return 'Please enter a valid address';
+                          },
                         ),
                         if (pickUpPlaces.value.isNotEmpty)
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  spreadRadius: 1,
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
                             ),
                             constraints: const BoxConstraints(
                               maxHeight:
@@ -395,13 +456,30 @@ class CourierView extends HookConsumerWidget {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: pickUpPlaces.value.map((place) {
+                                  final pp = place['placePrediction'];
+                                  final displayText = pp?['text']?['text'] ?? '';
+                                  final placeId = pp?['placeId'] ?? '';
+
                                   return ListTile(
-                                    title: Text(place['description']),
+                                    leading: const Icon(
+                                      Icons.location_on,
+                                      color: Colors.grey,
+                                      size: 20,
+                                    ),
+                                    title: Text(
+                                      displayText,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black,
+                                      ),
+                                    ),
                                     onTap: () {
-                                      getPickUpPlaceDetails(place['place_id']);
-                                      pickUpController.text =
-                                          place['description'];
-                                      pickUpPlaces.value = [];
+                                      if (placeId.isNotEmpty) {
+                                        getPickUpPlaceDetails(placeId);
+                                        pickUpController.text = displayText;
+                                        pickUpPlaces.value = [];
+                                      }
                                     },
                                   );
                                 }).toList(),
@@ -442,14 +520,27 @@ class CourierView extends HookConsumerWidget {
                               }
                             });
                           },
-                          validator: (val) =>
-                              Validators.requiredField(val, 'delivery_address'),
+                          validator: (val) {
+                            if (val is String) {
+                              return Validators.requiredField(
+                                  val, 'delivery_address');
+                            }
+                            return 'Please enter a valid address';
+                          },
                         ),
                         if (deliveryPlaces.value.isNotEmpty)
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  spreadRadius: 1,
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
                             ),
                             constraints: const BoxConstraints(
                               maxHeight:
@@ -461,14 +552,30 @@ class CourierView extends HookConsumerWidget {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: deliveryPlaces.value.map((place) {
+                                  final pp = place['placePrediction'];
+                                  final displayText = pp?['text']?['text'] ?? '';
+                                  final placeId = pp?['placeId'] ?? '';
+
                                   return ListTile(
-                                    title: Text(place['description']),
+                                    leading: const Icon(
+                                      Icons.location_on,
+                                      color: Colors.grey,
+                                      size: 20,
+                                    ),
+                                    title: Text(
+                                      displayText,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black,
+                                      ),
+                                    ),
                                     onTap: () {
-                                      getDeliveryPlaceDetails(
-                                          place['place_id']);
-                                      deliveryController.text =
-                                          place['description'];
-                                      deliveryPlaces.value = [];
+                                      if (placeId.isNotEmpty) {
+                                        getDeliveryPlaceDetails(placeId);
+                                        deliveryController.text = displayText;
+                                        deliveryPlaces.value = [];
+                                      }
                                     },
                                   );
                                 }).toList(),
@@ -589,6 +696,33 @@ class CourierView extends HookConsumerWidget {
             height: 48,
             isLoading: ref.watch(shopControllerProvider).bookCourier.isLoading,
             onPressed: () async {
+              // Add this validation before the form submission
+              if (pickUpController.text.isEmpty ||
+                  deliveryController.text.isEmpty ||
+                  nameController.text.isEmpty ||
+                  phoneNumberController.text.isEmpty ||
+                  emailController.text.isEmpty ||
+                  nameController2.text.isEmpty ||
+                  phoneNumberController2.text.isEmpty ||
+                  emailController2.text.isEmpty ||
+                  pickUpLat.value.isEmpty ||
+                  pickUpLong.value.isEmpty ||
+                  pickUpCity.value.isEmpty ||
+                  pickUpState.value.isEmpty ||
+                  deliveryLat.value.isEmpty ||
+                  deliveryLong.value.isEmpty ||
+                  deliveryCity.value.isEmpty ||
+                  deliveryState.value.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'Please select valid addresses with complete location data'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
               // Remove the form validation since you removed FormBuilder
               // if (formKey.currentState!.saveAndValidate()) {
               //   final formData = formKey.currentState!.value;
