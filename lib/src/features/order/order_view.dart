@@ -27,10 +27,6 @@ class OrderView extends HookConsumerWidget {
     final cartItemAsync = ref.watch(shopControllerProvider).fetchCart;
 
     final orderState = ref.watch(orderProvider);
-    final ongoingItems =
-        orderState.items.where((item) => item.tab == 'ongoing').toList();
-    final completedItems =
-        orderState.items.where((item) => item.tab == 'completed').toList();
 
     // Listen to tab changes
     useEffect(() {
@@ -49,19 +45,6 @@ class OrderView extends HookConsumerWidget {
       });
       return null;
     }, []);
-
-    void clearItems() {
-      final notifier = ref.read(orderProvider.notifier);
-      if (selectedIndex.value == 0) {
-        notifier.clearCartItems();
-      } else if (selectedIndex.value == 1) {
-        notifier.clearOngoingItems();
-      } else if (selectedIndex.value == 2) {
-        notifier.clearCompletedItems();
-      }
-    }
-
-    final myOrdersList = ref.watch(shopControllerProvider).myOrdersList;
 
     // Handle cart data based on async state
     Widget buildCartContent() {
@@ -296,7 +279,7 @@ class OrderView extends HookConsumerWidget {
               ),
               const Gap(16),
               const Text(
-                'Unable to fetch option groups at this momemnt please try again later. Or head to your profile to create a shop.',
+                'Unable to fetch cart items at this momemnt please try again later. Or head to your profile to create a shop.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,

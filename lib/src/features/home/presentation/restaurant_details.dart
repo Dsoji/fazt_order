@@ -41,6 +41,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
 
     useEffect(() {
       Future.microtask(() {
+        ref.read(shopControllerProvider.notifier).fetchCart();
         ref
             .read(shopControllerProvider.notifier)
             .fetchShopFoodCategory(storeId!);
@@ -55,6 +56,8 @@ class RestaurantDetailsView extends HookConsumerWidget {
         ref.watch(shopControllerProvider).shopFoodCategory.valueOrNull?.results;
     final cartItemAsync = ref.watch(shopControllerProvider).fetchCart;
     final cartItem = cartItemAsync.valueOrNull?.carts ?? [];
+    final totalItems =
+        cartItem.fold<int>(0, (sum, cart) => sum + (cart.items?.length ?? 0));
 
     // Add this state for selected category ID
     final selectedCategoryId = useState<String?>(null);
@@ -74,6 +77,8 @@ class RestaurantDetailsView extends HookConsumerWidget {
     }
 
     final mealVariants = ref.watch(shopControllerProvider).mealVariantMenu;
+
+    logger.d('cartItem: $cartItem');
 
     return Scaffold(
       backgroundColor: kcWhite,
@@ -113,7 +118,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '${cartItem.length} items in cart, tap to view',
+                          '$totalItems items in cart, tap to view',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -758,8 +763,8 @@ class AddToCartBottomSheet extends HookConsumerWidget {
             final quantity = entry.value;
 
             // Find the corresponding item to get its price
-            final item = items.where((item) => item.id == itemId).firstOrNull;
-
+            final item =
+                items.where((item) => item.variant?.id == itemId).firstOrNull;
             if (item != null) {
               optionsPrice += ((item.price ?? 0) * quantity).toInt();
             }

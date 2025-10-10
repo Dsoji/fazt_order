@@ -457,7 +457,8 @@ class CourierView extends HookConsumerWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: pickUpPlaces.value.map((place) {
                                   final pp = place['placePrediction'];
-                                  final displayText = pp?['text']?['text'] ?? '';
+                                  final displayText =
+                                      pp?['text']?['text'] ?? '';
                                   final placeId = pp?['placeId'] ?? '';
 
                                   return ListTile(
@@ -553,7 +554,8 @@ class CourierView extends HookConsumerWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: deliveryPlaces.value.map((place) {
                                   final pp = place['placePrediction'];
-                                  final displayText = pp?['text']?['text'] ?? '';
+                                  final displayText =
+                                      pp?['text']?['text'] ?? '';
                                   final placeId = pp?['placeId'] ?? '';
 
                                   return ListTile(
@@ -591,7 +593,7 @@ class CourierView extends HookConsumerWidget {
           ),
           const Gap(16), // Reduced gap after timeline
           ReusableDropdown(
-              label: 'Standard Package',
+              label: 'Parcel Type',
               hintText: 'Standard Package',
               selectedValue: selectedPackageType.value,
               items: const [

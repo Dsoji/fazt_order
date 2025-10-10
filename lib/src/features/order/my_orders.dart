@@ -26,11 +26,11 @@ class MyOrders extends HookConsumerWidget {
           final ongoingOrders = ordersData.results
                   ?.where((order) =>
                       order.status == 'paid' ||
-                      order.status == 'confirmed' ||
                       order.status == 'preparing' ||
+                      order.status == 'accepted' ||
                       order.status == 'ready' ||
-                      order.status == 'on_the_way' ||
-                      order.status == 'delivered')
+                      order.status == 'in_transit' ||
+                      order.status == 'arrived')
                   .toList() ??
               [];
 
