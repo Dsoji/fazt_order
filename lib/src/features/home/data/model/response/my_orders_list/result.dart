@@ -11,6 +11,8 @@ import 'status_history.dart';
 class OrderResult {
   DeliveryLocation? deliveryLocation;
   String? orderNumber;
+  String? orderType;
+  String? orderStatus;
   User? user;
   Shop? shop;
   String? store; // Changed back to String? since API returns string
@@ -29,6 +31,7 @@ class OrderResult {
   OrderResult({
     this.deliveryLocation,
     this.orderNumber,
+    this.orderType,
     this.user,
     this.shop,
     this.store,
@@ -56,6 +59,7 @@ class OrderResult {
             : DeliveryLocation.fromMap(
                 data['deliveryLocation'] as Map<String, dynamic>),
         orderNumber: data['orderNumber'] as String?,
+        orderType: data['orderType'] as String?,
         user: data['user'] == null
             ? null
             : User.fromMap(data['user'] as Map<String, dynamic>),
@@ -91,6 +95,7 @@ class OrderResult {
   Map<String, dynamic> toMap() => {
         'deliveryLocation': deliveryLocation?.toMap(),
         'orderNumber': orderNumber,
+        'orderType': orderType,
         'user': user?.toMap(),
         'shop': shop?.toMap(),
         'store': store, // Changed back to just store (not store?.toMap())
@@ -122,6 +127,7 @@ class OrderResult {
   OrderResult copyWith({
     DeliveryLocation? deliveryLocation,
     String? orderNumber,
+    String? orderType,
     User? user,
     Shop? shop,
     String? store, // Changed back to String?
@@ -142,6 +148,7 @@ class OrderResult {
       orderNumber: orderNumber ?? this.orderNumber,
       user: user ?? this.user,
       shop: shop ?? this.shop,
+      orderType: orderType ?? this.orderType,
       store: store ?? this.store,
       items: items ?? this.items,
       packCount: packCount ?? this.packCount,

@@ -5,9 +5,9 @@ import 'meal_variant.dart';
 
 class Item {
   MealVariant? mealVariant;
-  int? mealQuantity;
+  num? mealQuantity;
   List<ItemOption>? options;
-  int? packNumber;
+  num? packNumber;
   String? id;
 
   Item({
@@ -27,11 +27,11 @@ class Item {
         mealVariant: data['mealVariant'] == null
             ? null
             : MealVariant.fromMap(data['mealVariant'] as Map<String, dynamic>),
-        mealQuantity: data['mealQuantity'] as int?,
+        mealQuantity: data['mealQuantity'] as num?,
         options: (data['options'] as List<dynamic>?)
             ?.map((e) => ItemOption.fromMap(e as Map<String, dynamic>))
             .toList(),
-        packNumber: data['packNumber'] as int?,
+        packNumber: data['packNumber'] as num?,
         id: data['_id'] as String?,
       );
 
@@ -57,9 +57,9 @@ class Item {
 
   Item copyWith({
     MealVariant? mealVariant,
-    int? mealQuantity,
+    num? mealQuantity,
     List<ItemOption>? options,
-    int? packNumber,
+    num? packNumber,
     String? id,
   }) {
     return Item(

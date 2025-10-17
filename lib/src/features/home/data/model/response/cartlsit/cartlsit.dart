@@ -4,7 +4,7 @@ import 'cart.dart';
 
 class CartLsit {
   List<Cart>? carts;
-  int? totalCarts;
+  num? totalCarts;
 
   CartLsit({this.carts, this.totalCarts});
 
@@ -15,7 +15,7 @@ class CartLsit {
         carts: (data['carts'] as List<dynamic>?)
             ?.map((e) => Cart.fromMap(e as Map<String, dynamic>))
             .toList(),
-        totalCarts: data['totalCarts'] as int?,
+        totalCarts: data['totalCarts'] as num?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -37,7 +37,7 @@ class CartLsit {
 
   CartLsit copyWith({
     List<Cart>? carts,
-    int? totalCarts,
+    num? totalCarts,
   }) {
     return CartLsit(
       carts: carts ?? this.carts,

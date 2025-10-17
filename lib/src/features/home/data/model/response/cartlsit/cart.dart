@@ -7,11 +7,11 @@ class Cart {
   String? user;
   Shop? shop;
   List<Item>? items;
-  int? subtotal;
-  int? deliveryFee;
-  int? serviceFee;
-  int? totalPrice;
-  int? packCount;
+  num? subtotal;
+  num? deliveryFee;
+  num? serviceFee;
+  num? totalPrice;
+  num? packCount;
   DateTime? lastUpdated;
   DateTime? createdAt;
   DateTime? updatedAt;
@@ -45,11 +45,11 @@ class Cart {
         items: (data['items'] as List<dynamic>?)
             ?.map((e) => Item.fromMap(e as Map<String, dynamic>))
             .toList(),
-        subtotal: data['subtotal'] as int?,
-        deliveryFee: data['deliveryFee'] as int?,
-        serviceFee: data['serviceFee'] as int?,
-        totalPrice: data['totalPrice'] as int?,
-        packCount: data['packCount'] as int?,
+        subtotal: data['subtotal'] as num?,
+        deliveryFee: data['deliveryFee'] as num?,
+        serviceFee: data['serviceFee'] as num?,
+        totalPrice: data['totalPrice'] as num?,
+        packCount: data['packCount'] as num?,
         lastUpdated: data['lastUpdated'] == null
             ? null
             : DateTime.parse(data['lastUpdated'] as String),
@@ -93,11 +93,11 @@ class Cart {
     String? user,
     Shop? shop,
     List<Item>? items,
-    int? subtotal,
-    int? deliveryFee,
-    int? serviceFee,
-    int? totalPrice,
-    int? packCount,
+    num? subtotal,
+    num? deliveryFee,
+    num? serviceFee,
+    num? totalPrice,
+    num? packCount,
     DateTime? lastUpdated,
     DateTime? createdAt,
     DateTime? updatedAt,

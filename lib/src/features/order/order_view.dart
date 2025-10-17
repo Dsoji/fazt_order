@@ -52,6 +52,7 @@ class OrderView extends HookConsumerWidget {
         data: (cartData) {
           // Extract cart items from the async data
           final cartItems = cartData.carts ?? [];
+          logger.d('Cart Items: ${cartItems.length}');
 
           if (cartItems.isEmpty) {
             return Center(

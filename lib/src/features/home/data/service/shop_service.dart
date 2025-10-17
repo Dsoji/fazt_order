@@ -306,7 +306,7 @@ class ShopService {
   Future<ResultValue<MealDetails>> fetchMealDetails(String mealId) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.get(
-        'meal-variants//$mealId',
+        'meal-variants/$mealId',
         headers: {
           'Authorization': 'Bearer $accessToken',
         },

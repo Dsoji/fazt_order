@@ -88,33 +88,6 @@ class EditProfileView extends HookConsumerWidget {
                   child: Column(
                     children: [
                       // Avatar Section
-                      Center(
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            CircleAvatar(
-                              radius: 50,
-                              backgroundColor: Colors.grey[300],
-                              child: const Icon(
-                                Iconsax.camera,
-                                color: Colors.grey,
-                                size: 30,
-                              ),
-                            ),
-                            Positioned.fill(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(50),
-                                  onTap: () {
-                                    // TODO: Implement image picker functionality
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                       verticalSpaceMedium,
                       // Form Fields
                       _buildTextField(

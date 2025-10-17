@@ -55,9 +55,11 @@ class RestaurantDetailsView extends HookConsumerWidget {
     final selectedItems =
         ref.watch(shopControllerProvider).shopFoodCategory.valueOrNull?.results;
     final cartItemAsync = ref.watch(shopControllerProvider).fetchCart;
+    logger.d('cartItemAsync: $cartItemAsync');
     final cartItem = cartItemAsync.valueOrNull?.carts ?? [];
-    final totalItems =
-        cartItem.fold<int>(0, (sum, cart) => sum + (cart.items?.length ?? 0));
+    logger.d('cartItem: $cartItem');
+    final totalItems = cartItemAsync.valueOrNull?.totalCarts ?? 0;
+    logger.d('totalItems: $totalItems');
 
     // Add this state for selected category ID
     final selectedCategoryId = useState<String?>(null);

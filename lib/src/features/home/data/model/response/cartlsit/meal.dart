@@ -7,11 +7,11 @@ class Meal {
   String? mealName;
   String? mealDescription;
   String? mealImage;
-  int? price;
+  num? price;
   String? priceDescription;
   List<dynamic>? optionGroup;
   String? store;
-  int? numberOfFavorites;
+  num? numberOfFavorites;
   String? id;
 
   Meal({
@@ -39,11 +39,11 @@ class Meal {
         mealName: data['mealName'] as String?,
         mealDescription: data['mealDescription'] as String?,
         mealImage: data['mealImage'] as String?,
-        price: data['price'] as int?,
+        price: data['price'] as num?,
         priceDescription: data['priceDescription'] as String?,
         optionGroup: data['optionGroup'] as List<dynamic>?,
         store: data['store'] as String?,
-        numberOfFavorites: data['numberOfFavorites'] as int?,
+        numberOfFavorites: data['numberOfFavorites'] as num?,
         id: data['id'] as String?,
       );
 
@@ -77,11 +77,11 @@ class Meal {
     String? mealName,
     String? mealDescription,
     String? mealImage,
-    int? price,
+    num? price,
     String? priceDescription,
     List<dynamic>? optionGroup,
     String? store,
-    int? numberOfFavorites,
+    num? numberOfFavorites,
     String? id,
   }) {
     return Meal(

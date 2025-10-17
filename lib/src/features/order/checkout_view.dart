@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../providers/navigation_provider.dart';
 import '../../../providers/order_provider.dart';
 import '../../common/app_colors.dart';
 import '../../common/ui_helpers.dart';
@@ -348,43 +349,44 @@ class CheckoutScreen extends HookConsumerWidget {
                                     ],
                                   ),
                                 ),
-                                Container(
-                                  height: screenHeight(context) * 0.04,
-                                  width: screenWidth(context) * 0.25,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: kcPrimary400),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
-                                    children: [
-                                      GestureDetector(
-                                        behavior: HitTestBehavior.translucent,
-                                        onTap: () {
-                                          // Handle quantity decrease
-                                          // ref.read(shopControllerProvider.notifier).updateCartItemQuantity(item.id, item.quantity - 1);
-                                        },
-                                        child: const Icon(Iconsax.minus,
-                                            color: kcPrimary400),
-                                      ),
-                                      Text(
-                                        "${item.mealQuantity ?? 1}",
-                                        style: ktBodyRegularSize16.copyWith(
-                                            color: kcPrimary400),
-                                      ),
-                                      GestureDetector(
-                                        behavior: HitTestBehavior.translucent,
-                                        onTap: () {
-                                          // Handle quantity increase
-                                          // ref.read(shopControllerProvider.notifier).updateCartItemQuantity(item.id, item.quantity + 1);
-                                        },
-                                        child: const Icon(Iconsax.add,
-                                            color: kcPrimary400),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+
+                                // Container(
+                                //   height: screenHeight(context) * 0.04,
+                                //   width: screenWidth(context) * 0.25,
+                                //   decoration: BoxDecoration(
+                                //     borderRadius: BorderRadius.circular(20),
+                                //     border: Border.all(color: kcPrimary400),
+                                //   ),
+                                //   child: Row(
+                                //     mainAxisAlignment:
+                                //         MainAxisAlignment.spaceAround,
+                                //     children: [
+                                //       GestureDetector(
+                                //         behavior: HitTestBehavior.translucent,
+                                //         onTap: () {
+                                //           // Handle quantity decrease
+                                //           ref.read(shopControllerProvider.notifier).updateCartItemQuantity(item.id, item.quantity - 1);
+                                //         },
+                                //         child: const Icon(Iconsax.minus,
+                                //             color: kcPrimary400),
+                                //       ),
+                                //       Text(
+                                //         "${item.mealQuantity ?? 1}",
+                                //         style: ktBodyRegularSize16.copyWith(
+                                //             color: kcPrimary400),
+                                //       ),
+                                //       GestureDetector(
+                                //         behavior: HitTestBehavior.translucent,
+                                //         onTap: () {
+                                //           // Handle quantity increase
+                                //           // ref.read(shopControllerProvider.notifier).updateCartItemQuantity(item.id, item.quantity + 1);
+                                //         },
+                                //         child: const Icon(Iconsax.add,
+                                //             color: kcPrimary400),
+                                //       ),
+                                //     ],
+                                //   ),
+                                // ),
                               ],
                             ),
                           ),
@@ -426,7 +428,8 @@ class CheckoutScreen extends HookConsumerWidget {
             // Add Another Pack Button
             GestureDetector(
               onTap: () {
-                ref.read(orderProvider.notifier).addNewPack();
+                ref.read(navigationProvider.notifier).state = 0;
+                Navigator.pop(context);
               },
               child: Container(
                 width: screenWidth(context) * 0.45,

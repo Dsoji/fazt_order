@@ -10,7 +10,6 @@ import '../../../common/app_colors.dart';
 import '../../../common/components/restaurant_card.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/shimmer_restaurant_card.dart';
-import '../../../common/widgets/text_styles.dart';
 import '../../bottom_sheets/filters_sheet.dart';
 import '../../bottom_sheets/location_sheet.dart';
 import '../../profile/data/controller/profile_controller.dart';
@@ -143,29 +142,29 @@ class HomeView extends HookConsumerWidget {
             ],
           ),
         ),
-        actions: [
-          GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {
-              showFilterBottomSheet(context);
-            },
-            child: Row(
-              children: [
-                const Icon(
-                  Iconsax.document_filter,
-                  color: kcPrimary300,
-                  size: 16,
-                ),
-                horizontalSpaceTiny,
-                Text(
-                  "Filter",
-                  style: ktBodyRegularSize14.copyWith(color: kcPrimary300),
-                ),
-                horizontalSpaceSmall,
-              ],
-            ),
-          )
-        ],
+        // actions: [
+        //   GestureDetector(
+        //     behavior: HitTestBehavior.translucent,
+        //     onTap: () {
+        //       showFilterBottomSheet(context);
+        //     },
+        //     child: Row(
+        //       children: [
+        //         const Icon(
+        //           Iconsax.document_filter,
+        //           color: kcPrimary300,
+        //           size: 16,
+        //         ),
+        //         horizontalSpaceTiny,
+        //         Text(
+        //           "Filter",
+        //           style: ktBodyRegularSize14.copyWith(color: kcPrimary300),
+        //         ),
+        //         horizontalSpaceSmall,
+        //       ],
+        //     ),
+        //   )
+        // ],
         elevation: 0,
       ),
       body: Column(

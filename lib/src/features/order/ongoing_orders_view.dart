@@ -92,46 +92,33 @@ class OngoingOrderView extends HookConsumerWidget {
                         height: 150,
                         width: 150,
                         child: Lottie.asset(
-                            _getLottieAsset(orderItems.status == 'pending'
+                            _getLottieAsset(orderItems.status == 'paid'
                                 ? 1
-                                : orderItems.status == 'ongoing'
+                                : orderItems.status == 'preparing'
                                     ? 2
-                                    : orderItems.status == 'preparing'
+                                    : orderItems.status == 'in_transit'
                                         ? 3
                                         : 4))),
                     verticalSpaceSmall,
-                    Text.rich(
-                      TextSpan(
-                          text: isCompleted
-                              ? "Order Completed"
-                              : "Order Accepted",
-                          style: ktBodyRegularSize18.copyWith(
-                              color: kcPrimaryNeutral200, letterSpacing: 1),
-                          children: [
-                            TextSpan(
-                              text: " at ${orderItems.createdAt}",
-                              style: ktBodyRegularSize12.copyWith(
-                                  color: kcPrimaryNeutral200, letterSpacing: 1),
-                            )
-                          ]),
-                    ),
+
                     verticalSpaceSmall,
                     Text(
-                      orderItems.status == 'delivered'
-                          ? "Order was completed within"
-                          : orderItems.status == 'recieved'
-                              ? "Order received - preparing soon"
+                      textAlign: TextAlign.center,
+                      orderItems.status == 'paid'
+                          ? "Order has been paid for, waiting for vendor to confirm your order."
+                          : orderItems.status == 'accepted'
+                              ? "Order is accepted by vendor"
                               : orderItems.status == 'preparing'
-                                  ? "Your order is being prepared"
+                                  ? "Your order is being prepared by the vendor"
                                   : orderItems.status == 'ready'
-                                      ? "Order ready and will be picked up soon"
+                                      ? "Order ready and will be picked up by the rider"
                                       : orderItems.status == 'in_transit'
                                           ? "Order has been picked up and is on the way to you"
                                           : orderItems.status == 'arrived'
                                               ? "Rider has arrived"
                                               : "Order has been delivered",
                       style: const TextStyle(
-                          fontSize: 14,
+                          fontSize: 16,
                           color: kcPrimaryNeutral200,
                           letterSpacing: 1),
                     ),
