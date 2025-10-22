@@ -12,7 +12,6 @@ import '../../../../common/res/app_assets.dart';
 import '../../../../common/res/app_colors.dart';
 import '../../../../common/utils/validator.dart';
 import '../../../../common/widgets/custom_textfield.dart';
-import '../../../../common/widgets/or_divider.dart';
 import '../../../../common/widgets/reusable_buttons.dart';
 import '../../register/presentation/registration_screen.dart';
 
@@ -206,38 +205,39 @@ class LoginScreen extends HookConsumerWidget {
                     const Gap(16),
 
                     // OR Divider
-                    const OrDivider(),
-                    const Gap(16),
+                    // const OrDivider(),
+                    // const Gap(16),
 
-                    // Social Login Buttons
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ImgBton(
-                          width: 160,
-                          height: 48,
-                          onPressed: () {
-                            print("Google Login");
-                          },
-                          color: AppColors.brand800,
-                          image: ImageAssets.google,
-                          bgColor: AppColors.brand980,
-                          radius: 50,
-                        ),
-                        const Gap(24),
-                        ImgBton(
-                          width: 160,
-                          height: 48,
-                          onPressed: () {
-                            print("Apple Login");
-                          },
-                          color: AppColors.brand800,
-                          image: ImageAssets.apple,
-                          bgColor: AppColors.brand980,
-                          radius: 50,
-                        ),
-                      ],
-                    ),
+                    // // Social Login Buttons
+
+                    // Row(
+                    //   mainAxisAlignment: MainAxisAlignment.center,
+                    //   children: [
+                    //     ImgBton(
+                    //       width: 160,
+                    //       height: 48,
+                    //       onPressed: () {
+                    //         print("Google Login");
+                    //       },
+                    //       color: AppColors.brand800,
+                    //       image: ImageAssets.google,
+                    //       bgColor: AppColors.brand980,
+                    //       radius: 50,
+                    //     ),
+                    //     const Gap(24),
+                    //     ImgBton(
+                    //       width: 160,
+                    //       height: 48,
+                    //       onPressed: () {
+                    //         print("Apple Login");
+                    //       },
+                    //       color: AppColors.brand800,
+                    //       image: ImageAssets.apple,
+                    //       bgColor: AppColors.brand980,
+                    //       radius: 50,
+                    //     ),
+                    //   ],
+                    // ),
                   ],
                 ),
               ),

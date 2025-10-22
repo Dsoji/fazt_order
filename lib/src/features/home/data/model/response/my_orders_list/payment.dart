@@ -33,10 +33,26 @@ class Payment {
   }
 
   factory Payment.fromMap(Map<String, dynamic> data) => Payment(
-        subtotal: data['subtotal'] as int?,
-        deliveryFee: data['deliveryFee'] as int?,
-        serviceFee: data['serviceFee'] as int?,
-        total: data['total'] as int?,
+        subtotal: data['subtotal'] != null
+            ? (data['subtotal'] is double
+                ? (data['subtotal'] as double).toInt()
+                : data['subtotal'] as int)
+            : null,
+        deliveryFee: data['deliveryFee'] != null
+            ? (data['deliveryFee'] is double
+                ? (data['deliveryFee'] as double).toInt()
+                : data['deliveryFee'] as int)
+            : null,
+        serviceFee: data['serviceFee'] != null
+            ? (data['serviceFee'] is double
+                ? (data['serviceFee'] as double).toInt()
+                : data['serviceFee'] as int)
+            : null,
+        total: data['total'] != null
+            ? (data['total'] is double
+                ? (data['total'] as double).toInt()
+                : data['total'] as int)
+            : null,
         paymentMethod: data['paymentMethod'] as String?,
         paymentStatus: data['paymentStatus'] as String?,
         initiatedAt: data['initiatedAt'] == null

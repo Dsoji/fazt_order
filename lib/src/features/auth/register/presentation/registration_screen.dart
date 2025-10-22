@@ -6,11 +6,9 @@ import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:logger/logger.dart';
 
-import '../../../../common/res/app_assets.dart';
 import '../../../../common/res/app_colors.dart';
 import '../../../../common/utils/validator.dart';
 import '../../../../common/widgets/custom_textfield.dart';
-import '../../../../common/widgets/or_divider.dart';
 import '../../../../common/widgets/reusable_buttons.dart';
 import '../../data/controller/authentication_controller.dart';
 import '../../login/presentation/login_screen.dart';
@@ -221,32 +219,32 @@ class RegistrationScreen extends HookConsumerWidget {
                     ),
                   ),
                   const Gap(16),
-                  const OrDivider(),
-                  const Gap(16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ImgBton(
-                        width: 160,
-                        height: 48,
-                        onPressed: () {},
-                        color: AppColors.brand800,
-                        image: ImageAssets.google,
-                        bgColor: AppColors.brand980,
-                        radius: 50,
-                      ),
-                      const Gap(24),
-                      ImgBton(
-                        width: 160,
-                        height: 48,
-                        onPressed: () {},
-                        color: AppColors.brand800,
-                        image: ImageAssets.apple,
-                        bgColor: AppColors.brand980,
-                        radius: 50,
-                      ),
-                    ],
-                  ),
+                  // const OrDivider(),
+                  // const Gap(16),
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.center,
+                  //   children: [
+                  //     ImgBton(
+                  //       width: 160,
+                  //       height: 48,
+                  //       onPressed: () {},
+                  //       color: AppColors.brand800,
+                  //       image: ImageAssets.google,
+                  //       bgColor: AppColors.brand980,
+                  //       radius: 50,
+                  //     ),
+                  //     const Gap(24),
+                  //     ImgBton(
+                  //       width: 160,
+                  //       height: 48,
+                  //       onPressed: () {},
+                  //       color: AppColors.brand800,
+                  //       image: ImageAssets.apple,
+                  //       bgColor: AppColors.brand980,
+                  //       radius: 50,
+                  //     ),
+                  //   ],
+                  // ),
                 ],
               ),
             ),
