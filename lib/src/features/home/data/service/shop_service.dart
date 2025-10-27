@@ -205,6 +205,21 @@ class ShopService {
     );
   }
 
+  Future<ResultValue<String>> cancelOrder(String orderId) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.put(
+        'orders/$orderId/status',
+        header: {'Authorization': 'Bearer $accessToken'},
+        data: {
+          "status": "cancelled",
+        },
+      ),
+      parser: (data) => BaseModel.toRawString(data),
+      showErrorToast: false,
+      showSuccessToast: true,
+    );
+  }
+
   Future<ResultValue<StoreMealVariant>> fetchStoreMealVariant(
       String shopId) async {
     return apiRequestHelper.handleApiRequest(

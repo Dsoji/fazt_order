@@ -47,8 +47,8 @@ class SearchRestaurantView extends HookConsumerWidget {
     useEffect(() {
       if (query.isNotEmpty) {
         // You might want to get actual latitude and longitude from user location
-        const latitude = "6.5244"; // Default to Lagos coordinates
-        const longitude = "3.3792";
+        const latitude = "6.4500"; // Default to Lagos coordinates
+        const longitude = "3.4333";
         Future.microtask(() {
           ref.read(shopControllerProvider.notifier).globalSearch(
                 query,
@@ -108,27 +108,6 @@ class SearchRestaurantView extends HookConsumerWidget {
             ],
           ),
         ),
-        actions: [
-          GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: () {},
-            child: Row(
-              children: [
-                const Icon(
-                  Iconsax.document_filter,
-                  color: kcPrimary300,
-                  size: 16,
-                ),
-                horizontalSpaceTiny,
-                Text(
-                  "Filter",
-                  style: ktBodyRegularSize14.copyWith(color: kcPrimary300),
-                ),
-                horizontalSpaceSmall,
-              ],
-            ),
-          )
-        ],
         elevation: 0,
       ),
       body: Column(
@@ -553,7 +532,7 @@ class SearchRestaurantView extends HookConsumerWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.network(
-              meal.store?.storeDisplayImage ?? 'asset/images/placeholder.png',
+              meal.meals?.first.mealImage ?? 'asset/images/placeholder.png',
               width: 60,
               height: 60,
               fit: BoxFit.cover,

@@ -315,6 +315,9 @@ class CheckoutScreen extends HookConsumerWidget {
                                                     ),
                                                   ),
                                                 ),
+                                                horizontalSpaceTiny,
+                                                Text(
+                                                    "x${option.quantity ?? "0"}")
                                               ],
                                             ),
                                           );

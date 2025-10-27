@@ -262,6 +262,23 @@ class ShopController extends StateNotifier<ShopState> {
     );
   }
 
+  Future<bool> cancelOrder(String orderId) async {
+    state = state.copyWith(cancelOrder: const AsyncValue.loading());
+    final result = await _authenticationRepository.cancelOrder(orderId);
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+            cancelOrder: AsyncValue.error(error, StackTrace.current));
+        return false;
+      },
+      (success) {
+        state = state.copyWith(cancelOrder: AsyncValue.data(success));
+        return true;
+      },
+    );
+  }
+
   Future<bool> fetchStoreMealVariant(String shopId) async {
     state = state.copyWith(storeMealVariant: const AsyncValue.loading());
     final result =

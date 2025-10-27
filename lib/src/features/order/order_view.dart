@@ -144,14 +144,16 @@ class OrderView extends HookConsumerWidget {
                                         SvgPicture.asset(
                                             "asset/svgs/delivery_icon.svg"),
                                         const SizedBox(width: 4),
-                                        Text(
-                                          orderState.deliveryAddress,
-                                          maxLines: 2,
-                                          softWrap: true,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                              color: kcPrimaryNeutral300,
-                                              fontSize: 12),
+                                        Flexible(
+                                          child: Text(
+                                            item.shop?.location?.address ?? "",
+                                            maxLines: 2,
+                                            softWrap: true,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                color: kcPrimaryNeutral300,
+                                                fontSize: 12),
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -164,7 +166,7 @@ class OrderView extends HookConsumerWidget {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      "₦${((item.totalPrice ?? 0) * (item.packCount ?? 0)).toStringAsFixed(0)}",
+                                      "₦${(item.totalPrice ?? 0).toStringAsFixed(0)}",
                                       style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w400,

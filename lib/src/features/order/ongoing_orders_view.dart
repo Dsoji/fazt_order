@@ -37,15 +37,11 @@ class OngoingOrderView extends HookConsumerWidget {
     return 'asset/lottie/delivery-accepted.json';
   }
 
-  void _showCancelOrderBottomSheet(BuildContext context) {
-    showModalBottomSheet(
+  void _showCancelOrderDialog(BuildContext context) {
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (context) {
-        return const CancelOrderBottomSheet();
+        return CancelOrderDialog(orderId: orderItems.id ?? '');
       },
     );
   }
@@ -56,7 +52,6 @@ class OngoingOrderView extends HookConsumerWidget {
     final cancelText = canCancel
         ? "Waiting for vendor to confirm your order. You can still cancel this order at the moment."
         : "You can not cancel this order at this moment.";
-    final isCompleted = orderItems.status == 'completed';
 
     logger.d('Order Items: ${orderItems.status}');
 
@@ -150,7 +145,7 @@ class OngoingOrderView extends HookConsumerWidget {
                         inactiveColor: kcPrimary800),
                     verticalSpaceSmall,
                     if (orderItems.status == 'pending' ||
-                        orderItems.status == 'recieved') ...[
+                        orderItems.status == 'paid') ...[
                       verticalSpaceSmall,
                       Text(
                         cancelText,
@@ -164,7 +159,7 @@ class OngoingOrderView extends HookConsumerWidget {
                         width: 150,
                         height: 48,
                         onPressed: () {
-                          _showCancelOrderBottomSheet(context);
+                          _showCancelOrderDialog(context);
                         },
                         color: kcPrimary400,
                         textColor: kcWhite,

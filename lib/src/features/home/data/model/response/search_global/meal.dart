@@ -1,12 +1,14 @@
 import 'dart:convert';
 
+import 'package:fazt_order/src/features/home/data/model/response/search_global/mealls.dart';
+
 import 'shop.dart';
 import 'store.dart';
 
 class Meal {
   Shop? shop;
   Store? store;
-  List<Meal>? meals;
+  List<MealsItem>? meals;
 
   Meal({this.shop, this.store, this.meals});
 
@@ -21,14 +23,14 @@ class Meal {
             ? null
             : Store.fromMap(data['store'] as Map<String, dynamic>),
         meals: (data['meals'] as List<dynamic>?)
-            ?.map((e) => Meal.fromMap(e as Map<String, dynamic>))
+            ?.map((e) => MealsItem.fromMap(e as Map<String, dynamic>))
             .toList(),
       );
 
   Map<String, dynamic> toMap() => {
-        'shop': shop?.toMap(),
-        'store': store?.toMap(),
-        'meals': meals?.map((e) => e.toMap()).toList(),
+        'shop': shop?.toMap() ?? {},
+        'store': store?.toMap() ?? {},
+        'meals': meals?.map((e) => e.toMap()).toList() ?? [],
       };
 
   /// `dart:convert`
@@ -46,7 +48,7 @@ class Meal {
   Meal copyWith({
     Shop? shop,
     Store? store,
-    List<Meal>? meals,
+    List<MealsItem>? meals,
   }) {
     return Meal(
       shop: shop ?? this.shop,

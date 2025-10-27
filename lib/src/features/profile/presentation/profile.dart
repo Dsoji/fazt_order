@@ -3,6 +3,7 @@ import 'package:fazt_order/src/features/profile/presentation/settings_view.dart'
 import 'package:fazt_order/src/features/profile/presentation/wallet_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gap/gap.dart';
 import 'package:hive/hive.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -267,6 +268,38 @@ class ProfileView extends HookConsumerWidget {
                       },
                     ),
                   ],
+                ),
+              ),
+              const Gap(24),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 232, 199, 197),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: _buildListItem(
+                  backgroundColor: Colors.red,
+                  icon: Iconsax.trash,
+                  iconColor: Colors.white,
+                  title: "Delete Account",
+                  onTap: () {
+                    var box = Hive.box('data');
+                    box.clear();
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const LoginScreen()),
+                    );
+                    Fluttertoast.showToast(
+                      msg: "Account deleted successfully",
+                      toastLength: Toast.LENGTH_SHORT,
+                      gravity: ToastGravity.CENTER,
+                      timeInSecForIosWeb: 1,
+                      backgroundColor: Colors.yellow.shade700,
+                      textColor: Colors.black,
+                    );
+                  },
                 ),
               ),
               const Gap(100),

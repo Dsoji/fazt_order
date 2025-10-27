@@ -275,6 +275,27 @@ class ShopRepository {
     }
   }
 
+  Future<Result<FailureHandler, String>> cancelOrder(String orderId) async {
+    try {
+      final data = await authService.cancelOrder(orderId);
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to cancel order',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to cancel order'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
   Future<Result<FailureHandler, StoreMealVariant>> fetchStoreMealVariant(
       String shopId) async {
     try {
