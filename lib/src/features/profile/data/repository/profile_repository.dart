@@ -588,4 +588,29 @@ class ProfileRepository {
       return Error(failure);
     }
   }
+
+  Future<Result<FailureHandler, String>> deleteUser({
+    required String userId,
+  }) async {
+    try {
+      final data = await authService.deleteUser(
+        userId: userId,
+      );
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to delete user',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to delete user'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
 }

@@ -122,6 +122,7 @@ class DioApiClient implements IApiClient {
     String uri, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
+    Map<String, dynamic>? header,
   }) async {
     try {
       final response = await _dio.delete(

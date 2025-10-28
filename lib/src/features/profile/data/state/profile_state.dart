@@ -2,8 +2,8 @@
 import 'package:fazt_order/src/features/profile/data/model/response/favourites_list.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/image_upload_response.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/store_details/store_details.dart';
-import 'package:fazt_order/src/features/profile/data/model/response/user_wallet/user_wallet.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/transaction_history.dart';
+import 'package:fazt_order/src/features/profile/data/model/response/user_wallet/user_wallet.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../auth/data/model/payload/profile_payload.dart';
@@ -31,6 +31,7 @@ class ProfileState {
   final AsyncValue<String> loader;
   final AsyncValue<String> addMeal;
   final AsyncValue<UserWallet> wallet;
+  final AsyncValue<String> deleteUser;
 
   const ProfileState({
     required this.favouritesList,
@@ -53,6 +54,7 @@ class ProfileState {
     required this.storeInfo,
     required this.wallet,
     required this.transactionHistory,
+    required this.deleteUser,
   });
 
   factory ProfileState.initial() {
@@ -78,6 +80,7 @@ class ProfileState {
       storeInfo: AsyncData(StoreDetails()),
       wallet: AsyncValue.data(UserWallet()),
       transactionHistory: AsyncValue.data(TransactionHistoryResponse()),
+      deleteUser: const AsyncValue.data(''),
     );
   }
 
@@ -105,6 +108,7 @@ class ProfileState {
     AsyncValue<StoreDetails>? storeInfo,
     AsyncValue<UserWallet>? wallet,
     AsyncValue<TransactionHistoryResponse>? transactionHistory,
+    AsyncValue<String>? deleteUser,
   }) {
     return ProfileState(
       profilePayload: profilePayload ?? this.profilePayload,
@@ -127,6 +131,7 @@ class ProfileState {
       storeInfo: storeInfo ?? this.storeInfo,
       wallet: wallet ?? this.wallet,
       transactionHistory: transactionHistory ?? this.transactionHistory,
+      deleteUser: deleteUser ?? this.deleteUser,
     );
   }
 }

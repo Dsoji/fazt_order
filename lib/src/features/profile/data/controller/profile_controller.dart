@@ -513,4 +513,29 @@ class ProfileController extends StateNotifier<ProfileState> {
       },
     );
   }
+
+  Future<bool> deleteUser({
+    required String userId,
+  }) async {
+    state = state.copyWith(deleteUser: const AsyncValue.loading());
+
+    final result = await _authenticationRepository.deleteUser(
+      userId: userId,
+    );
+
+    return result.when(
+      (error) {
+        state = state.copyWith(
+          deleteUser: AsyncValue.error(error, StackTrace.current),
+        );
+        return false;
+      },
+      (success) {
+        state = state.copyWith(
+          deleteUser: AsyncValue.data(success),
+        );
+        return true;
+      },
+    );
+  }
 }

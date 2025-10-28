@@ -283,22 +283,38 @@ class ProfileView extends HookConsumerWidget {
                   icon: Iconsax.trash,
                   iconColor: Colors.white,
                   title: "Delete Account",
-                  onTap: () {
-                    var box = Hive.box('data');
-                    box.clear();
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const LoginScreen()),
-                    );
-                    Fluttertoast.showToast(
-                      msg: "Account deleted successfully",
-                      toastLength: Toast.LENGTH_SHORT,
-                      gravity: ToastGravity.CENTER,
-                      timeInSecForIosWeb: 1,
-                      backgroundColor: Colors.yellow.shade700,
-                      textColor: Colors.black,
-                    );
+                  onTap: () async {
+                    final result = await ref
+                        .read(profileControllerProvider.notifier)
+                        .deleteUser(
+                          userId: userDetails.value?.user?.id ?? '',
+                        );
+                    if (result == true) {
+                      var box = Hive.box('data');
+                      box.clear();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const LoginScreen()),
+                      );
+                      Fluttertoast.showToast(
+                        msg: "Account deleted successfully",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.CENTER,
+                        timeInSecForIosWeb: 1,
+                        backgroundColor: Colors.yellow.shade700,
+                        textColor: Colors.black,
+                      );
+                    } else {
+                      Fluttertoast.showToast(
+                        msg: "Failed to delete account",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.CENTER,
+                        timeInSecForIosWeb: 1,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                      );
+                    }
                   },
                 ),
               ),

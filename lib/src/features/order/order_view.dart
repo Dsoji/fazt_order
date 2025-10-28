@@ -1,3 +1,5 @@
+import 'package:animated_segmented_tab_control/animated_segmented_tab_control.dart';
+import 'package:fazt_order/src/common/res/app_colors.dart';
 import 'package:fazt_order/src/features/order/checkout_view.dart';
 import 'package:fazt_order/src/features/order/completed_orders.dart';
 import 'package:flutter/material.dart';
@@ -314,85 +316,38 @@ class OrderView extends HookConsumerWidget {
       ),
       body: Column(
         children: [
-          // TabBar
-          TabBar(
-            labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-            controller: tabController,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white,
-            indicatorPadding: EdgeInsets.zero,
-            tabAlignment: TabAlignment.start,
-            isScrollable: true,
-            dividerColor: kcTransparent,
-            indicatorColor: kcTransparent,
-            overlayColor: WidgetStateProperty.all(Colors.transparent),
-            tabs: [
-              Tab(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: selectedIndex.value == 0
-                        ? Border.all(color: kcTransparent)
-                        : Border.all(color: kcPrimary700),
-                    color:
-                        selectedIndex.value == 0 ? kcPrimary300 : kcTransparent,
-                  ),
-                  child: Text(
-                    "My Cart",
-                    style: TextStyle(
-                        color:
-                            selectedIndex.value == 0 ? kcWhite : kcPrimary400,
-                        fontSize: 12),
-                  ),
-                ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SegmentedTabControl(
+              tabPadding: const EdgeInsets.all(0),
+              controller: tabController,
+              tabTextColor: AppColors.neutral500,
+              selectedTabTextColor: Colors.white,
+              indicatorPadding: const EdgeInsets.symmetric(
+                horizontal: 4,
+                vertical: 4,
               ),
-              Tab(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: selectedIndex.value == 1
-                        ? Border.all(color: kcTransparent)
-                        : Border.all(color: kcPrimary700),
-                    color:
-                        selectedIndex.value == 1 ? kcPrimary300 : kcTransparent,
-                  ),
-                  child: Text(
-                    "Ongoing",
-                    style: TextStyle(
-                        color:
-                            selectedIndex.value == 1 ? kcWhite : kcPrimary400,
-                        fontSize: 12),
-                  ),
-                ),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                color: AppColors.neutral500,
               ),
-              Tab(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: selectedIndex.value == 2
-                        ? Border.all(color: kcTransparent)
-                        : Border.all(color: kcPrimary700),
-                    color:
-                        selectedIndex.value == 2 ? kcPrimary300 : kcTransparent,
-                  ),
-                  child: Text(
-                    "Completed",
-                    style: TextStyle(
-                        color:
-                            selectedIndex.value == 2 ? kcWhite : kcPrimary400,
-                        fontSize: 12),
-                  ),
-                ),
+              barDecoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
               ),
-            ],
+              indicatorDecoration: BoxDecoration(
+                color: AppColors.brand300,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              tabs: const [
+                SegmentTab(label: "My Cart"),
+                SegmentTab(label: "Ongoing"),
+                SegmentTab(label: "Completed"),
+              ],
+            ),
           ),
-          // TabBarView
+          // TabBar
+
           Expanded(
             child: TabBarView(
               controller: tabController,

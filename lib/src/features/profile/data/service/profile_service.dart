@@ -1,7 +1,7 @@
 import 'package:fazt_order/src/features/profile/data/model/response/favourites_list.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/image_upload_response.dart';
-import 'package:fazt_order/src/features/profile/data/model/response/transaction_history.dart';
 import 'package:fazt_order/src/features/profile/data/model/response/store_details/store_details.dart';
+import 'package:fazt_order/src/features/profile/data/model/response/transaction_history.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:logger/logger.dart';
@@ -496,6 +496,20 @@ class ProfileeService {
       },
       showErrorToast: true,
       showSuccessToast: true,
+    );
+  }
+
+  Future<ResultValue<String>> deleteUser({
+    required String userId,
+  }) async {
+    final String accessToken = await box.get('accessToken');
+
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.delete('users/$userId',
+          header: {'Authorization': 'Bearer $accessToken'}),
+      parser: (data) {
+        return BaseModel.toRawString(data);
+      },
     );
   }
 }

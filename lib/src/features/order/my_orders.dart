@@ -1,4 +1,5 @@
 import 'package:fazt_order/src/features/order/ongoing_orders_view.dart';
+import 'package:fazt_order/src/features/order/ongoing_parcel_order.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
@@ -80,14 +81,25 @@ class MyOrders extends HookConsumerWidget {
 
                     return GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => OngoingOrderView(
-                              orderItems: order,
+                        if (order.orderType == 'parcel') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OngoingParcelOrderView(
+                                orderItems: order,
+                              ),
                             ),
-                          ),
-                        );
+                          );
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OngoingOrderView(
+                                orderItems: order,
+                              ),
+                            ),
+                          );
+                        }
                       },
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
@@ -109,7 +121,7 @@ class MyOrders extends HookConsumerWidget {
                                               errorBuilder:
                                                   (context, error, stackTrace) {
                                                 return Image.asset(
-                                                  "asset/images/Frame 269.png",
+                                                  "asset/images/Frame 2693.png",
                                                   width: 80,
                                                   height: 80,
                                                   fit: BoxFit.cover,
@@ -117,7 +129,7 @@ class MyOrders extends HookConsumerWidget {
                                               },
                                             )
                                           : Image.asset(
-                                              "asset/images/Frame 269.png",
+                                              "asset/images/Frame 2693.png",
                                               width: 80,
                                               height: 80,
                                               fit: BoxFit.cover,
@@ -155,12 +167,14 @@ class MyOrders extends HookConsumerWidget {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        "${order.items?.length ?? 0} items",
-                                        style: const TextStyle(
-                                            color: Colors.grey, fontSize: 12),
-                                      ),
+                                      if (order.orderType != 'parcel') ...[
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          "${order.items?.length ?? 0} items",
+                                          style: const TextStyle(
+                                              color: Colors.grey, fontSize: 12),
+                                        ),
+                                      ],
                                       const SizedBox(height: 8),
                                       Text(
                                         "₦${(order.payment?.total ?? 0).toStringAsFixed(0)}",

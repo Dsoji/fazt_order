@@ -27,6 +27,7 @@ class OrderResult {
   DateTime? createdAt;
   DateTime? updatedAt;
   String? id;
+  int? riderOtp;
 
   OrderResult({
     this.deliveryLocation,
@@ -46,11 +47,12 @@ class OrderResult {
     this.createdAt,
     this.updatedAt,
     this.id,
+    this.riderOtp,
   });
 
   @override
   String toString() {
-    return 'Result(deliveryLocation: $deliveryLocation, orderNumber: $orderNumber, user: $user, shop: $shop, store: $store, items: $items, packCount: $packCount, deliveryType: $deliveryType, storeMessage: $storeMessage, status: $status, statusHistory: $statusHistory, payment: $payment, orderPlacedAt: $orderPlacedAt, createdAt: $createdAt, updatedAt: $updatedAt, id: $id)';
+    return 'Result(deliveryLocation: $deliveryLocation, orderNumber: $orderNumber, user: $user, shop: $shop, store: $store, items: $items, packCount: $packCount, deliveryType: $deliveryType, storeMessage: $storeMessage, status: $status, statusHistory: $statusHistory, payment: $payment, orderPlacedAt: $orderPlacedAt, createdAt: $createdAt, updatedAt: $updatedAt, id: $id, rideerOtp: $riderOtp)';
   }
 
   factory OrderResult.fromMap(Map<String, dynamic> data) => OrderResult(
@@ -90,6 +92,9 @@ class OrderResult {
             ? null
             : DateTime.parse(data['updatedAt'] as String),
         id: data['id'] as String?,
+        riderOtp: (data['riderOTP'] as num?)?.toInt() ??
+            (data['riderOtp'] as num?)?.toInt() ??
+            (data['rider_otp'] as num?)?.toInt(),
       );
 
   Map<String, dynamic> toMap() => {
@@ -110,6 +115,7 @@ class OrderResult {
         'createdAt': createdAt?.toIso8601String(),
         'updatedAt': updatedAt?.toIso8601String(),
         'id': id,
+        'riderOTP': riderOtp,
       };
 
   /// `dart:convert`
@@ -142,6 +148,7 @@ class OrderResult {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? id,
+    int? riderOtp,
   }) {
     return OrderResult(
       deliveryLocation: deliveryLocation ?? this.deliveryLocation,
@@ -161,6 +168,7 @@ class OrderResult {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       id: id ?? this.id,
+      riderOtp: riderOtp ?? this.riderOtp,
     );
   }
 }

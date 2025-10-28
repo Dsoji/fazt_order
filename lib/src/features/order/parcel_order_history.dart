@@ -1,5 +1,5 @@
 import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
-import 'package:fazt_order/src/features/order/ongoing_orders_view.dart';
+import 'package:fazt_order/src/features/order/ongoing_parcel_order.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -60,7 +60,7 @@ class ParcelOrderHistory extends HookConsumerWidget {
                       context,
                       MaterialPageRoute(
                           builder: (context) =>
-                              OngoingOrderView(orderItems: order)));
+                              OngoingParcelOrderView(orderItems: order)));
                 },
                 child: Column(
                   children: [
