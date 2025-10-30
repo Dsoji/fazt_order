@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
@@ -59,8 +61,24 @@ class CustomerSupportView extends StatelessWidget {
               _buildListItem(
                 icon: Iconsax.sms,
                 title: "Email",
-                onTap: () {
-                  // TODO: Implement Email support navigation
+                onTap: () async {
+                  const String email = 'Assist@faztorder.net';
+                  const String subject = 'I have a question';
+                  const String body = 'Hello, Swiftswap';
+
+                  final String emailUrl =
+                      'mailto:$email?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
+
+                  final Uri emailUri = Uri.parse(emailUrl);
+
+                  if (await canLaunchUrl(emailUri)) {
+                    await launchUrl(
+                      emailUri,
+                      mode: LaunchMode.externalApplication,
+                    );
+                  } else {
+                    print('Could not launch email client');
+                  }
                 },
               ),
               verticalSpaceTiny,
@@ -69,8 +87,12 @@ class CustomerSupportView extends StatelessWidget {
               _buildListItem(
                 icon: Iconsax.instagram,
                 title: "Instagram",
-                onTap: () {
-                  // TODO: Implement Instagram support navigation
+                onTap: () async {
+                  final url = Uri.parse(
+                      "https://www.instagram.com/faztorder?igsh=MWI2dWgxcG9wNjNheQ%3D%3D&utm_source=qr");
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
                 },
               ),
               verticalSpaceTiny,
@@ -93,8 +115,11 @@ class CustomerSupportView extends StatelessWidget {
                     letterSpacing: 1,
                   ),
                 ),
-                onTap: () {
-                  // TODO: Implement Instagram support navigation
+                onTap: () async {
+                  final url = Uri.parse("https://x.com/faztorder?s=21");
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  }
                 },
               )
             ],

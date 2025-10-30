@@ -70,6 +70,7 @@ class MyApp extends HookConsumerWidget {
     Animate.restartOnHotReload = true;
 
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       navigatorKey: navigatorKey,
       title: 'Fazt Vendor',
       theme: ThemeData(
