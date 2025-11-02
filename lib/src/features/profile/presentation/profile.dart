@@ -30,142 +30,222 @@ class ProfileView extends HookConsumerWidget {
       final opacity = isLoading ? 0.7 : (hasError ? 0.8 : 1.0);
       final nameColor = hasError ? Colors.red.shade300 : Colors.black;
 
-      return Column(
-        children: [
-          // Avatar with loading/error indication
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundImage:
-                    const AssetImage('asset/images/profile-picture.png'),
-                backgroundColor: kcPrimaryNeutral800,
-                child: isLoading
-                    ? Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.3),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
+      // Get user initials for avatar fallback
+      final firstName = userDetails?.user?.firstName ?? '';
+      final lastName = userDetails?.user?.lastName ?? '';
+      final initials = firstName.isNotEmpty || lastName.isNotEmpty
+          ? '${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}'
+              .toUpperCase()
+          : 'U';
+
+      return Container(
+        padding: const EdgeInsets.all(24.0),
+        decoration: BoxDecoration(
+          color: kcWhite,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              spreadRadius: 2,
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Avatar Section
+            // User Name
+            Opacity(
+              opacity: opacity,
+              child: Text(
+                '${userDetails?.user?.firstName ?? ''} ${userDetails?.user?.lastName ?? ''}'
+                    .trim(),
+                style: ktBodySemiBoldSize20.copyWith(
+                  fontSize: 22,
+                  color: nameColor,
+                  letterSpacing: 0.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            verticalSpaceSmall,
+
+            // Contact Details Card
+            Opacity(
+              opacity: opacity,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: kcPrimaryNeutral950,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    // Mobile Number
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: kcPrimary600.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Iconsax.call,
+                            size: 16,
+                            color: kcPrimary400,
                           ),
                         ),
-                      )
-                    : null,
-              ),
-            ],
-          ),
-          verticalSpaceSmall,
-          // User Name
-          Opacity(
-            opacity: opacity,
-            child: Text(
-              '${userDetails?.user?.firstName ?? ''} ${userDetails?.user?.lastName ?? ''}'
-                  .trim(),
-              style: ktBodySemiBoldSize20.copyWith(
-                fontSize: 16,
-                color: nameColor,
-                letterSpacing: 1,
-              ),
-            ),
-          ),
-          verticalSpaceTiny,
-          // Contact Details
-          Opacity(
-            opacity: opacity,
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  const TextSpan(
-                    text: "Mobile: ",
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: kcPrimaryNeutral500,
+                        horizontalSpaceSmall,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Mobile",
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: kcPrimaryNeutral500,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                userDetails?.user?.phone ?? 'Not provided',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: hasError
+                                      ? Colors.red.shade300
+                                      : kcPrimaryNeutral200,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  TextSpan(
-                    text: userDetails?.user?.phone ?? '',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color:
-                          hasError ? Colors.red.shade300 : kcPrimaryNeutral200,
+                    const SizedBox(height: 12),
+                    // Divider
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: kcPrimaryNeutral800.withOpacity(0.5),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          verticalSpaceTiny,
-          Opacity(
-            opacity: opacity,
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  const TextSpan(
-                    text: "Email: ",
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: kcPrimaryNeutral500,
+                    const SizedBox(height: 12),
+                    // Email
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: kcPrimary600.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Iconsax.sms,
+                            size: 16,
+                            color: kcPrimary400,
+                          ),
+                        ),
+                        horizontalSpaceSmall,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Email",
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: kcPrimaryNeutral500,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                userDetails?.user?.email ?? 'Not provided',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: hasError
+                                      ? Colors.red.shade300
+                                      : kcPrimaryNeutral200,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  TextSpan(
-                    text: userDetails?.user?.email ?? '',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color:
-                          hasError ? Colors.red.shade300 : kcPrimaryNeutral200,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          verticalSpaceSmall,
-          // Edit Button
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const EditProfileView(),
+                  ],
                 ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                border: Border.all(color: kcPrimary600, width: 1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Iconsax.edit,
-                    size: 16,
-                    color: kcPrimary400,
-                  ),
-                  horizontalSpaceTiny,
-                  Text(
-                    "Edit",
-                    style: TextStyle(
-                      color: kcPrimary400,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
               ),
             ),
-          ),
-        ],
+            verticalSpaceMedium,
+
+            // Edit Button
+            Opacity(
+              opacity: opacity,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EditProfileView(),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        kcPrimary400,
+                        kcPrimary600,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: kcPrimary400.withOpacity(0.3),
+                        spreadRadius: 0,
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Iconsax.edit,
+                        size: 18,
+                        color: kcWhite,
+                      ),
+                      horizontalSpaceSmall,
+                      Text(
+                        "Edit Profile",
+                        style: TextStyle(
+                          color: kcWhite,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -335,6 +415,7 @@ class ProfileView extends HookConsumerWidget {
                 color: Colors.red,
                 textColor: Colors.white,
               ),
+              const Gap(100),
             ],
           ),
         ),

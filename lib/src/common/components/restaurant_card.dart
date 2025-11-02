@@ -12,9 +12,14 @@ import '../../features/home/data/model/response/shops_model/result.dart';
 class RestaurantCard extends ConsumerWidget {
   final ShopResult restaurant;
   final int index;
+  final bool? isLoggedIn;
 
-  const RestaurantCard(
-      {super.key, required this.restaurant, required this.index});
+  const RestaurantCard({
+    super.key,
+    required this.restaurant,
+    required this.index,
+    this.isLoggedIn = true,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,7 +28,10 @@ class RestaurantCard extends ConsumerWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => RestaurantDetailsView(restaurant: restaurant),
+            builder: (context) => RestaurantDetailsView(
+              restaurant: restaurant,
+              isLoggedIn: isLoggedIn,
+            ),
           ),
         );
       },

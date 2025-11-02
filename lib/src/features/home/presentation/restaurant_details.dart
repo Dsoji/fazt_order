@@ -15,6 +15,7 @@ import '../../../common/app_colors.dart';
 import '../../../common/res/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
+import '../../auth/login/presentation/login_screen.dart';
 import '../../profile/data/controller/profile_controller.dart';
 import '../data/controller/shop_controller.dart';
 import '../data/model/response/meal_details/item.dart' as meal_details;
@@ -25,10 +26,12 @@ final logger = Logger();
 
 class RestaurantDetailsView extends HookConsumerWidget {
   final ShopResult restaurant;
+  final bool? isLoggedIn;
 
   const RestaurantDetailsView({
     super.key,
     required this.restaurant,
+    this.isLoggedIn = true,
   });
 
   @override
@@ -41,7 +44,9 @@ class RestaurantDetailsView extends HookConsumerWidget {
 
     useEffect(() {
       Future.microtask(() {
-        ref.read(shopControllerProvider.notifier).fetchCart();
+        if (isLoggedIn == true) {
+          ref.read(shopControllerProvider.notifier).fetchCart();
+        }
         ref
             .read(shopControllerProvider.notifier)
             .fetchShopFoodCategory(storeId!);
@@ -85,54 +90,82 @@ class RestaurantDetailsView extends HookConsumerWidget {
     return Scaffold(
       backgroundColor: kcWhite,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: cartItem.isNotEmpty
-          ? Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.brand900,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+      floatingActionButton: isLoggedIn == false
+          ? GestureDetector(
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              },
+              child: Container(
+                width: 82,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.brand400,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(
+                  children: [
+                    Text(
+                      'Login',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    Icon(
+                      IconsaxPlusLinear.login_1,
+                      color: Colors.black,
+                    ),
+                  ],
+                ),
+              ))
+          : cartItem.isNotEmpty
+              ? Container(
+                  margin: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.brand900,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(28),
-                  onTap: () {
-                    // Navigate to Order tab (index 1) in the bottom navigation
-                    ref.read(navigationProvider.notifier).state = 1;
-                    Navigator.pop(context);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Iconsax.shopping_cart,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(28),
+                      onTap: () {
+                        // Navigate to Order tab (index 1) in the bottom navigation
+                        ref.read(navigationProvider.notifier).state = 1;
+                        Navigator.pop(context);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Iconsax.shopping_cart,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$totalItems items in cart, tap to view',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '$totalItems items in cart, tap to view',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            )
-          : null,
+                )
+              : null,
       appBar: AppBar(
         leading: IconButton(
           onPressed: () {
@@ -596,7 +629,18 @@ class RestaurantDetailsView extends HookConsumerWidget {
           GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: () {
-              _showAddToCartBottomSheet(context, menuItem as dynamic);
+              if (isLoggedIn == true) {
+                _showAddToCartBottomSheet(context, menuItem as dynamic);
+              } else {
+                Fluttertoast.showToast(
+                  msg: 'Please login to add to cart',
+                  toastLength: Toast.LENGTH_LONG,
+                  gravity: ToastGravity.CENTER,
+                  backgroundColor: Colors.orangeAccent,
+                  textColor: Colors.white,
+                  fontSize: 14.0,
+                );
+              }
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

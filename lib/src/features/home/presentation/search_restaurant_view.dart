@@ -1,14 +1,22 @@
 import 'package:fazt_order/src/common/widgets/text_styles.dart';
+import 'package:fazt_order/src/features/home/data/model/response/shops_model/location.dart'
+    as shops_model;
+import 'package:fazt_order/src/features/home/data/model/response/shops_model/result.dart';
+import 'package:fazt_order/src/features/home/data/model/response/shops_model/store.dart'
+    as shops_model;
+import 'package:fazt_order/src/features/home/presentation/restaurant_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:logger/logger.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/shimmer_restaurant_card.dart';
+import '../../bottom_sheets/location_sheet.dart';
 import '../../profile/data/controller/profile_controller.dart';
 import '../data/controller/shop_controller.dart';
 import '../data/model/response/search_global/meal.dart';
@@ -18,6 +26,7 @@ import '../data/model/response/search_global/shop.dart';
 // Providers for search query and filter state
 final searchQueryProvider = StateProvider<String>((ref) => "");
 final selectedFilterProvider = StateProvider<String>((ref) => "ALL");
+final logger = Logger();
 
 class SearchRestaurantView extends HookConsumerWidget {
   final String initialQuery;
@@ -30,7 +39,12 @@ class SearchRestaurantView extends HookConsumerWidget {
     final query = ref.watch(searchQueryProvider);
     final selectedFilter = ref.watch(selectedFilterProvider);
     final tabController = useTabController(initialLength: 3);
-
+    final userDetails =
+        ref.watch(profileControllerProvider).userDetails.valueOrNull;
+    final lat = userDetails?.user?.location?.coordinates?[1] ?? '0';
+    final long = userDetails?.user?.location?.coordinates?[0] ?? '0';
+    logger.d('lat: $lat');
+    logger.d('long: $long');
     // Initialize the search query with the initial query
     useEffect(() {
       searchController.text = initialQuery;
@@ -47,8 +61,8 @@ class SearchRestaurantView extends HookConsumerWidget {
     useEffect(() {
       if (query.isNotEmpty) {
         // You might want to get actual latitude and longitude from user location
-        const latitude = "6.4500"; // Default to Lagos coordinates
-        const longitude = "3.4333";
+        final latitude = "$lat"; // Default to Lagos coordinates
+        final longitude = "$long";
         Future.microtask(() {
           ref.read(shopControllerProvider.notifier).globalSearch(
                 query,
@@ -75,16 +89,25 @@ class SearchRestaurantView extends HookConsumerWidget {
       return () => tabController.removeListener(listener);
     }, [tabController]);
 
-    final userDetails =
-        ref.watch(profileControllerProvider).userDetails.valueOrNull;
+    void showLocationBottomSheet(BuildContext context) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) {
+          return const LocationBottomSheet();
+        },
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         title: GestureDetector(
           onTap: () {
-            // Navigate back to HomeView or show location bottom sheet
-            Navigator.pop(context);
+            showLocationBottomSheet(context);
           },
           child: Row(
             children: [
@@ -93,8 +116,8 @@ class SearchRestaurantView extends HookConsumerWidget {
               Text(
                 (userDetails?.user?.location?.address ?? 'Location Unknown')
                             .length >
-                        12
-                    ? '${(userDetails?.user?.location?.address ?? 'Location Unknown').substring(0, 12)}...'
+                        24
+                    ? '${(userDetails?.user?.location?.address ?? 'Location Unknown').substring(0, 24)}...'
                     : (userDetails?.user?.location?.address ??
                         'Location Unknown'),
                 style:
@@ -306,9 +329,9 @@ class SearchRestaurantView extends HookConsumerWidget {
                   final type = result.key;
 
                   if (type == 'shop' && item is Shop) {
-                    return _buildShopResult(item, index);
+                    return _buildShopResult(item, index, context);
                   } else if (type == 'meal' && item is Meal) {
-                    return _buildMealResult(item, index);
+                    return _buildMealResult(item, index, context);
                   }
                   return const SizedBox.shrink();
                 },
@@ -343,7 +366,7 @@ class SearchRestaurantView extends HookConsumerWidget {
               child: ListView.builder(
                 itemCount: shops.length,
                 itemBuilder: (context, index) {
-                  return _buildShopResult(shops[index], index);
+                  return _buildShopResult(shops[index], index, context);
                 },
               ),
             ),
@@ -376,7 +399,7 @@ class SearchRestaurantView extends HookConsumerWidget {
               child: ListView.builder(
                 itemCount: meals.length,
                 itemBuilder: (context, index) {
-                  return _buildMealResult(meals[index], index);
+                  return _buildMealResult(meals[index], index, context);
                 },
               ),
             ),
@@ -450,124 +473,186 @@ class SearchRestaurantView extends HookConsumerWidget {
     );
   }
 
-  Widget _buildShopResult(Shop shop, int index) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              shop.store?.storeDisplayImage ?? 'asset/images/placeholder.png',
-              width: 60,
-              height: 60,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: 60,
-                height: 60,
-                color: Colors.grey[300],
-                child: const Icon(Icons.store, color: Colors.grey),
+  Widget _buildShopResult(Shop shop, int index, BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RestaurantDetailsView(
+              restaurant: ShopResult(
+                id: shop.id,
+                shopName: shop.shopName,
+                store: shop.store != null
+                    ? shops_model.Store(
+                        id: shop.store!.id,
+                        storeName: shop.store!.storeName,
+                        storeDisplayImage: shop.store!.storeDisplayImage,
+                      )
+                    : null,
+                location: shop.location != null
+                    ? shops_model.Location(
+                        type: shop.location!.type,
+                        coordinates: shop.location!.coordinates?.toList(),
+                        address: shop.location!.address,
+                        state: shop.location!.state,
+                        city: shop.location!.city,
+                      )
+                    : null,
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  shop.store?.storeName ?? 'Unknown Store',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  shop.location?.address ?? 'No address available',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                shop.store?.storeDisplayImage ?? 'asset/images/placeholder.png',
+                width: 60,
+                height: 60,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 60,
+                  height: 60,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.store, color: Colors.grey),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    shop.store?.storeName ?? 'Unknown Store',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    shop.location?.address ?? 'No address available',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildMealResult(Meal meal, int index) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              meal.meals?.first.mealImage ?? 'asset/images/placeholder.png',
-              width: 60,
-              height: 60,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: 60,
-                height: 60,
-                color: Colors.grey[300],
-                child: const Icon(Icons.restaurant, color: Colors.grey),
+  Widget _buildMealResult(Meal meal, int index, BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RestaurantDetailsView(
+              restaurant: ShopResult(
+                id: meal.shop?.id,
+                shopName: meal.shop?.shopName,
+                store: meal.store != null
+                    ? shops_model.Store(
+                        id: meal.store!.id,
+                        storeName: meal.store!.storeName,
+                        storeDisplayImage: meal.store!.storeDisplayImage,
+                      )
+                    : null,
+                location: meal.shop?.location != null
+                    ? shops_model.Location(
+                        type: meal.shop!.location!.type,
+                        coordinates: meal.shop!.location!.coordinates?.toList(),
+                        address: meal.shop!.location!.address,
+                        state: meal.shop!.location!.state,
+                        city: meal.shop!.location!.city,
+                      )
+                    : null,
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Meal from ${meal.shop?.store?.storeName ?? 'Unknown Store'}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  meal.shop?.location?.address ?? 'No address available',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.network(
+                meal.meals?.first.mealImage ?? 'asset/images/placeholder.png',
+                width: 60,
+                height: 60,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 60,
+                  height: 60,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.restaurant, color: Colors.grey),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${meal.meals?.first.mealName ?? 'Unknown Meal'} from  ${meal.store?.storeName ?? 'Unknown Store'} (${meal.shop?.shopName ?? 'Unknown Shop'})',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    meal.shop?.location?.address ?? 'No address available',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

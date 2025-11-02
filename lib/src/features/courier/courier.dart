@@ -7,6 +7,7 @@ import 'package:fazt_order/src/common/widgets/reusbale_dropdown_widget.dart';
 import 'package:fazt_order/src/features/courier/parcel_confirm_details.dart';
 import 'package:fazt_order/src/features/order/parcel_order_history.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
@@ -271,7 +272,16 @@ class CourierView extends HookConsumerWidget {
     }
 
     final selectedPackageType = useState<String?>(null);
-
+    useEffect(() {
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFFED9900),
+        statusBarIconBrightness: Brightness.light,
+      ));
+      return () {
+        // Optional: Reset on dispose if needed
+        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+      };
+    }, []);
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),

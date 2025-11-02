@@ -1,5 +1,7 @@
+import 'package:fazt_order/src/common/widgets/or_divider.dart';
 import 'package:fazt_order/src/features/auth/data/controller/authentication_controller.dart';
 import 'package:fazt_order/src/features/dashboard_view.dart';
+import 'package:fazt_order/src/features/home/presentation/home_preview.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -199,6 +201,28 @@ class LoginScreen extends HookConsumerWidget {
                                 },
                             ),
                           ],
+                        ),
+                      ),
+                    ),
+                    const Gap(16),
+                    const OrDivider(),
+                    const Gap(16),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HomePreview(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Login as a guest',
+                        style: TextStyle(
+                          color: AppColors.brand400,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
                         ),
                       ),
                     ),

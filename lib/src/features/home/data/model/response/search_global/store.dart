@@ -15,13 +15,13 @@ class Store {
   factory Store.fromMap(Map<String, dynamic> data) => Store(
         storeDisplayImage: data['storeDisplayImage'] as String?,
         storeName: data['storeName'] as String?,
-        id: data['id'] as String?,
+        id: data['_id'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
         'storeDisplayImage': storeDisplayImage,
         'storeName': storeName,
-        'id': id,
+        '_id': id,
       };
 
   /// `dart:convert`
