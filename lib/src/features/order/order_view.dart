@@ -11,6 +11,7 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../../../providers/navigation_provider.dart';
 import '../../../providers/order_provider.dart';
 import '../../common/app_colors.dart';
 import '../../common/widgets/reusable_buttons.dart';
@@ -54,9 +55,10 @@ class OrderView extends HookConsumerWidget {
         data: (cartData) {
           // Extract cart items from the async data
           final cartItems = cartData.carts ?? [];
+          final availableCarts = cartData.availableCarts ?? 0;
           logger.d('Cart Items: ${cartItems.length}');
 
-          if (cartItems.isEmpty) {
+          if (availableCarts == 0) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -69,6 +71,7 @@ class OrderView extends HookConsumerWidget {
                   GestureDetector(
                     onTap: () {
                       // Navigate to place order
+                      ref.read(navigationProvider.notifier).state = 0;
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(

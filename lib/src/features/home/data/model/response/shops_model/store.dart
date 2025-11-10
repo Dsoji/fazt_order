@@ -1,27 +1,35 @@
 import 'dart:convert';
 
+import 'sales_operation.dart';
+
 class Store {
   String? storeDisplayImage;
   String? storeName;
   String? id;
+  SalesOperation? salesOperation;
 
-  Store({this.storeDisplayImage, this.storeName, this.id});
+  Store({this.storeDisplayImage, this.storeName, this.id, this.salesOperation});
 
   @override
   String toString() {
-    return 'Store(storeDisplayImage: $storeDisplayImage, storeName: $storeName, id: $id)';
+    return 'Store(storeDisplayImage: $storeDisplayImage, storeName: $storeName, id: $id, salesOperation: $salesOperation)';
   }
 
   factory Store.fromMap(Map<String, dynamic> data) => Store(
         storeDisplayImage: data['storeDisplayImage'] as String?,
         storeName: data['storeName'] as String?,
         id: data['id'] as String?,
+        salesOperation: data['salesOperation'] == null
+            ? null
+            : SalesOperation.fromMap(
+                data['salesOperation'] as Map<String, dynamic>),
       );
 
   Map<String, dynamic> toMap() => {
         'storeDisplayImage': storeDisplayImage,
         'storeName': storeName,
         'id': id,
+        'salesOperation': salesOperation?.toMap(),
       };
 
   /// `dart:convert`
@@ -40,11 +48,13 @@ class Store {
     String? storeDisplayImage,
     String? storeName,
     String? id,
+    SalesOperation? salesOperation,
   }) {
     return Store(
       storeDisplayImage: storeDisplayImage ?? this.storeDisplayImage,
       storeName: storeName ?? this.storeName,
       id: id ?? this.id,
+      salesOperation: salesOperation ?? this.salesOperation,
     );
   }
 }

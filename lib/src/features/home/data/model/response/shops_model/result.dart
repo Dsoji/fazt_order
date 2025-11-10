@@ -16,6 +16,7 @@ class ShopResult {
   DateTime? updatedAt;
   String? id;
   bool? isLiked;
+  bool? isOpen;
 
   ShopResult({
     this.location,
@@ -30,18 +31,20 @@ class ShopResult {
     this.updatedAt,
     this.id,
     this.isLiked,
+    this.isOpen,
   });
 
   @override
   String toString() {
-    return 'Result(location: $location, numberOfFavorites: $numberOfFavorites, rating: $rating, deliveryFee: $deliveryFee, shopName: $shopName, manager: $manager, phone: $phone, store: $store, createdAt: $createdAt, updatedAt: $updatedAt, id: $id, isLiked: $isLiked)';
+    return 'Result(location: $location, numberOfFavorites: $numberOfFavorites, rating: $rating, deliveryFee: $deliveryFee, shopName: $shopName, manager: $manager, phone: $phone, store: $store, createdAt: $createdAt, updatedAt: $updatedAt, id: $id, isLiked: $isLiked, isOpen: $isOpen)';
   }
 
   factory ShopResult.fromMap(Map<String, dynamic> data) => ShopResult(
         location: data['location'] == null
             ? null
             : Location.fromMap(data['location'] as Map<String, dynamic>),
-        numberOfFavorites: data['favoriteCount'] as int? ?? 0, // Provide default value
+        numberOfFavorites:
+            data['favoriteCount'] as int? ?? 0, // Provide default value
         rating: data['rating'] as int? ?? 0, // Provide default value
         deliveryFee: data['deliveryFee'] as int?,
         shopName: data['shopName'] as String?,
@@ -58,6 +61,7 @@ class ShopResult {
             : DateTime.parse(data['updatedAt'] as String),
         id: data['id'] as String?,
         isLiked: data['isLiked'] as bool?,
+        isOpen: data['isOpen'] as bool?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -73,6 +77,7 @@ class ShopResult {
         'updatedAt': updatedAt?.toIso8601String(),
         'id': id,
         'isLiked': isLiked,
+        'isOpen': isOpen,
       };
 
   /// `dart:convert`
@@ -100,6 +105,7 @@ class ShopResult {
     DateTime? updatedAt,
     String? id,
     bool? isLiked,
+    bool? isOpen,
   }) {
     return ShopResult(
       location: location ?? this.location,
@@ -114,6 +120,7 @@ class ShopResult {
       updatedAt: updatedAt ?? this.updatedAt,
       id: id ?? this.id,
       isLiked: isLiked ?? this.isLiked,
+      isOpen: isOpen ?? this.isOpen,
     );
   }
 }

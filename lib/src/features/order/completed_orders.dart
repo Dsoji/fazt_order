@@ -1,6 +1,8 @@
 import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
+import 'package:fazt_order/src/features/order/completed_order_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shimmer/shimmer.dart';
@@ -18,9 +20,10 @@ class CompletedOrders extends HookConsumerWidget {
 
     return myOrdersList.when(
       data: (ordersData) {
-        // Filter completed orders
+        // Filter completed orders (delivered or cancelled)
         final completedOrders = ordersData.results
-                ?.where((order) => order.status == 'delivered')
+                ?.where((order) =>
+                    order.status == 'delivered' || order.status == 'cancelled')
                 .toList() ??
             [];
 
@@ -43,71 +46,105 @@ class CompletedOrders extends HookConsumerWidget {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: completedOrders.length,
-          itemBuilder: (context, index) {
-            final order = completedOrders[index];
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                itemCount: completedOrders.length,
+                itemBuilder: (context, index) {
+                  final order = completedOrders[index];
+                  return Column(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    order.deliveryLocation?.address ??
-                                        "Unknown Address",
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    CompletedOrderView(orderItems: order),
+                              ),
+                            );
+                          },
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            order.deliveryLocation?.address ??
+                                                "Unknown Address",
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ),
+                                        Text(
+                                          order.createdAt
+                                                  ?.toString()
+                                                  .split(' ')[0] ??
+                                              "Unknown Date",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
+                                    verticalSpaceTiny,
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          "Order #${order.orderNumber ?? 'Unknown'}",
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        Text(
+                                          order.status ?? 'Unknown Status',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: order.status == 'delivered'
+                                                ? Colors.green
+                                                : Colors.red,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                                Text(
-                                  order.createdAt?.toString().split(' ')[0] ??
-                                      "Unknown Date",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            verticalSpaceTiny,
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  "Order #${order.orderNumber ?? 'Unknown'}",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
+                      verticalSpaceSmall,
+                      SvgPicture.asset('asset/svgs/dotted_line.svg'),
+                      verticalSpaceSmall,
                     ],
-                  ),
-                ),
-                verticalSpaceSmall,
-                SvgPicture.asset('asset/svgs/dotted_line.svg'),
-                verticalSpaceSmall,
-              ],
-            );
-          },
+                  );
+                },
+              ),
+              const Gap(150),
+            ],
+          ),
         );
       },
       loading: () => ListView.builder(

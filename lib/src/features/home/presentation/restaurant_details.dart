@@ -20,6 +20,7 @@ import '../../profile/data/controller/profile_controller.dart';
 import '../data/controller/shop_controller.dart';
 import '../data/model/response/meal_details/item.dart' as meal_details;
 import '../data/model/response/meal_variant_menu/result.dart';
+import '../data/model/response/shops_model/day_schedule.dart';
 import '../data/model/response/shops_model/result.dart';
 
 final logger = Logger();
@@ -42,6 +43,200 @@ class RestaurantDetailsView extends HookConsumerWidget {
     logger.d('shopId: $shopId');
     logger.d('storeId: $storeId');
 
+    // Function to get the current time and date on the device
+    String getCurrentDateTime() {
+      final now = DateTime.now();
+      return "${now.year.toString().padLeft(4, '0')}-"
+          "${now.month.toString().padLeft(2, '0')}-"
+          "${now.day.toString().padLeft(2, '0')} "
+          "${now.hour.toString().padLeft(2, '0')}:"
+          "${now.minute.toString().padLeft(2, '0')}:"
+          "${now.second.toString().padLeft(2, '0')}";
+    }
+
+    // Function to get the current day's schedule and times
+    DaySchedule? getCurrentDaySchedule() {
+      final schedule = restaurant.store?.salesOperation?.schedule;
+      if (schedule == null) return null;
+
+      final now = DateTime.now();
+      final weekday = now.weekday; // 1 = Monday, 7 = Sunday
+
+      switch (weekday) {
+        case 1:
+          return schedule.monday;
+        case 2:
+          return schedule.tuesday;
+        case 3:
+          return schedule.wednesday;
+        case 4:
+          return schedule.thursday;
+        case 5:
+          return schedule.friday;
+        case 6:
+          return schedule.saturday;
+        case 7:
+          return schedule.sunday;
+        default:
+          return null;
+      }
+    }
+
+    // Function to check if restaurant is currently open
+    bool isRestaurantOpen() {
+      final currentDaySchedule = getCurrentDaySchedule();
+
+      // Check if the day is marked as open
+      if (currentDaySchedule?.open != true) {
+        return false;
+      }
+
+      // Get time slots for today
+      final timeSlots = currentDaySchedule?.time;
+
+      // If no time slots exist, fall back to the open flag
+      if (timeSlots == null || timeSlots.isEmpty) {
+        return currentDaySchedule?.open ?? false;
+      }
+
+      final now = DateTime.now();
+      bool hasValidTimeSlot = false;
+
+      // Check if current time falls within any time slot
+      for (final timeSlot in timeSlots) {
+        if (timeSlot.startTime != null && timeSlot.endTime != null) {
+          hasValidTimeSlot = true;
+          try {
+            // Parse the ISO 8601 time strings
+            final startTime = DateTime.parse(timeSlot.startTime!);
+            final endTime = DateTime.parse(timeSlot.endTime!);
+
+            // Extract only the time portion (hours and minutes) for comparison
+            final currentTime =
+                DateTime(2000, 1, 1, now.hour, now.minute, now.second);
+            final startTimeOnly = DateTime(
+                2000, 1, 1, startTime.hour, startTime.minute, startTime.second);
+            final endTimeOnly = DateTime(
+                2000, 1, 1, endTime.hour, endTime.minute, endTime.second);
+
+            // Check if current time is within the time range
+            if (currentTime.isAfter(
+                    startTimeOnly.subtract(const Duration(seconds: 1))) &&
+                currentTime
+                    .isBefore(endTimeOnly.add(const Duration(seconds: 1)))) {
+              return true;
+            }
+          } catch (e) {
+            // If parsing fails, skip this time slot
+            logger.e('Error parsing time: $e');
+            continue;
+          }
+        }
+      }
+
+      // If time slots exist but none have valid startTime/endTime, fall back to open flag
+      if (!hasValidTimeSlot) {
+        return currentDaySchedule?.open ?? false;
+      }
+
+      // If we have valid time slots but current time doesn't fall within any, return false
+      return false;
+    }
+
+    // Function to format time from ISO string to readable format (e.g., "2PM")
+    String formatTime(String? isoTime) {
+      if (isoTime == null) return '';
+      try {
+        final dateTime = DateTime.parse(isoTime);
+        final hour = dateTime.hour;
+        final minute = dateTime.minute;
+        final period = hour >= 12 ? 'PM' : 'AM';
+        final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+        if (minute == 0) {
+          return '$displayHour$period';
+        } else {
+          return '$displayHour:${minute.toString().padLeft(2, '0')}$period';
+        }
+      } catch (e) {
+        logger.e('Error formatting time: $e');
+        return '';
+      }
+    }
+
+    // Function to get opening hours text
+    String getOpeningHoursText() {
+      final currentDaySchedule = getCurrentDaySchedule();
+
+      if (currentDaySchedule?.open != true) {
+        return 'CLOSED';
+      }
+
+      final endTime = currentDaySchedule?.time?.isNotEmpty == true
+          ? currentDaySchedule!.time!.first.endTime
+          : null;
+      final startTime = currentDaySchedule?.time?.isNotEmpty == true
+          ? currentDaySchedule!.time!.first.startTime
+          : null;
+
+      if (endTime != null) {
+        final formattedEndTime = formatTime(endTime);
+        if (formattedEndTime.isNotEmpty) {
+          return 'OPENING UNTIL $formattedEndTime';
+        }
+      }
+
+      // If no endTime but day is open, show generic message
+      if (startTime != null) {
+        final formattedStartTime = formatTime(startTime);
+        if (formattedStartTime.isNotEmpty) {
+          return 'OPEN FROM $formattedStartTime';
+        }
+      }
+
+      return 'OPEN';
+    }
+
+    // Function to get opening hours display text
+    String getOpeningHoursDisplayText() {
+      final currentDaySchedule = getCurrentDaySchedule();
+
+      // If closed, show CLOSED
+      if (currentDaySchedule?.open != true) {
+        return 'CLOSED';
+      }
+
+      final startTime = currentDaySchedule?.time?.isNotEmpty == true
+          ? currentDaySchedule!.time!.first.startTime
+          : null;
+      final endTime = currentDaySchedule?.time?.isNotEmpty == true
+          ? currentDaySchedule!.time!.first.endTime
+          : null;
+
+      // If both times exist, show formatted times
+      if (startTime != null && endTime != null) {
+        final formattedStartTime = formatTime(startTime);
+        final formattedEndTime = formatTime(endTime);
+        if (formattedStartTime.isNotEmpty && formattedEndTime.isNotEmpty) {
+          return 'OPENING FROM\n$formattedStartTime TO $formattedEndTime';
+        }
+      }
+
+      // If no times exist but open is true, show ALL DAY
+      return 'ALL DAY';
+    }
+
+    // Get startTime and endTime for the current day
+    final currentDaySchedule = getCurrentDaySchedule();
+    final startTime = currentDaySchedule?.time?.isNotEmpty == true
+        ? currentDaySchedule!.time!.first.startTime
+        : null;
+    final endTime = currentDaySchedule?.time?.isNotEmpty == true
+        ? currentDaySchedule!.time!.first.endTime
+        : null;
+    final isOpenNow = isRestaurantOpen();
+    final openingHoursText = getOpeningHoursText();
+    final openingHoursDisplayText = getOpeningHoursDisplayText();
+
     useEffect(() {
       Future.microtask(() {
         if (isLoggedIn == true) {
@@ -63,7 +258,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
     logger.d('cartItemAsync: $cartItemAsync');
     final cartItem = cartItemAsync.valueOrNull?.carts ?? [];
     logger.d('cartItem: $cartItem');
-    final totalItems = cartItemAsync.valueOrNull?.totalCarts ?? 0;
+    final totalItems = cartItemAsync.valueOrNull?.availableCarts ?? 0;
     logger.d('totalItems: $totalItems');
 
     // Add this state for selected category ID
@@ -289,7 +484,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          "${restaurant.rating} (${restaurant.numberOfFavorites})",
+                          "${restaurant.numberOfFavorites}",
                           style: const TextStyle(
                             fontSize: 12,
                             color: kcPrimaryNeutral500,
@@ -322,12 +517,12 @@ class RestaurantDetailsView extends HookConsumerWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: kcPrimaryOrange500,
+                        color: isOpenNow ? kcPrimaryOrange500 : kcPrimaryRed500,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
-                        '5 minutes',
-                        style: TextStyle(
+                      child: Text(
+                        isOpenNow ? "OPEN" : "CLOSED",
+                        style: const TextStyle(
                           fontSize: 14,
                           color: kcWhite,
                         ),
@@ -350,16 +545,16 @@ class RestaurantDetailsView extends HookConsumerWidget {
                           size: 16,
                         ),
                         const SizedBox(width: 4),
-                        const Text(
-                          "OPENING UNTIL 2PM",
-                          style: TextStyle(
+                        Text(
+                          openingHoursDisplayText,
+                          style: const TextStyle(
                             fontSize: 14,
                             color: kcPrimaryNeutral400,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(width: 16),
+                    const Spacer(),
                     Row(
                       children: [
                         SvgPicture.asset('asset/svgs/delivery_icon.svg'),
@@ -375,24 +570,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                     ),
                   ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 15.0, right: 75),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '9:00 PM ',
-                        style: ktBodyRegularSize14.copyWith(
-                            color: kcPrimaryNeutral100),
-                      ),
-                      Text(
-                        'Instant Delivery',
-                        style: ktBodyRegularSize14.copyWith(
-                            color: kcPrimaryNeutral100),
-                      )
-                    ],
-                  ),
-                ),
+
                 const Gap(20),
                 SvgPicture.asset("asset/svgs/dotted_line.svg"),
                 const Gap(20),
@@ -480,7 +658,8 @@ class RestaurantDetailsView extends HookConsumerWidget {
                 mealVariants.when(
                   data: (data) => Column(
                     children: data.results
-                            ?.map((item) => _buildMenuItem(context, item))
+                            ?.map((item) =>
+                                _buildMenuItem(context, item, isOpenNow))
                             .toList() ??
                         [],
                   ),
@@ -553,6 +732,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
   Widget _buildMenuItem(
     BuildContext context,
     MealVariantMenuResult menuItem,
+    bool isOpenNow,
   ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -629,6 +809,19 @@ class RestaurantDetailsView extends HookConsumerWidget {
           GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: () {
+              // Check if shop is closed first
+              if (!isOpenNow) {
+                Fluttertoast.showToast(
+                  msg: '⚠️ Shop is currently closed',
+                  toastLength: Toast.LENGTH_LONG,
+                  gravity: ToastGravity.CENTER,
+                  backgroundColor: AppColors.red200,
+                  textColor: Colors.white,
+                  fontSize: 14.0,
+                );
+                return;
+              }
+
               if (isLoggedIn == true) {
                 _showAddToCartBottomSheet(context, menuItem as dynamic);
               } else {
@@ -809,8 +1002,8 @@ class AddToCartBottomSheet extends HookConsumerWidget {
             final quantity = entry.value;
 
             // Find the corresponding item to get its price
-            final item =
-                items.where((item) => item.variant?.id == itemId).firstOrNull;
+            final itemWhere = items.where((item) => item.variant?.id == itemId);
+            final item = itemWhere.isEmpty ? null : itemWhere.first;
             if (item != null) {
               optionsPrice += ((item.price ?? 0) * quantity).toInt();
             }
@@ -1078,79 +1271,141 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                       .addToCart
                                       .isLoading,
                                   onPressed: () async {
-                                    // Check if required options are selected
-                                    final options = mealDetails
-                                        .mealVariant?.meal?.optionGroup;
-                                    bool hasRequiredSelections = true;
-                                    String? missingRequiredGroup;
+                                    try {
+                                      // Check if required options are selected
+                                      final options = mealDetails
+                                          .mealVariant?.meal?.optionGroup;
+                                      bool hasRequiredSelections = true;
+                                      String? missingRequiredGroup;
 
-                                    if (options != null) {
-                                      for (final optionGroup in options) {
-                                        final isRequired =
-                                            optionGroup.least != null &&
-                                                optionGroup.least! > 0;
-                                        if (isRequired) {
-                                          final selectedItemsForGroup =
-                                              selectedItemsWithQuantity.value[
-                                                      optionGroup.id ?? ''] ??
-                                                  {};
+                                      if (options != null) {
+                                        for (final optionGroup in options) {
+                                          final isRequired =
+                                              optionGroup.least != null &&
+                                                  optionGroup.least! > 0;
+                                          if (isRequired) {
+                                            final selectedItemsForGroup =
+                                                selectedItemsWithQuantity.value[
+                                                        optionGroup.id ?? ''] ??
+                                                    {};
 
-                                          if (selectedItemsForGroup.isEmpty) {
-                                            hasRequiredSelections = false;
-                                            missingRequiredGroup =
-                                                optionGroup.groupName;
-                                            break;
+                                            // Filter to only count in-stock items for required check
+                                            final inStockSelectedItems =
+                                                <String, int>{};
+                                            final items =
+                                                optionGroup.items ?? [];
+
+                                            for (final entry
+                                                in selectedItemsForGroup
+                                                    .entries) {
+                                              final itemVariantId = entry.key;
+
+                                              // Safely find the item using where().firstOrNull pattern
+                                              final itemWhere = items.where(
+                                                  (item) =>
+                                                      item.variant?.id ==
+                                                      itemVariantId);
+                                              final item = itemWhere.isEmpty
+                                                  ? null
+                                                  : itemWhere.first;
+
+                                              // Check if item was found and is in stock
+                                              if (item != null &&
+                                                  item.variant?.inStock ==
+                                                      true) {
+                                                inStockSelectedItems[
+                                                        itemVariantId] =
+                                                    entry.value;
+                                              }
+                                            }
+
+                                            if (inStockSelectedItems.isEmpty) {
+                                              hasRequiredSelections = false;
+                                              missingRequiredGroup =
+                                                  optionGroup.groupName;
+                                              break;
+                                            }
                                           }
                                         }
                                       }
-                                    }
 
-                                    if (!hasRequiredSelections) {
-                                      Fluttertoast.showToast(
-                                        msg:
-                                            '🚨 Please select all required options',
-                                        toastLength: Toast.LENGTH_LONG,
-                                        gravity: ToastGravity.TOP,
-                                        backgroundColor: Colors.yellow[600],
-                                        textColor: Colors.black,
-                                        fontSize: 14.0,
-                                      );
-
-                                      return;
-                                    }
-
-                                    // Prepare the options data for the API
-                                    List<Map<String, dynamic>> optionsData = [];
-
-                                    for (final optionGroup in options ?? []) {
-                                      final selectedItemsForGroup =
-                                          selectedItemsWithQuantity.value[
-                                                  optionGroup.id ?? ''] ??
-                                              {};
-
-                                      for (final entry
-                                          in selectedItemsForGroup.entries) {
-                                        optionsData.add({
-                                          "optionItemVariant": entry.key,
-                                          "quantity": entry.value,
-                                        });
-                                      }
-                                    }
-
-                                    // Call your updated addToCart method
-                                    final result = await ref
-                                        .read(shopControllerProvider.notifier)
-                                        .addToCart(
-                                          menuItem.id ?? '',
-                                          quantity.value,
-                                          optionsData,
+                                      if (!hasRequiredSelections) {
+                                        Fluttertoast.showToast(
+                                          msg:
+                                              '🚨 Please select all required options',
+                                          toastLength: Toast.LENGTH_LONG,
+                                          gravity: ToastGravity.TOP,
+                                          backgroundColor: Colors.yellow[600],
+                                          textColor: Colors.black,
+                                          fontSize: 14.0,
                                         );
 
-                                    if (result == true) {
-                                      await ref
+                                        return;
+                                      }
+
+                                      // Prepare the options data for the API - only include in-stock items
+                                      List<Map<String, dynamic>> optionsData =
+                                          [];
+
+                                      for (final optionGroup in options ?? []) {
+                                        final selectedItemsForGroup =
+                                            selectedItemsWithQuantity.value[
+                                                    optionGroup.id ?? ''] ??
+                                                {};
+                                        final items = optionGroup.items ?? [];
+
+                                        for (final entry
+                                            in selectedItemsForGroup.entries) {
+                                          final itemVariantId = entry.key;
+
+                                          // Safely find the corresponding item to check stock status
+                                          final itemWhere = items.where(
+                                              (item) =>
+                                                  item.variant?.id ==
+                                                  itemVariantId);
+                                          final item = itemWhere.isEmpty
+                                              ? null
+                                              : itemWhere.first;
+
+                                          // Only add to optionsData if item is found and in stock
+                                          if (item != null &&
+                                              item.variant?.inStock == true) {
+                                            optionsData.add({
+                                              "optionItemVariant": entry.key,
+                                              "quantity": entry.value,
+                                            });
+                                          }
+                                        }
+                                      }
+
+                                      // Call your updated addToCart method
+                                      final result = await ref
                                           .read(shopControllerProvider.notifier)
-                                          .fetchCart();
-                                      Navigator.pop(context);
+                                          .addToCart(
+                                            menuItem.id ?? '',
+                                            quantity.value,
+                                            optionsData,
+                                          );
+
+                                      if (result == true) {
+                                        await ref
+                                            .read(
+                                                shopControllerProvider.notifier)
+                                            .fetchCart();
+                                        Navigator.pop(context);
+                                      }
+                                    } catch (e, stackTrace) {
+                                      logger.e(
+                                          'Error adding to cart: $e\n$stackTrace');
+                                      Fluttertoast.showToast(
+                                        msg:
+                                            'An error occurred. Please try again.',
+                                        toastLength: Toast.LENGTH_LONG,
+                                        gravity: ToastGravity.CENTER,
+                                        backgroundColor: Colors.red,
+                                        textColor: Colors.white,
+                                        fontSize: 14.0,
+                                      );
                                     }
                                   },
                                   color: AppColors.brand400,
@@ -1271,6 +1526,7 @@ class AddToCartBottomSheet extends HookConsumerWidget {
     String title,
     List<String> options,
     List<meal_details.Item> items, // Use the meal_details Item type
+
     {
     required bool isRequired,
     required int maxSelection,
@@ -1329,12 +1585,15 @@ class AddToCartBottomSheet extends HookConsumerWidget {
           final isSelected =
               selectedItemIdsWithQuantity.containsKey(itemVariantId);
           final quantity = selectedItemIdsWithQuantity[itemVariantId] ?? 0;
+          final isInStock = item.variant?.inStock ?? false; // Add this line
 
           // Add debug print
-          print('Item: $itemId, isSelected: $isSelected, quantity: $quantity');
+          print(
+              'Item: $itemId, isSelected: $isSelected, quantity: $quantity, inStock: $isInStock');
 
           return buildOptionTileWithQuantity(
             option,
+            isInStock, // Change from true to actual stock status
             maxSelection,
             isSelected: isSelected,
             quantity: quantity,
@@ -1435,6 +1694,7 @@ class AddToCartBottomSheet extends HookConsumerWidget {
   // Updated option tile with quantity controls
   Widget buildOptionTileWithQuantity(
     String option,
+    bool inStock,
     int maxSelection, {
     required bool isSelected,
     required int quantity,
@@ -1442,100 +1702,139 @@ class AddToCartBottomSheet extends HookConsumerWidget {
     required Function(int) onQuantityChanged,
   }) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? AppColors.brand300 : Colors.grey[300]!,
-            width: isSelected ? 2 : 1,
+      onTap: inStock
+          ? onTap
+          : null, // Keep restriction - out of stock items can't be selected
+      child: Opacity(
+        opacity: inStock ? 1.0 : 0.5,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: inStock
+                  ? isSelected
+                      ? AppColors.brand300
+                      : Colors.grey[300]!
+                  : Colors.grey[400]!,
+              width: isSelected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            color: isSelected
+                ? AppColors.brand300.withOpacity(0.1)
+                : Colors.transparent,
           ),
-          borderRadius: BorderRadius.circular(8),
-          color: isSelected
-              ? AppColors.brand300.withOpacity(0.1)
-              : Colors.transparent,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              maxSelection == 1
-                  ? (isSelected
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked)
-                  : (isSelected
-                      ? Icons.check_box
-                      : Icons.check_box_outline_blank),
-              color: isSelected ? AppColors.brand300 : Colors.grey[600],
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                option,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: isSelected ? AppColors.brand300 : Colors.black,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
+          child: Row(
+            children: [
+              Icon(
+                maxSelection == 1
+                    ? (isSelected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked)
+                    : (isSelected
+                        ? Icons.check_box
+                        : Icons.check_box_outline_blank),
+                color: inStock
+                    ? (isSelected ? AppColors.brand300 : Colors.grey[600])
+                    : Colors.grey[400],
               ),
-            ),
-            // Quantity controls (only show when selected)
-            if (isSelected && quantity > 0) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.brand300.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.brand300, width: 1),
-                ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        if (quantity > 1) {
-                          onQuantityChanged(quantity - 1);
-                        } else {
-                          onQuantityChanged(0); // Remove item
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        child: const Icon(
-                          Icons.remove,
-                          size: 16,
-                          color: AppColors.brand300,
+                    Expanded(
+                      child: Text(
+                        option,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: inStock
+                              ? (isSelected ? AppColors.brand300 : Colors.black)
+                              : Colors.grey[500],
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '$quantity',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.brand300,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () {
-                        onQuantityChanged(quantity + 1);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        child: const Icon(
-                          Icons.add,
-                          size: 16,
-                          color: AppColors.brand300,
+                    if (!inStock)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red[100],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'Out of Stock',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.red[700],
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
+              // Quantity controls (only show when selected and in stock)
+              if (isSelected && quantity > 0 && inStock) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.brand300.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.brand300, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          if (quantity > 1) {
+                            onQuantityChanged(quantity - 1);
+                          } else {
+                            onQuantityChanged(0); // Remove item
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          child: const Icon(
+                            Icons.remove,
+                            size: 16,
+                            color: AppColors.brand300,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '$quantity',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.brand300,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {
+                          onQuantityChanged(quantity + 1);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          child: const Icon(
+                            Icons.add,
+                            size: 16,
+                            color: AppColors.brand300,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

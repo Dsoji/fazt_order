@@ -1,7 +1,9 @@
 import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
+import 'package:fazt_order/src/features/home/presentation/customer_support.dart';
 import 'package:fazt_order/src/features/profile/presentation/settings_view.dart';
 import 'package:fazt_order/src/features/profile/presentation/wallet_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gap/gap.dart';
@@ -15,7 +17,6 @@ import '../../../common/widgets/text_styles.dart';
 import '../../auth/login/presentation/login_screen.dart';
 import '../../home/presentation/favorites_view.dart';
 import '../data/controller/profile_controller.dart';
-import 'customer_support_view.dart';
 import 'edit_profile.dart';
 
 class ProfileView extends HookConsumerWidget {
@@ -24,7 +25,7 @@ class ProfileView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userDetails = ref.watch(profileControllerProvider).userDetails;
-
+    final String? link = dotenv.env['CHAT_LINK'];
     Widget buildUserProfileSection(dynamic userDetails,
         {bool isLoading = false, bool hasError = false}) {
       final opacity = isLoading ? 0.7 : (hasError ? 0.8 : 1.0);
@@ -343,7 +344,8 @@ class ProfileView extends HookConsumerWidget {
                           context,
                           MaterialPageRoute(
                               builder: (context) =>
-                                  const CustomerSupportView()),
+                                  CustomerSupportWebViewScreen(
+                                      uri: link ?? '')),
                         );
                       },
                     ),
