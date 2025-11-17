@@ -13,6 +13,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:iconsax_plus/iconsax_plus.dart';
 
+import '../../../common/location_service.dart';
 import '../../../common/res/app_assets.dart';
 import '../../../common/res/app_colors.dart';
 import '../../../common/widgets/custom_textfield.dart';
@@ -69,58 +70,18 @@ class MapLocationScreen extends HookConsumerWidget {
 
     Future<void> getPlaceDetails(String placeId, String description) async {
       isLoading.value = true;
-
-      final url =
-          'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$apiKey';
-
       try {
-        final response = await http.get(Uri.parse(url));
-        final json = jsonDecode(response.body);
-
-        if (json['status'] == 'OK') {
-          final result = json['result'];
-          final location = result['geometry']['location'];
-
-          String? foundCity;
-          String? foundState;
-          String? streetNumber;
-          String? route;
-
-          for (var component in result['address_components']) {
-            final List types = component['types'];
-            if (types.contains('locality')) {
-              foundCity = component['long_name'];
-            }
-            if (types.contains('administrative_area_level_1')) {
-              foundState = component['long_name'];
-            }
-            if (types.contains('street_number')) {
-              streetNumber = component['long_name'];
-            }
-            if (types.contains('route')) {
-              route = component['long_name'];
-            }
-          }
-
-          lat.value = location['lat'].toString();
-          long.value = location['lng'].toString();
-          city.value = foundCity ?? '';
-          state.value = foundState ?? '';
-
-          // Save selected address
-          selectedAddress.value = {
-            'title': description.split(',').first,
-            'address': result['formatted_address'] ?? description,
-            'lat': lat.value,
-            'lng': long.value,
-            'city': city.value,
-            'state': state.value,
-          };
-        } else {
-          print('Error fetching place details: ${json['status']}');
+        final addressData =
+            await LocationService.getPlaceDetails(placeId, description);
+        if (addressData != null) {
+          lat.value = addressData.lat;
+          long.value = addressData.lng;
+          city.value = addressData.city;
+          state.value = addressData.state;
+          selectedAddress.value = addressData.toMap();
         }
       } catch (e) {
-        print('Error: $e');
+        print('Error getting place details: $e');
       } finally {
         isLoading.value = false;
       }
@@ -142,9 +103,15 @@ class MapLocationScreen extends HookConsumerWidget {
           Positioned(
             top: 40,
             left: 20,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () => Navigator.pop(context),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.brand950,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
           ),
           // Bottom-aligned container overlay
@@ -155,7 +122,7 @@ class MapLocationScreen extends HookConsumerWidget {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: const BoxDecoration(
-                color: Colors.white,
+                color: AppColors.brand980,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(24),
                   topRight: Radius.circular(24),
@@ -197,9 +164,23 @@ class MapLocationScreen extends HookConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         InkWell(
-                          onTap: () {
-                            // Removed geolocator and geocoding logic
-                            // You can add your own logic here if needed
+                          onTap: () async {
+                            isLoading.value = true;
+                            try {
+                              final addressData = await LocationService
+                                  .getCurrentLocationWithAddress(context);
+                              if (addressData != null) {
+                                lat.value = addressData.lat;
+                                long.value = addressData.lng;
+                                city.value = addressData.city;
+                                state.value = addressData.state;
+                                selectedAddress.value = addressData.toMap();
+                              }
+                            } catch (e) {
+                              print('Error getting current location: $e');
+                            } finally {
+                              isLoading.value = false;
+                            }
                           },
                           child: const Row(
                             children: [

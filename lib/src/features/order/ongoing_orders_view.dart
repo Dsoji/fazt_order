@@ -196,10 +196,10 @@ class OngoingOrderView extends HookConsumerWidget {
               verticalSpaceSmall,
 
               // OTP Section
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
+                  const Row(
                     children: [
                       Icon(Iconsax.message, size: 20, color: Colors.grey),
                       SizedBox(width: 8),
@@ -213,9 +213,9 @@ class OngoingOrderView extends HookConsumerWidget {
                     ],
                   ),
                   Text(
-                    // orderItems.otp,
-                    '0000',
-                    style: TextStyle(
+                    '${orderItems.riderOtp}',
+                    // '0000',
+                    style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: kcPrimaryNeutral200),

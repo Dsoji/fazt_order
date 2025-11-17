@@ -38,6 +38,9 @@ class RestaurantDetailsView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedCategory = useState("All");
+    final searchQuery = useState<String>('');
+    final searchController = useTextEditingController();
+    final isSearching = useState(false);
     final storeId = restaurant.store?.id;
     final shopId = restaurant.id;
     logger.d('shopId: $shopId');
@@ -84,6 +87,12 @@ class RestaurantDetailsView extends HookConsumerWidget {
 
     // Function to check if restaurant is currently open
     bool isRestaurantOpen() {
+      // If restaurant.isOpen is explicitly set (not null), it overrides the schedule
+      if (restaurant.isOpen != null) {
+        return restaurant.isOpen!;
+      }
+
+      // Otherwise, check the schedule
       final currentDaySchedule = getCurrentDaySchedule();
 
       // Check if the day is marked as open
@@ -362,26 +371,53 @@ class RestaurantDetailsView extends HookConsumerWidget {
                 )
               : null,
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(Iconsax.arrow_left_2),
-        ),
-        title: Text(
-          "Details",
-          style: ktBodySemiBoldSize20.copyWith(fontSize: 24),
-        ),
+        leading: isSearching.value
+            ? IconButton(
+                onPressed: () {
+                  searchController.clear();
+                  searchQuery.value = '';
+                  isSearching.value = false;
+                },
+                icon: const Icon(Icons.close),
+              )
+            : IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Iconsax.arrow_left_2),
+              ),
+        title: isSearching.value
+            ? TextField(
+                controller: searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search meals...',
+                  border: InputBorder.none,
+                  hintStyle: ktBodySemiBoldSize20.copyWith(
+                    fontSize: 24,
+                    color: Colors.grey,
+                  ),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                style: ktBodySemiBoldSize20.copyWith(fontSize: 24),
+                onChanged: (value) {
+                  searchQuery.value = value.toLowerCase();
+                },
+              )
+            : Text(
+                "Details",
+                style: ktBodySemiBoldSize20.copyWith(fontSize: 24),
+              ),
+        centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Iconsax.search_normal, color: kcBlack),
-            onPressed: () {
-              // Implement search functionality if needed
-            },
-          ),
+          if (!isSearching.value)
+            IconButton(
+              icon: const Icon(Iconsax.search_normal, color: kcBlack),
+              onPressed: () {
+                isSearching.value = true;
+              },
+            ),
         ],
-        backgroundColor: Colors.white,
-        elevation: 0,
       ),
       body: ListView(
         shrinkWrap: true,
@@ -656,13 +692,54 @@ class RestaurantDetailsView extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 mealVariants.when(
-                  data: (data) => Column(
-                    children: data.results
-                            ?.map((item) =>
-                                _buildMenuItem(context, item, isOpenNow))
-                            .toList() ??
-                        [],
-                  ),
+                  data: (data) {
+                    // Filter results based on search query
+                    List<MealVariantMenuResult> filteredResults =
+                        data.results ?? [];
+
+                    if (searchQuery.value.isNotEmpty) {
+                      filteredResults = filteredResults.where((item) {
+                        final mealName =
+                            item.meal?.mealName?.toLowerCase() ?? '';
+                        final mealDescription =
+                            item.meal?.mealDescription?.toLowerCase() ?? '';
+                        final query = searchQuery.value.toLowerCase();
+                        return mealName.contains(query) ||
+                            mealDescription.contains(query);
+                      }).toList();
+                    }
+
+                    // Also filter by selected category if not "All"
+                    if (selectedCategory.value != "All") {
+                      filteredResults = filteredResults.where((item) {
+                        return item.meal?.category?.categoryName ==
+                            selectedCategory.value;
+                      }).toList();
+                    }
+
+                    if (filteredResults.isEmpty &&
+                        searchQuery.value.isNotEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Center(
+                          child: Text(
+                            'No meals found matching your search',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: filteredResults
+                          .map((item) =>
+                              _buildMenuItem(context, item, isOpenNow))
+                          .toList(),
+                    );
+                  },
                   error: (error, stackTrace) {
                     logger
                         .d('Error loading meal variants: $error\n$stackTrace');

@@ -52,6 +52,12 @@ class HomeView extends HookConsumerWidget {
 
   // Helper function to check if restaurant is currently open based on schedule
   bool _isRestaurantOpen(ShopResult shop) {
+    // If shop.isOpen is explicitly set (not null), it overrides the schedule
+    if (shop.isOpen != null) {
+      return shop.isOpen!;
+    }
+
+    // Otherwise, check the schedule
     final currentDaySchedule = _getCurrentDaySchedule(shop);
 
     // Check if the day is marked as open

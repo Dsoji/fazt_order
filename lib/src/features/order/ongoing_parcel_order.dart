@@ -208,7 +208,7 @@ class OngoingParcelOrderView extends HookConsumerWidget {
                   ),
                   Text(
                     // orderItems.otp,
-                    orderItems.riderOtp?.toString() ?? '0000',
+                    '${orderItems.riderOtp}',
                     style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,

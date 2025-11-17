@@ -92,9 +92,7 @@ class OrderResult {
             ? null
             : DateTime.parse(data['updatedAt'] as String),
         id: data['id'] as String?,
-        riderOtp: (data['riderOTP'] as num?)?.toInt() ??
-            (data['riderOtp'] as num?)?.toInt() ??
-            (data['rider_otp'] as num?)?.toInt(),
+        riderOtp: data['riderOTP'] as int,
       );
 
   Map<String, dynamic> toMap() => {

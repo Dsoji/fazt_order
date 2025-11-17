@@ -6,12 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
+import 'package:geolocator/geolocator.dart';
 // import 'package:geocoding/geocoding.dart'; // Removed
 // import 'package:geolocator/geolocator.dart'; // Removed
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:iconsax/iconsax.dart';
+import 'package:logger/logger.dart';
 
+import '../../common/location_service.dart';
 import '../../common/res/app_colors.dart';
 import '../../common/widgets/custom_textfield.dart';
 import '../../common/widgets/reusable_buttons.dart';
@@ -38,8 +41,13 @@ class LocationBottomSheet extends HookConsumerWidget {
     // For debouncing search input
     final debounceTimer = useRef<Timer?>(null);
 
+    // Add this hook for current position
+    final currentPosition = useState<Position?>(null);
+
     final String? apiKey = dotenv.env['MAP_KEY'];
     print(apiKey);
+
+    final logger = Logger();
 
     // Watch update state
     final addrUpdate = ref.watch(
@@ -86,62 +94,21 @@ class LocationBottomSheet extends HookConsumerWidget {
       }
     }
 
-    Future<void> getPlaceDetails(String placeId, String description) async {
+    Future<void> getCurrentPosition(BuildContext context) async {
       isLoading.value = true;
-
-      final url =
-          'https://places.googleapis.com/v1/places/$placeId?languageCode=en&regionCode=NG';
-
       try {
-        final response = await http.get(
-          Uri.parse(url),
-          headers: {
-            'X-Goog-Api-Key': apiKey ?? '',
-            'X-Goog-FieldMask':
-                'id,displayName,formattedAddress,location,addressComponents',
-          },
-        );
-
-        final json = jsonDecode(response.body);
-
-        if (response.statusCode == 200) {
-          final result = json;
-
-          final location = result['location'];
-          String? foundCity;
-          String? foundState;
-
-          if (result['addressComponents'] is List) {
-            for (var component in result['addressComponents']) {
-              final List types = (component['types'] ?? []) as List;
-              if (types.contains('locality')) {
-                foundCity = component['longText'] ?? component['shortText'];
-              }
-              if (types.contains('administrative_area_level_1')) {
-                foundState = component['longText'] ?? component['shortText'];
-              }
-            }
-          }
-
-          lat.value = (location?['latitude'] ?? '').toString();
-          long.value = (location?['longitude'] ?? '').toString();
-          city.value = foundCity ?? '';
-          state.value = foundState ?? '';
-
-          selectedAddress.value = {
-            'title': description.split(',').first,
-            'address': result['formattedAddress'] ?? description,
-            'lat': lat.value,
-            'lng': long.value,
-            'city': city.value,
-            'state': state.value,
-          };
-        } else {
-          print(
-              'Error fetching place details: ${response.statusCode} ${response.body}');
+        final addressData =
+            await LocationService.getCurrentLocationWithAddress(context);
+        if (addressData != null) {
+          // Update the state with the address data
+          lat.value = addressData.lat;
+          long.value = addressData.lng;
+          city.value = addressData.city;
+          state.value = addressData.state;
+          selectedAddress.value = addressData.toMap();
         }
       } catch (e) {
-        print('Error: $e');
+        logger.e('Error getting current location: $e');
       } finally {
         isLoading.value = false;
       }
@@ -200,6 +167,15 @@ class LocationBottomSheet extends HookConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  getCurrentPosition(context);
+                },
+                child: const Text(
+                  'Use Current Location',
+                  style: TextStyle(color: AppColors.brand300),
+                ),
+              ),
               CustomFormTextField(
                 controller: controller,
                 hintText: 'e.g Lagos, Nigeria',
@@ -226,11 +202,26 @@ class LocationBottomSheet extends HookConsumerWidget {
                       return ListTile(
                         title: Text(pp?['text']?['text'] ?? ''),
                         onTap: () async {
-                          await getPlaceDetails(
-                            pp?['placeId'],
-                            pp?['text']?['text'] ?? '',
-                          );
-                          places.value = [];
+                          isLoading.value = true;
+                          try {
+                            final addressData =
+                                await LocationService.getPlaceDetails(
+                              pp?['placeId'],
+                              pp?['text']?['text'] ?? '',
+                            );
+                            if (addressData != null) {
+                              lat.value = addressData.lat;
+                              long.value = addressData.lng;
+                              city.value = addressData.city;
+                              state.value = addressData.state;
+                              selectedAddress.value = addressData.toMap();
+                            }
+                            places.value = [];
+                          } catch (e) {
+                            logger.e('Error getting place details: $e');
+                          } finally {
+                            isLoading.value = false;
+                          }
                         },
                       );
                     },

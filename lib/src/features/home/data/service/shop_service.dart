@@ -242,6 +242,7 @@ class ShopService {
         queryParameters: {
           'category': categoryId,
           'shop': shopId,
+          'inStock': true,
         },
       ),
       parser: (data) => MealVariantMenu.fromMap(data),

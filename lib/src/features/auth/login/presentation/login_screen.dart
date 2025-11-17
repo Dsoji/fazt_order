@@ -23,9 +23,8 @@ class LoginScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Using hooks for controllers and state
-    final emailController =
-        useTextEditingController(text: 'map@mailinator.com');
-    final passwordController = useTextEditingController(text: 'Test123.');
+    final emailController = useTextEditingController();
+    final passwordController = useTextEditingController();
 
     // State hooks for password visibility
     final isPasswordVisible = useState(false);
@@ -141,30 +140,48 @@ class LoginScreen extends HookConsumerWidget {
                               .valueOrNull;
 
                           final userRole = user?.user?.role;
-                          if (userRole == 'user') {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const DashboardView(),
+
+                          final userVerified = user?.user?.verified;
+                          if (userVerified == false) {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.white,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(20),
+                                ),
+                              ),
+                              builder: (context) => VerificationBottomSheet(
+                                email: emailController.text.trim(),
                               ),
                             );
                           } else {
-                            final box = Hive.box('data');
-                            await box.clear();
-                            Fluttertoast.showToast(
-                              msg:
-                                  "You are not authorized as a vendor and cannot access this app",
-                              toastLength: Toast.LENGTH_LONG,
-                              gravity: ToastGravity.TOP,
-                              backgroundColor:
-                                  const Color.fromARGB(255, 228, 212, 62),
-                              textColor: Colors.black,
-                              fontSize: 14.0,
-                            );
+                            if (userRole == 'user') {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const DashboardView(),
+                                ),
+                              );
+                            } else {
+                              final box = Hive.box('data');
+                              await box.clear();
+                              Fluttertoast.showToast(
+                                msg:
+                                    "You are not authorized as a user and cannot access this app",
+                                toastLength: Toast.LENGTH_LONG,
+                                gravity: ToastGravity.TOP,
+                                backgroundColor:
+                                    const Color.fromARGB(255, 228, 212, 62),
+                                textColor: Colors.black,
+                                fontSize: 14.0,
+                              );
+                            }
                           }
-                        }
 
-                        // Handle login logic
+                          // Handle login logic
+                        }
                       },
                       color: AppColors.brand400,
                       textColor: Colors.white,
@@ -268,6 +285,97 @@ class LoginScreen extends HookConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class VerificationBottomSheet extends HookConsumerWidget {
+  final String email;
+
+  const VerificationBottomSheet({
+    super.key,
+    required this.email,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final verificationCodeController = useTextEditingController();
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: keyboardHeight,
+        left: 24,
+        right: 24,
+        top: 24,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Account Not Verified',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const Gap(16),
+            const Text(
+              'Your account has not been verified. Please verify your account to continue.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+            const Gap(24),
+            CustomFormTextField(
+              hintText: 'Input PIN',
+              fieldName: 'Verification Code',
+              keyboardType: TextInputType.number,
+              controller: verificationCodeController,
+              validator: (value) => Validators.requiredField(
+                value,
+                'Verification Code',
+              ),
+            ),
+            const Gap(24),
+            FullButton(
+              text: "Verify Account",
+              width: double.infinity,
+              height: 48,
+              isLoading: ref
+                  .watch(authenticationControllerProvider)
+                  .emailConfirmation
+                  .isLoading,
+              onPressed: () async {
+                final authService =
+                    ref.read(authenticationControllerProvider.notifier);
+                final result = await authService.emailConfirm(
+                  email,
+                  verificationCodeController.text.trim(),
+                );
+
+                if (result == true && context.mounted) {
+                  verificationCodeController.clear();
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DashboardView(),
+                    ),
+                  );
+                } else {
+                  verificationCodeController.clear();
+                }
+              },
+              color: AppColors.brand400,
+              textColor: Colors.white,
+            ),
+            const Gap(24), // Extra gap at bottom for better spacing
+          ],
+        ),
       ),
     );
   }
