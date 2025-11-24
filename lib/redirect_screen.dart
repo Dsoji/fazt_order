@@ -1,4 +1,5 @@
 import 'package:fazt_order/src/features/dashboard_view.dart';
+import 'package:fazt_order/src/features/profile/data/service/permission_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -17,6 +18,8 @@ class RedirectScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     useEffect(() {
       Future.delayed(Duration.zero, () async {
+        await PermissionService().requestAllPermissions();
+
         var box = Hive.box('data');
         final token = box.get('accessToken');
         String? refreshToken = box.get('refreshToken');

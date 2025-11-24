@@ -24,7 +24,7 @@ class DioApiClient implements IApiClient {
       receiveTimeout: 1.minutes,
       contentType: 'application/json',
       validateStatus: _validateStatus,
-      baseUrl: 'https://fazt.onrender.com/v1/',
+      baseUrl: 'https://faztorder.onrender.com/v1/',
     );
 
     // set the options

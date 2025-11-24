@@ -61,7 +61,7 @@ class ProfileeService {
         return BaseModel.toRawString(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -89,7 +89,7 @@ class ProfileeService {
         return BaseModel.toRawString(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -125,7 +125,7 @@ class ProfileeService {
         return BaseModel.toRawString(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -154,7 +154,7 @@ class ProfileeService {
         return BaseModel.toRawString(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -211,7 +211,7 @@ class ProfileeService {
         return BaseModel.toRawString(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -308,7 +308,7 @@ class ProfileeService {
         return StoreDetails.fromMap(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -349,7 +349,7 @@ class ProfileeService {
         return BaseModel.toRawString(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -368,7 +368,7 @@ class ProfileeService {
         return StoreDetails.fromMap(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -396,7 +396,7 @@ class ProfileeService {
         return BaseModel.toRawString(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -435,7 +435,7 @@ class ProfileeService {
         return BaseModel.toRawString(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -445,7 +445,7 @@ class ProfileeService {
 
     return apiRequestHelper.handleApiRequest(
       () => apiClient.get(
-        'payments/transactions',
+        'payments/wallet/transactions',
         headers: {
           'Authorization': 'Bearer $accessToken',
         },
@@ -477,7 +477,7 @@ class ProfileeService {
         return BaseModel.toRawString(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -495,7 +495,7 @@ class ProfileeService {
         return FavouritesListResponse.fromMap(data);
       },
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 

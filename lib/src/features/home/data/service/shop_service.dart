@@ -202,6 +202,8 @@ class ShopService {
       () => apiClient
           .get('orders', headers: {'Authorization': 'Bearer $accessToken'}),
       parser: (data) => MyOrdersList.fromMap(data),
+      showErrorToast: false,
+      showSuccessToast: false,
     );
   }
 
@@ -216,7 +218,7 @@ class ShopService {
       ),
       parser: (data) => BaseModel.toRawString(data),
       showErrorToast: false,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -284,7 +286,7 @@ class ShopService {
       ),
       parser: (data) => BaseModel.toRawString(data),
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -297,7 +299,7 @@ class ShopService {
       ),
       parser: (data) => ParcelRequest.fromMap(data),
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 
@@ -315,7 +317,7 @@ class ShopService {
       ),
       parser: (data) => ParcelPaymentDetails.fromMap(data),
       showErrorToast: true,
-      showSuccessToast: true,
+      showSuccessToast: false,
     );
   }
 

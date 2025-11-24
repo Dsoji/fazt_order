@@ -42,6 +42,7 @@ class OrderView extends HookConsumerWidget {
     }, [tabController]);
 
     // Fetch orders when the widget is first built
+
     useEffect(() {
       Future.microtask(() {
         ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
