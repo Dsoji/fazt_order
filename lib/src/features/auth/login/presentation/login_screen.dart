@@ -143,6 +143,9 @@ class LoginScreen extends HookConsumerWidget {
 
                           final userVerified = user?.user?.verified;
                           if (userVerified == false) {
+                            await ref
+                                .read(authenticationControllerProvider.notifier)
+                                .resendEmailVerification(email);
                             showModalBottomSheet(
                               context: context,
                               isScrollControlled: true,

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:fazt_order/src/common/api/dio_api_interceptor.dart';
+import 'package:fazt_order/src/common/res/base.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -24,7 +25,7 @@ class DioApiClient implements IApiClient {
       receiveTimeout: 1.minutes,
       contentType: 'application/json',
       validateStatus: _validateStatus,
-      baseUrl: 'https://faztorder.onrender.com/v1/',
+      baseUrl: BasePaths.baseProdUrl,
     );
 
     // set the options

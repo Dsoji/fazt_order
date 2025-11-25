@@ -209,122 +209,20 @@ class AuthenticationService {
     );
   }
 
-  // Future<ResultValue<UserProfileModel>> fetchUserInfo() async {
-  //   final String accessToken = await box.get('accessToken');
-  //   return await apiRequestHelper.handleApiRequest<UserProfileModel>(
-  //     () => apiClient.get(
-  //       'user/profile',
-  //       headers: {
-  //         'Authorization': 'Bearer $accessToken',
-  //       },
-  //     ),
-  //     parser: (data) => UserProfileModel.fromMap(data),
-  //     showErrorToast: true,
-  //     // showSuccessToast: true,
-  //   );
-  // }
-
-  // Future<ResultValue<String>> changeUsername({required String username}) async {
-  //   final String accessToken = await box.get('accessToken');
-  //   return await apiRequestHelper.handleApiRequest<String>(
-  //     () => apiClient.post(
-  //       'user/profile/changeUsername',
-  //       header: {
-  //         'Authorization': 'Bearer $accessToken',
-  //       },
-  //       data: {
-  //         "username": username,
-  //       },
-  //     ),
-  //     parser: (data) => BaseModel.toRawString(data),
-  //     showErrorToast: true,
-  //     showSuccessToast: true,
-  //   );
-  // }
-
-  // Future<ResultValue<String>> changeEmail({
-  //   required String email,
-  //   required String code,
-  // }) async {
-  //   final String accessToken = await box.get('accessToken');
-  //   return await apiRequestHelper.handleApiRequest<String>(
-  //     () => apiClient.post(
-  //       'user/profile/changeEmail',
-  //       header: {
-  //         'Authorization': 'Bearer $accessToken',
-  //       },
-  //       data: {
-  //         "email": email,
-  //         "code": code,
-  //         "device": deviceId,
-  //       },
-  //     ),
-  //     parser: (data) => BaseModel.toRawString(data),
-  //     showErrorToast: true,
-  //     showSuccessToast: true,
-  //   );
-  // }
-
-  // Future<ResultValue<String>> changePswrd({
-  //   required String password,
-  //   required String oldPassword,
-  // }) async {
-  //   final String accessToken = await box.get('accessToken');
-  //   return await apiRequestHelper.handleApiRequest<String>(
-  //     () => apiClient.post(
-  //       'user/auth/changePassword',
-  //       header: {
-  //         'Authorization': 'Bearer $accessToken',
-  //       },
-  //       data: {
-  //         "pastword": oldPassword, // the previous password
-  //         "password": password,
-  //       },
-  //     ),
-  //     parser: (data) => BaseModel.toRawString(data),
-  //     showErrorToast: true,
-  //     showSuccessToast: true,
-  //   );
-  // }
-
-  // Future<ResultValue<String>> changePin({
-  //   required String email,
-  //   required String code,
-  //   required String pin,
-  // }) async {
-  //   return await apiRequestHelper.handleApiRequest<String>(
-  //     () => apiClient.post(
-  //       'user/auth/resetPin',
-  //       header: {
-  //         'Authorization': 'Bearer $accessToken',
-  //       },
-  //       data: {
-  //         "email": email,
-  //         "code": code, // reset code gotten by calling emailVerification
-  //         "pin": pin, // the new pin
-  //         "device": deviceId
-  //       },
-  //     ),
-  //     parser: (data) => BaseModel.toRawString(data),
-  //     showErrorToast: true,
-  //     showSuccessToast: true,
-  //   );
-  // }
-
-  // Future<ResultValue<UploadResponse>> updateImage(dynamic data) async {
-  //   return await apiRequestHelper.handleApiRequest<UploadResponse>(
-  //     () => apiClient.post(
-  //       'mediaUpload',
-  //       data: data,
-  //       header: {
-  //         'Authorization': 'Bearer $accessToken',
-  //       },
-  //     ),
-  //     parser: (data) {
-  //       logger.d(data);
-  //       return UploadResponse.fromMap(data);
-  //     },
-  //     showErrorToast: true,
-  //   );
-  // }
+  Future<ResultValue<String>> resendEmailVerification({
+    required String email,
+  }) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'auth/resend-otp',
+        data: {"email": email},
+      ),
+      parser: (data) {
+        print(data);
+        return BaseModel.toRawString(data);
+      },
+      showErrorToast: true,
+      showSuccessToast: false,
+    );
+  }
 }

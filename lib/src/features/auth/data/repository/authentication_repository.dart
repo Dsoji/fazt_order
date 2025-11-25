@@ -211,157 +211,28 @@ class AuthenticationRepository {
     }
   }
 
-  // Future<Result<FailureHandler, UserProfileModel>> fetchProfileDetails({
-  //   ProfilePayload? payload,
-  // }) async {
-  //   try {
-  //     final data = await authService.fetchUserInfo();
+  Future<Result<FailureHandler, String>> resendEmailVerification({
+    required String email,
+  }) async {
+    try {
+      final data = await authService.resendEmailVerification(
+        email: email,
+      );
 
-  //     if (data.isSuccess) {
-  //       return Success(data.value ?? UserProfileModel());
-  //     } else {
-  //       return Error(
-  //         data.error ??
-  //             FailureHandler(
-  //               message: 'Failed to update profile',
-  //               stackTrace: StackTrace.current,
-  //               exception: Exception('Failed to update profile'),
-  //             ),
-  //       );
-  //     }
-  //   } on FailureHandler catch (failure) {
-  //     return Error(failure);
-  //   }
-  // }
-
-  // Future<Result<FailureHandler, String>> updateUsername({
-  //   required String name,
-  // }) async {
-  //   try {
-  //     final data = await authService.changeUsername(
-  //       username: name,
-  //     );
-
-  //     if (data.isSuccess) {
-  //       return Success(data.value ?? '');
-  //     } else {
-  //       return Error(
-  //         data.error ??
-  //             FailureHandler(
-  //               message: 'Failed to change username',
-  //               stackTrace: StackTrace.current,
-  //               exception: Exception('Failed to change username'),
-  //             ),
-  //       );
-  //     }
-  //   } on FailureHandler catch (failure) {
-  //     return Error(failure);
-  //   }
-  // }
-
-  // Future<Result<FailureHandler, String>> updateEmail({
-  //   required String email,
-  //   required String code,
-  // }) async {
-  //   try {
-  //     final data = await authService.changeEmail(
-  //       email: email,
-  //       code: code,
-  //     );
-
-  //     if (data.isSuccess) {
-  //       return Success(data.value ?? '');
-  //     } else {
-  //       return Error(
-  //         data.error ??
-  //             FailureHandler(
-  //               message: 'Failed to change email',
-  //               stackTrace: StackTrace.current,
-  //               exception: Exception('Failed to change email'),
-  //             ),
-  //       );
-  //     }
-  //   } on FailureHandler catch (failure) {
-  //     return Error(failure);
-  //   }
-  // }
-
-  // Future<Result<FailureHandler, String>> updatePswrd({
-  //   required String password,
-  //   required String oldPassword,
-  // }) async {
-  //   try {
-  //     final data = await authService.changePswrd(
-  //       password: password,
-  //       oldPassword: oldPassword,
-  //     );
-
-  //     if (data.isSuccess) {
-  //       return Success(data.value ?? '');
-  //     } else {
-  //       return Error(
-  //         data.error ??
-  //             FailureHandler(
-  //               message: 'Failed to change password',
-  //               stackTrace: StackTrace.current,
-  //               exception: Exception('Failed to change password'),
-  //             ),
-  //       );
-  //     }
-  //   } on FailureHandler catch (failure) {
-  //     return Error(failure);
-  //   }
-  // }
-
-  // Future<Result<FailureHandler, String>> updatePin({
-  //   required String email,
-  //   required String pin,
-  //   required String code,
-  // }) async {
-  //   try {
-  //     final data = await authService.changePin(
-  //       email: email,
-  //       pin: pin,
-  //       code: code,
-  //     );
-
-  //     if (data.isSuccess) {
-  //       return Success(data.value ?? '');
-  //     } else {
-  //       return Error(
-  //         data.error ??
-  //             FailureHandler(
-  //               message: 'Failed to change password',
-  //               stackTrace: StackTrace.current,
-  //               exception: Exception('Failed to change password'),
-  //             ),
-  //       );
-  //     }
-  //   } on FailureHandler catch (failure) {
-  //     return Error(failure);
-  //   }
-  // }
-
-  // Future<Result<FailureHandler, UploadResponse>> uploadImage(
-  //     dynamic payload) async {
-  //   print(payload);
-  //   try {
-  //     final data = await authService.updateImage(payload);
-
-  //     if (data.isSuccess) {
-  //       return Success(data.value ?? UploadResponse());
-  //     } else {
-  //       return Error(
-  //         data.error ??
-  //             FailureHandler(
-  //               message: 'Failed to update image',
-  //               stackTrace: StackTrace.current,
-  //               exception: Exception('Failed to update image'),
-  //             ),
-  //       );
-  //     }
-  //   } on FailureHandler catch (failure) {
-  //     return Error(failure);
-  //   }
-  // }
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to resend verification email',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to resend verification email'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
 }

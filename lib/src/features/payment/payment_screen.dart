@@ -223,7 +223,7 @@ class PaymentScreen extends HookConsumerWidget {
                     .valueOrNull
                     ?.payment
                     ?.reference;
-                logger.d(orderLink);
+                logger.d('order link: $orderLink');
                 if (orderLink != null) {
                   Navigator.push(
                     context,
@@ -234,6 +234,11 @@ class PaymentScreen extends HookConsumerWidget {
                       ),
                     ),
                   );
+                } else {
+                  ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+                  ref.read(shopControllerProvider.notifier).fetchCart();
+                  Navigator.pop(context);
+                  Navigator.pop(context);
                 }
               }
             },

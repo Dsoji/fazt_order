@@ -166,7 +166,7 @@ class RestaurantCard extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          "${(restaurant.store?.storeName ?? '').toUpperCase()} (${(restaurant.shopName ?? '')})",
+                          (restaurant.store?.storeName ?? '').toUpperCase(),
                           style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold),
                           maxLines: 2,
@@ -198,15 +198,12 @@ class RestaurantCard extends ConsumerWidget {
                   // Row(
                   //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   //   children: [
-                  //     Expanded(
-                  //       child: Text(
-                  //         "${restaurant.location?.address ?? ''}, ${restaurant.location?.city ?? ''}, ${restaurant.location?.state ?? ''} state.",
-                  //         style:
-                  //             TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  //         maxLines: 2,
-                  //         overflow: TextOverflow.ellipsis,
-                  //       ),
-                  //     ),
+                  Text(
+                    "Landmark: ${restaurant.shopName ?? ''}",
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   //     Row(
                   //       children: [
                   //         const Icon(Iconsax.star1,

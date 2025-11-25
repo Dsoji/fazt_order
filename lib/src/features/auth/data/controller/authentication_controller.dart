@@ -241,170 +241,26 @@ class AuthenticationController extends StateNotifier<AuthenticationState> {
     );
   }
 
-  // Future<bool> fetchProfile() async {
-  //   state = state.copyWith(userDetails: const AsyncValue.loading());
+  Future<bool> resendEmailVerification(String email) async {
+    state = state.copyWith(emailVerification: const AsyncValue.loading());
 
-  //   final result = await _authenticationRepository.fetchProfileDetails();
+    final result = await _authenticationRepository.resendEmailVerification(
+      email: email,
+    );
 
-  //   return result.when(
-  //     (error) {
-  //       state = state.copyWith(
-  //         userDetails: AsyncValue.error(error, StackTrace.current),
-  //       );
-  //       return false;
-  //     },
-  //     (success) {
-  //       state = state.copyWith(
-  //         userDetails: AsyncValue.data(success),
-  //       );
-  //       return true;
-  //     },
-  //   );
-  // }
-
-  // Future<bool> updateUsername(
-  //   String payload,
-  // ) async {
-  //   state = state.copyWith(userName: const AsyncValue.loading());
-
-  //   final result = await _authenticationRepository.updateUsername(
-  //     name: payload,
-  //   );
-
-  //   return result.when(
-  //     (error) {
-  //       state = state.copyWith(
-  //         userName: AsyncValue.error(error, StackTrace.current),
-  //       );
-  //       return false;
-  //     },
-  //     (success) {
-  //       state = state.copyWith(
-  //         userName: AsyncValue.data(success),
-  //       );
-  //       return true;
-  //     },
-  //   );
-  // }
-
-  // Future<bool> updateEmail(
-  //   String payload,
-  //   String code,
-  // ) async {
-  //   state = state.copyWith(emailChange: const AsyncValue.loading());
-
-  //   final result = await _authenticationRepository.updateEmail(
-  //     email: payload,
-  //     code: code,
-  //   );
-
-  //   return result.when(
-  //     (error) {
-  //       state = state.copyWith(
-  //         emailChange: AsyncValue.error(error, StackTrace.current),
-  //       );
-  //       return false;
-  //     },
-  //     (success) {
-  //       state = state.copyWith(
-  //         emailChange: AsyncValue.data(success),
-  //       );
-  //       return true;
-  //     },
-  //   );
-  // }
-
-  // Future<bool> changePassword(
-  //   String password,
-  //   String oldPassword,
-  // ) async {
-  //   state = state.copyWith(forgotPassword: const AsyncValue.loading());
-
-  //   final result = await _authenticationRepository.updatePswrd(
-  //     password: password,
-  //     oldPassword: oldPassword,
-  //   );
-
-  //   return result.when(
-  //     (error) {
-  //       state = state.copyWith(
-  //         forgotPassword: AsyncValue.error(error, StackTrace.current),
-  //       );
-  //       return false;
-  //     },
-  //     (success) {
-  //       state = state.copyWith(
-  //         forgotPassword: AsyncValue.data(success),
-  //       );
-  //       return true;
-  //     },
-  //   );
-  // }
-
-  // Future<bool> changePin(
-  //   String email,
-  //   String code,
-  //   String pin,
-  // ) async {
-  //   state = state.copyWith(resetPin: const AsyncValue.loading());
-
-  //   final result = await _authenticationRepository.updatePin(
-  //     email: email,
-  //     pin: pin,
-  //     code: code,
-  //   );
-
-  //   return result.when(
-  //     (error) {
-  //       state = state.copyWith(
-  //         resetPin: AsyncValue.error(error, StackTrace.current),
-  //       );
-  //       return false;
-  //     },
-  //     (success) {
-  //       state = state.copyWith(
-  //         resetPin: AsyncValue.data(success),
-  //       );
-  //       return true;
-  //     },
-  //   );
-  // }
-
-  // Future<bool> uploadMultipleFiles(List<File> files) async {
-  //   state = state.copyWith(imageUpload: const AsyncValue.loading());
-
-  //   final formData = FormData();
-
-  //   for (var file in files) {
-  //     final fileName = file.path.split('/').last;
-
-  //     formData.files.add(
-  //       MapEntry(
-  //         "file", // 👈 This must match what the backend expects
-  //         await MultipartFile.fromFile(
-  //           file.path,
-  //           filename: fileName,
-  //           contentType: MediaType('image', fileName.split('.').last),
-  //         ),
-  //       ),
-  //     );
-  //   }
-
-  //   final result = await _authenticationRepository.uploadImage(formData);
-
-  //   return result.when(
-  //     (error) {
-  //       state = state.copyWith(
-  //         imageUpload: AsyncValue.error(error, StackTrace.current),
-  //       );
-  //       return false;
-  //     },
-  //     (success) {
-  //       state = state.copyWith(
-  //         imageUpload: AsyncValue.data(success ?? UploadResponse()),
-  //       );
-  //       return true;
-  //     },
-  //   );
-  // }
+    return result.when(
+      (error) {
+        state = state.copyWith(
+          emailVerification: AsyncValue.error(error, StackTrace.current),
+        );
+        return false;
+      },
+      (success) {
+        state = state.copyWith(
+          emailVerification: AsyncValue.data(success),
+        );
+        return true;
+      },
+    );
+  }
 }
