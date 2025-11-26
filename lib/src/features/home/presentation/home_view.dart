@@ -195,6 +195,14 @@ class HomeView extends HookConsumerWidget {
     final shops = ref.watch(shopControllerProvider).shops;
     final isFilterApplied = useState(false);
     final selectedFilter = useState<String?>(null);
+    Future<void> handleRefresh() async {
+      await ref.read(profileControllerProvider.notifier).fetchProfile();
+      await ref.read(shopControllerProvider.notifier).revalidateShops();
+      await ref.read(shopControllerProvider.notifier).fetchCart();
+      await ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
+      await ref.read(profileControllerProvider.notifier).fetchWallet();
+      await ref.read(profileControllerProvider.notifier).fetchFavouritesList();
+    }
 
     // Helper function to filter shops based on selected filter
     List<ShopResult> filterShops(List<ShopResult>? allShops) {
@@ -401,11 +409,103 @@ class HomeView extends HookConsumerWidget {
 
           // Restaurant List (Single ListView)
           Expanded(
-            child: shops.when(
-              loading: () => shops.maybeWhen(
-                data: (data) {
-                  final filteredShops = filterShops(data.results);
+            child: RefreshIndicator(
+              onRefresh: handleRefresh,
+              child: shops.when(
+                loading: () => shops.maybeWhen(
+                  data: (data) {
+                    final filteredShops = filterShops(data.results);
+                    return ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: filteredShops.length,
+                      itemBuilder: (context, index) {
+                        final shop = filteredShops[index];
+                        return RestaurantCard(
+                          restaurant: shop,
+                          index: index,
+                        );
+                      },
+                    );
+                  },
+                  orElse: () => ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    itemCount: 10,
+                    itemBuilder: (context, index) =>
+                        const ShimmerRestaurantCard(),
+                  ),
+                ),
+                error: (error, stackTrace) => ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  children: [
+                    const SizedBox(height: 120),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 48,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error loading shops: ${error.toString()}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            ref
+                                .read(shopControllerProvider.notifier)
+                                .revalidateShops();
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 120),
+                  ],
+                ),
+                data: (shops) {
+                  final filteredShops = filterShops(shops.results);
+                  if (filteredShops.isEmpty) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      children: [
+                        const SizedBox(height: 120),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Iconsax.search_normal_1,
+                              color: kcPrimaryNeutral500,
+                              size: 48,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              selectedFilter.value == 'Open now'
+                                  ? 'No restaurants are open now'
+                                  : selectedFilter.value == 'Favourites'
+                                      ? 'No favourite restaurants found'
+                                      : 'No restaurants found',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: kcPrimaryNeutral500,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 120),
+                      ],
+                    );
+                  }
                   return ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     itemCount: filteredShops.length,
                     itemBuilder: (context, index) {
@@ -417,104 +517,7 @@ class HomeView extends HookConsumerWidget {
                     },
                   );
                 },
-                orElse: () => ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  itemCount: 10,
-                  itemBuilder: (context, index) =>
-                      const ShimmerRestaurantCard(),
-                ),
               ),
-              error: (error, stackTrace) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error loading shops: ${error.toString()}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        ref
-                            .read(shopControllerProvider.notifier)
-                            .revalidateShops();
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              ),
-              data: (shops) {
-                final filteredShops = filterShops(shops.results);
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    await ref
-                        .read(profileControllerProvider.notifier)
-                        .fetchProfile();
-                    await ref
-                        .read(shopControllerProvider.notifier)
-                        .revalidateShops();
-
-                    await ref.read(shopControllerProvider.notifier).fetchCart();
-                    await ref
-                        .read(shopControllerProvider.notifier)
-                        .fetchMyOrdersList();
-                    await ref
-                        .read(profileControllerProvider.notifier)
-                        .fetchWallet();
-                    await ref
-                        .read(profileControllerProvider.notifier)
-                        .fetchFavouritesList();
-                    await ref
-                        .read(shopControllerProvider.notifier)
-                        .revalidateShops();
-                  },
-                  child: filteredShops.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Iconsax.search_normal_1,
-                                color: kcPrimaryNeutral500,
-                                size: 48,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                selectedFilter.value == 'Open now'
-                                    ? 'No restaurants are open now'
-                                    : selectedFilter.value == 'Favourites'
-                                        ? 'No favourite restaurants found'
-                                        : 'No restaurants found',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: kcPrimaryNeutral500,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          itemCount: filteredShops.length,
-                          itemBuilder: (context, index) {
-                            final shop = filteredShops[index];
-                            return RestaurantCard(
-                              restaurant: shop,
-                              index: index,
-                            );
-                          },
-                        ),
-                );
-              },
             ),
           ),
           const Gap(92),

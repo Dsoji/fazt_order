@@ -6,10 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:logger/logger.dart';
 
 import '../../features/home/data/controller/shop_controller.dart';
 import '../../features/home/data/model/response/shops_model/day_schedule.dart';
 import '../../features/home/data/model/response/shops_model/result.dart';
+
+final logger = Logger();
 
 class RestaurantCard extends ConsumerWidget {
   final ShopResult restaurant;
@@ -24,96 +27,106 @@ class RestaurantCard extends ConsumerWidget {
   });
 
   // Helper function to get the current day's schedule
-  DaySchedule? _getCurrentDaySchedule(ShopResult shop) {
-    final schedule = shop.store?.salesOperation?.schedule;
-    if (schedule == null) return null;
-
-    final now = DateTime.now();
-    final weekday = now.weekday; // 1 = Monday, 7 = Sunday
-
-    switch (weekday) {
-      case 1:
-        return schedule.monday;
-      case 2:
-        return schedule.tuesday;
-      case 3:
-        return schedule.wednesday;
-      case 4:
-        return schedule.thursday;
-      case 5:
-        return schedule.friday;
-      case 6:
-        return schedule.saturday;
-      case 7:
-        return schedule.sunday;
-      default:
-        return null;
-    }
-  }
-
-  // Helper function to check if restaurant is currently open based on schedule
-  bool _isRestaurantOpen(ShopResult shop) {
-    final currentDaySchedule = _getCurrentDaySchedule(shop);
-
-    // Check if the day is marked as open
-    if (currentDaySchedule?.open != true) {
-      return false;
-    }
-
-    // Get time slots for today
-    final timeSlots = currentDaySchedule?.time;
-
-    // If no time slots exist, fall back to the open flag
-    if (timeSlots == null || timeSlots.isEmpty) {
-      return currentDaySchedule?.open ?? false;
-    }
-
-    final now = DateTime.now();
-    bool hasValidTimeSlot = false;
-
-    // Check if current time falls within any time slot
-    for (final timeSlot in timeSlots) {
-      if (timeSlot.startTime != null && timeSlot.endTime != null) {
-        hasValidTimeSlot = true;
-        try {
-          // Parse the ISO 8601 time strings
-          final startTime = DateTime.parse(timeSlot.startTime!);
-          final endTime = DateTime.parse(timeSlot.endTime!);
-
-          // Extract only the time portion (hours and minutes) for comparison
-          final currentTime =
-              DateTime(2000, 1, 1, now.hour, now.minute, now.second);
-          final startTimeOnly = DateTime(
-              2000, 1, 1, startTime.hour, startTime.minute, startTime.second);
-          final endTimeOnly = DateTime(
-              2000, 1, 1, endTime.hour, endTime.minute, endTime.second);
-
-          // Check if current time is within the time range
-          if (currentTime.isAfter(
-                  startTimeOnly.subtract(const Duration(seconds: 1))) &&
-              currentTime
-                  .isBefore(endTimeOnly.add(const Duration(seconds: 1)))) {
-            return true;
-          }
-        } catch (e) {
-          // If parsing fails, skip this time slot
-          continue;
-        }
-      }
-    }
-
-    // If time slots exist but none have valid startTime/endTime, fall back to open flag
-    if (!hasValidTimeSlot) {
-      return currentDaySchedule?.open ?? false;
-    }
-
-    // If we have valid time slots but current time doesn't fall within any, return false
-    return false;
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isOpen = _isRestaurantOpen(restaurant);
+    // Function to get the current day's schedule and times
+
+    DaySchedule? getCurrentDaySchedule() {
+      final schedule = restaurant.store?.salesOperation?.schedule;
+      if (schedule == null) return null;
+
+      final now = DateTime.now();
+      final weekday = now.weekday; // 1 = Monday, 7 = Sunday
+
+      switch (weekday) {
+        case 1:
+          return schedule.monday;
+        case 2:
+          return schedule.tuesday;
+        case 3:
+          return schedule.wednesday;
+        case 4:
+          return schedule.thursday;
+        case 5:
+          return schedule.friday;
+        case 6:
+          return schedule.saturday;
+        case 7:
+          return schedule.sunday;
+        default:
+          return null;
+      }
+    }
+
+    // Helper function to check if restaurant is currently open based on schedule
+    bool isRestaurantOpen() {
+      // If restaurant.isOpen is explicitly set (not null), it overrides the schedule
+      if (restaurant.isOpen != null) {
+        return restaurant.isOpen!;
+      }
+
+      // Otherwise, check the schedule
+      final currentDaySchedule = getCurrentDaySchedule();
+
+      // Check if the day is marked as open
+      if (currentDaySchedule?.open != true) {
+        return false;
+      }
+
+      // Get time slots for today
+      final timeSlots = currentDaySchedule?.time;
+
+      // If no time slots exist, fall back to the open flag
+      if (timeSlots == null || timeSlots.isEmpty) {
+        return currentDaySchedule?.open ?? false;
+      }
+
+      final now = DateTime.now();
+      bool hasValidTimeSlot = false;
+
+      // Check if current time falls within any time slot
+      for (final timeSlot in timeSlots) {
+        if (timeSlot.startTime != null && timeSlot.endTime != null) {
+          hasValidTimeSlot = true;
+          try {
+            // Parse the ISO 8601 time strings
+            final startTime = DateTime.parse(timeSlot.startTime!);
+            final endTime = DateTime.parse(timeSlot.endTime!);
+
+            // Extract only the time portion (hours and minutes) for comparison
+            final currentTime =
+                DateTime(2000, 1, 1, now.hour, now.minute, now.second);
+            final startTimeOnly = DateTime(
+                2000, 1, 1, startTime.hour, startTime.minute, startTime.second);
+            final endTimeOnly = DateTime(
+                2000, 1, 1, endTime.hour, endTime.minute, endTime.second);
+
+            // Check if current time is within the time range
+            if (currentTime.isAfter(
+                    startTimeOnly.subtract(const Duration(seconds: 1))) &&
+                currentTime
+                    .isBefore(endTimeOnly.add(const Duration(seconds: 1)))) {
+              return true;
+            }
+          } catch (e) {
+            // If parsing fails, skip this time slot
+            logger.e('Error parsing time: $e');
+            continue;
+          }
+        }
+      }
+
+      // If time slots exist but none have valid startTime/endTime, fall back to open flag
+      if (!hasValidTimeSlot) {
+        return currentDaySchedule?.open ?? false;
+      }
+
+      // If we have valid time slots but current time doesn't fall within any, return false
+      return false;
+    }
+
+    final isOpen = isRestaurantOpen();
 
     return GestureDetector(
       onTap: () {
