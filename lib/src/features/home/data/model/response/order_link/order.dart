@@ -2,7 +2,7 @@ class Order {
   String? id;
   String? orderNumber;
   String? status;
-  int? total;
+  double? total;
   String? paymentMethod;
 
   Order({
@@ -22,7 +22,7 @@ class Order {
         id: json['id'] as String?,
         orderNumber: json['orderNumber'] as String?,
         status: json['status'] as String?,
-        total: json['total'] as int?,
+        total: json['total'] as double?,
         paymentMethod: json['paymentMethod'] as String?,
       );
 
@@ -38,7 +38,7 @@ class Order {
     String? id,
     String? orderNumber,
     String? status,
-    int? total,
+    double? total,
     String? paymentMethod,
   }) {
     return Order(

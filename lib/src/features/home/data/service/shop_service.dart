@@ -194,6 +194,8 @@ class ShopService {
         },
       ),
       parser: (data) => OrderLink.fromJson(data),
+      showErrorToast: false,
+      showSuccessToast: false,
     );
   }
 

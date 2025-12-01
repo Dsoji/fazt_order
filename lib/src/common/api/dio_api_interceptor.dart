@@ -40,6 +40,11 @@ class DioApiInterceptor extends Interceptor {
   // final AppRouter appRouter;
   final Ref ref;
 
+  // Static variables to track refresh token requests
+  static Future<Response?>? _refreshTokenFuture;
+  static DateTime? _lastRefreshTime;
+  static const Duration _refreshCooldown = Duration(seconds: 30);
+
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -85,123 +90,156 @@ class DioApiInterceptor extends Interceptor {
       DioException err, ErrorInterceptorHandler handler) async {
     final statusCode = err.response?.statusCode;
 
-    // final refreshToken = await authLocalService.geRefreshToken();
-
     if (statusCode == 401) {
       var box = Hive.box('data');
       String? refreshToken = box.get('refreshToken');
       logger.d(refreshToken);
 
-      /// get the previous user from the local storage
-      // UserModel previousUser = await authLocalService.getUser();
-      // ref.read(navigatorKeyProvider).currentState?.pushReplacement(
-      //       MaterialPageRoute(
-      //         builder: (context) => const OnboardingScreen(),
-      //       ),
-      //     );
-
-      final dio = Dio()
-        ..interceptors.add(LogInterceptor(
-          request: true,
-          requestBody: true,
-          responseHeader: true,
-          responseBody: true,
-          error: true,
-          // logPrint: (obj) =>
-          //     log(obj.toString()), // Customize print function if needed
-        ));
-
-      /// make a request to the refresh token endpoint
-      try {
-        log('Over here we are trying to refresh the token');
-        final response = await dio.post(
-          '${BasePaths.baseProdUrl}auth/refresh-token',
-          data: {
-            'refreshToken': refreshToken,
-          },
-        );
-
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          log('Over here refreshing the token was successful');
-          final data = response.data;
-          final token = data['data']['accessToken'];
-          final newrefreshToken = data['data']['refreshToken'];
-
-          box.put('accessToken', token);
-          box.put('refreshToken', newrefreshToken);
-
-          /// hit the previous request with the new token retrieved
-          final origin = err.response?.requestOptions;
-          log('Over here rwe try the request again');
-          final previousReqResponse = await dio.request(
-            BasePaths.baseProdUrl + origin!.path,
-            data: origin.data,
-            options: Options(
-              headers: {
-                HttpHeaders.authorizationHeader: 'Bearer $token',
-              },
-            ),
-          );
-
-          return handler.resolve(previousReqResponse);
+      // Check if we should wait for an ongoing refresh or skip if too soon
+      if (_refreshTokenFuture != null) {
+        log('Refresh token request already in progress, waiting...');
+        try {
+          final refreshResponse = await _refreshTokenFuture;
+          if (refreshResponse != null) {
+            // Use the token from the ongoing refresh
+            final token = box.get('accessToken');
+            return _retryOriginalRequest(err, handler, token);
+          }
+        } catch (e) {
+          log('Error waiting for refresh token: $e');
         }
-        //   final data = response.data;
+      }
 
-        //   /// update the user by copying the new tokens to the previous user model
+      // Check if last refresh was less than 30 seconds ago
+      if (_lastRefreshTime != null) {
+        final timeSinceLastRefresh =
+            DateTime.now().difference(_lastRefreshTime!);
+        if (timeSinceLastRefresh < _refreshCooldown) {
+          log('Last refresh was ${timeSinceLastRefresh.inSeconds}s ago, using existing token');
+          final token = box.get('accessToken');
+          return _retryOriginalRequest(err, handler, token);
+        }
+      }
 
-        //   //! UserModel updatedUser = previousUser.copyWith(
-        //   //   accessToken: data['data']['access_token'] ?? '',
-        //   //   refreshToken: data['data']['refresh_token'] ?? '',
-        //   // );
+      // Create a new refresh token request
+      _refreshTokenFuture = _performTokenRefresh(refreshToken, box);
 
-        //   /// save the updated user object to the local storage
-        //   // await authLocalService.setUser(updatedUser);
-
-        //   /// hit the previous request with the new token retrieved
-        //   final origin = err.response?.requestOptions;
-
-        //   final previousReqResponse = await dio.request(
-        //     EnvironmentConfig.instance.baseUrl + origin!.path,
-        //     data: origin.data,
-        //     options: Options(
-        //       headers: {
-        //         HttpHeaders.authorizationHeader:
-        //             'Bearer ${data['data']['access_token']}',
-        //       },
-        //     ),
-        //   );
-
-        //   return handler.resolve(previousReqResponse);
-        // }
-      } on DioException catch (dioError) {
-        if (dioError.response != null) {
-          Fluttertoast.showToast(
-            msg:
-                "Oops! There was a problem. A quick log in should get things back on track.",
-            toastLength: Toast.LENGTH_LONG,
-            gravity: ToastGravity.TOP,
-            backgroundColor: Colors.red,
-            textColor: Colors.white,
-            fontSize: 14.0,
-          );
-          final box = Hive.box('data');
-          await box.clear();
-          Navigator.of(ref.read(navigatorKeyProvider).currentContext!)
-              .pushReplacement(
-            MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-          );
-          // appRouter.replaceAll([
-          //   const AuthRoute(children: [SignInRoute()]),
-          // ]);
+      try {
+        final refreshResponse = await _refreshTokenFuture;
+        if (refreshResponse != null) {
+          final token = box.get('accessToken');
+          return _retryOriginalRequest(err, handler, token);
         }
       } catch (e) {
-        // Handle any other errors
-        log('Unexpected error: $e');
+        log('Error during token refresh: $e');
+      } finally {
+        // Clear the future after completion
+        _refreshTokenFuture = null;
       }
 
       return handler.next(err);
     }
 
     return handler.next(err);
+  }
+
+  Future<Response?> _performTokenRefresh(String? refreshToken, Box box) async {
+    final dio = Dio()
+      ..interceptors.add(LogInterceptor(
+        request: true,
+        requestBody: true,
+        responseHeader: true,
+        responseBody: true,
+        error: true,
+      ));
+
+    try {
+      log('Over here we are trying to refresh the token');
+      final response = await dio.post(
+        '${BasePaths.baseProdUrl}auth/refresh-token',
+        data: {
+          'refreshToken': refreshToken,
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        log('Over here refreshing the token was successful');
+        final data = response.data;
+        final token = data['data']['accessToken'];
+        final newrefreshToken = data['data']['refreshToken'];
+
+        box.put('accessToken', token);
+        box.put('refreshToken', newrefreshToken);
+
+        // Update the last refresh time
+        _lastRefreshTime = DateTime.now();
+
+        return response;
+      }
+    } on DioException catch (dioError) {
+      if (dioError.response != null) {
+        Fluttertoast.showToast(
+          msg:
+              "Oops! There was a problem. A quick log in should get things back on track.",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 14.0,
+        );
+        final box = Hive.box('data');
+        await box.clear();
+        Navigator.of(ref.read(navigatorKeyProvider).currentContext!)
+            .pushReplacement(
+          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+        );
+      }
+      rethrow;
+    } catch (e) {
+      log('Unexpected error during token refresh: $e');
+      rethrow;
+    }
+
+    return null;
+  }
+
+  Future<void> _retryOriginalRequest(
+    DioException err,
+    ErrorInterceptorHandler handler,
+    String? token,
+  ) async {
+    final dio = Dio()
+      ..interceptors.add(LogInterceptor(
+        request: true,
+        requestBody: true,
+        responseHeader: true,
+        responseBody: true,
+        error: true,
+      ));
+
+    final origin = err.requestOptions;
+    log('Over here we try the request again');
+
+    // Create a new request with all original details
+    final retryOptions = Options(
+      method: origin.method,
+      headers: {
+        ...origin.headers,
+        HttpHeaders.authorizationHeader: 'Bearer $token',
+      },
+      contentType: origin.contentType,
+      responseType: origin.responseType,
+      followRedirects: origin.followRedirects,
+      validateStatus: origin.validateStatus,
+    );
+
+    final previousReqResponse = await dio.request(
+      origin.uri.toString(),
+      data: origin.data,
+      queryParameters: origin.queryParameters,
+      options: retryOptions,
+    );
+
+    return handler.resolve(previousReqResponse);
   }
 }

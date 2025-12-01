@@ -68,7 +68,7 @@ class TransactionRecord {
   bool? isDeleted;
   String? order;
   String? user;
-  int? amount;
+  double? amount;
   String? currency;
   String? method;
   String? status;
@@ -109,7 +109,7 @@ class TransactionRecord {
         isDeleted: data['isDeleted'] as bool?,
         order: data['order'] as String?,
         user: data['user'] as String?,
-        amount: (data['amount'] as num?)?.toInt(),
+        amount: (data['amount'] as num?)?.toDouble(),
         currency: data['currency'] as String?,
         method: data['method'] as String?,
         status: data['status'] as String?,
@@ -161,7 +161,7 @@ class TransactionRecord {
     bool? isDeleted,
     String? order,
     String? user,
-    int? amount,
+    double? amount,
     String? currency,
     String? method,
     String? status,

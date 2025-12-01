@@ -12,6 +12,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:iconsax/iconsax.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:logger/logger.dart';
 
 import '../../common/location_service.dart';
@@ -178,16 +179,19 @@ class LocationBottomSheet extends HookConsumerWidget {
               ),
               CustomFormTextField(
                 controller: controller,
-                hintText: 'e.g Lagos, Nigeria',
+                hintText: 'Full Address',
                 fieldName: '',
                 keyboardType: TextInputType.text,
-                onChanged: (text) {
-                  debounceTimer.value?.cancel();
-                  debounceTimer.value =
-                      Timer(const Duration(milliseconds: 400), () {
-                    searchPlaces(text!);
-                  });
-                },
+                suffixIcon: IconButton(
+                  onPressed: () {
+                    debounceTimer.value?.cancel();
+                    debounceTimer.value =
+                        Timer(const Duration(milliseconds: 400), () {
+                      searchPlaces(controller.text);
+                    });
+                  },
+                  icon: const Icon(IconsaxPlusLinear.search_normal),
+                ),
               ),
               const Gap(12),
               if (places.value.isNotEmpty)

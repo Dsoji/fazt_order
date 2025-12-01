@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:fazt_order/src/common/app_colors.dart';
 import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
 import 'package:fazt_order/src/features/auth/data/controller/authentication_controller.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:iconsax_plus/iconsax_plus.dart';
+import 'package:logger/logger.dart';
 
 import '../../../common/location_service.dart';
 import '../../../common/res/app_assets.dart';
@@ -19,6 +21,8 @@ import '../../../common/res/app_colors.dart';
 import '../../../common/widgets/custom_textfield.dart';
 import '../../dashboard_view.dart';
 import '../data/model/payload/address_payload.dart';
+
+final logger = Logger();
 
 class MapLocationScreen extends HookConsumerWidget {
   const MapLocationScreen({super.key});
@@ -29,6 +33,7 @@ class MapLocationScreen extends HookConsumerWidget {
     final places = useState<List<dynamic>>([]);
     final isLoading = useState(false);
     final selectedAddress = useState<Map<String, String>?>(null);
+    final debounceTimer = useRef<Timer?>(null);
 
     // Place Details
     final lat = useState('');
@@ -37,10 +42,14 @@ class MapLocationScreen extends HookConsumerWidget {
     final state = useState('');
 
     // For debouncing search input
-    final debounceTimer = useRef<Timer?>(null);
-
     final String? apiKey = dotenv.env['MAP_KEY'];
     print(apiKey);
+
+    // Watch update state
+    final addrUpdate = ref.watch(
+      authenticationControllerProvider.select((s) => s.addressUpdate),
+    );
+    final isUpdating = addrUpdate.isLoading;
 
     Future<void> searchPlaces(String query) async {
       if (query.isEmpty) {
@@ -50,16 +59,29 @@ class MapLocationScreen extends HookConsumerWidget {
 
       isLoading.value = true;
 
-      final url =
-          'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=$apiKey&types=geocode';
+      const url = 'https://places.googleapis.com/v1/places:autocomplete';
       try {
-        final response = await http.get(Uri.parse(url));
-        final json = jsonDecode(response.body);
+        final response = await http.post(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey ?? '',
+            'X-Goog-FieldMask':
+                'suggestions.placePrediction.placeId,suggestions.placePrediction.text',
+          },
+          body: jsonEncode({
+            'input': query,
+            'regionCode': 'NG',
+            'languageCode': 'en',
+          }),
+        );
 
-        if (json['status'] == 'OK') {
-          places.value = json['predictions'];
+        final json = jsonDecode(response.body);
+        if (response.statusCode == 200 && json['suggestions'] != null) {
+          places.value = List<dynamic>.from(json['suggestions']);
         } else {
-          print('Error fetching places: ${json['status']}');
+          print(
+              'Error fetching places: ${response.statusCode} ${response.body}');
         }
       } catch (e) {
         print('Error: $e');
@@ -68,12 +90,13 @@ class MapLocationScreen extends HookConsumerWidget {
       }
     }
 
-    Future<void> getPlaceDetails(String placeId, String description) async {
+    Future<void> getCurrentPosition(BuildContext context) async {
       isLoading.value = true;
       try {
         final addressData =
-            await LocationService.getPlaceDetails(placeId, description);
+            await LocationService.getCurrentLocationWithAddress(context);
         if (addressData != null) {
+          // Update the state with the address data
           lat.value = addressData.lat;
           long.value = addressData.lng;
           city.value = addressData.city;
@@ -81,7 +104,7 @@ class MapLocationScreen extends HookConsumerWidget {
           selectedAddress.value = addressData.toMap();
         }
       } catch (e) {
-        print('Error getting place details: $e');
+        logger.e('Error getting current location: $e');
       } finally {
         isLoading.value = false;
       }
@@ -128,175 +151,202 @@ class MapLocationScreen extends HookConsumerWidget {
                   topRight: Radius.circular(24),
                 ),
               ),
-              child: selectedAddress.value == null
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Grant current location',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'This let us show nearby restaurants, stores you can order from and address to deliver to.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black54,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        CustomFormTextField(
-                          controller: controller,
-                          hintText: 'e.g Lagos, Nigeria',
-                          fieldName: '',
-                          keyboardType: TextInputType.text,
-                          onChanged: (text) {
-                            debounceTimer.value?.cancel();
-                            debounceTimer.value =
-                                Timer(const Duration(milliseconds: 400), () {
-                              searchPlaces(text!);
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        InkWell(
-                          onTap: () async {
-                            isLoading.value = true;
-                            try {
-                              final addressData = await LocationService
-                                  .getCurrentLocationWithAddress(context);
-                              if (addressData != null) {
-                                lat.value = addressData.lat;
-                                long.value = addressData.lng;
-                                city.value = addressData.city;
-                                state.value = addressData.state;
-                                selectedAddress.value = addressData.toMap();
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Set current location",
+                    style: TextStyle(
+                      color: kcPrimaryNeutral100,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "This let us show nearby restaurants, stores you can order from and address to deliver to.",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: kcPrimaryNeutral300,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () {
+                      getCurrentPosition(context);
+                    },
+                    child: const Text(
+                      'Use Current Location',
+                      style: TextStyle(color: AppColors.brand300),
+                    ),
+                  ),
+                  CustomFormTextField(
+                    controller: controller,
+                    hintText: 'Full Address',
+                    fieldName: '',
+                    keyboardType: TextInputType.text,
+                    suffixIcon: IconButton(
+                      onPressed: () {
+                        debounceTimer.value?.cancel();
+                        debounceTimer.value =
+                            Timer(const Duration(milliseconds: 400), () {
+                          searchPlaces(controller.text);
+                        });
+                      },
+                      icon: const Icon(IconsaxPlusLinear.search_normal),
+                    ),
+                  ),
+                  const Gap(12),
+                  if (places.value.isNotEmpty)
+                    SizedBox(
+                      height: 350,
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: places.value.length,
+                        itemBuilder: (context, index) {
+                          final place = places.value[index];
+                          final pp = place['placePrediction'];
+                          return ListTile(
+                            title: Text(pp?['text']?['text'] ?? ''),
+                            onTap: () async {
+                              isLoading.value = true;
+                              try {
+                                final addressData =
+                                    await LocationService.getPlaceDetails(
+                                  pp?['placeId'],
+                                  pp?['text']?['text'] ?? '',
+                                );
+                                if (addressData != null) {
+                                  lat.value = addressData.lat;
+                                  long.value = addressData.lng;
+                                  city.value = addressData.city;
+                                  state.value = addressData.state;
+                                  selectedAddress.value = addressData.toMap();
+                                }
+                                places.value = [];
+                              } catch (e) {
+                                logger.e('Error getting place details: $e');
+                              } finally {
+                                isLoading.value = false;
                               }
-                            } catch (e) {
-                              print('Error getting current location: $e');
-                            } finally {
-                              isLoading.value = false;
-                            }
-                          },
-                          child: const Row(
-                            children: [
-                              Icon(Icons.my_location,
-                                  color: Colors.green, size: 20),
-                              SizedBox(width: 8),
-                              Text(
-                                'Use your current location',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Gap(12),
-                        if (places.value.isNotEmpty)
-                          SizedBox(
-                            height: 350,
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: places.value.length,
-                              itemBuilder: (context, index) {
-                                final place = places.value[index];
-                                return ListTile(
-                                    title: Text(place['description']),
-                                    onTap: () {
-                                      getPlaceDetails(place['place_id'],
-                                          place['description']);
-                                      places.value = [];
-                                    });
-                              },
-                            ),
-                          ),
-                        const SizedBox(height: 32),
-                      ],
-                    )
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  if (selectedAddress.value != null) ...[
+                    const Gap(12),
+                    Card(
+                      color: kcPrimary980,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: kcPrimary400, width: 1),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(IconsaxPlusLinear.location,
-                                color: AppColors.neutral200),
-                            const SizedBox(width: 8),
                             Text(
                               selectedAddress.value!['title'] ?? '',
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                  color: AppColors.neutral200),
+                                color: kcPrimaryNeutral100,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            const Spacer(),
-                            OutlinedButton(
-                              onPressed: () {
-                                selectedAddress.value = null;
-                                controller.clear();
-                              },
-                              style: OutlinedButton.styleFrom(
-                                side:
-                                    const BorderSide(color: AppColors.brand400),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
+                            const Gap(6),
+                            Text(
+                              selectedAddress.value!['address'] ?? '',
+                              style: const TextStyle(
+                                color: kcPrimaryNeutral300,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const Gap(8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'City: ${selectedAddress.value!['city'] ?? ''}',
+                                    style: const TextStyle(
+                                      color: kcPrimaryNeutral400,
+                                      fontSize: 13,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              child: const Text(
-                                'Change',
-                                style: TextStyle(color: AppColors.brand400),
-                              ),
+                                Expanded(
+                                  child: Text(
+                                    'State: ${selectedAddress.value!['state'] ?? ''}',
+                                    style: const TextStyle(
+                                      color: kcPrimaryNeutral400,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Gap(6),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Lat: ${selectedAddress.value!['lat'] ?? ''}',
+                                    style: const TextStyle(
+                                      color: kcPrimaryNeutral500,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    'Lng: ${selectedAddress.value!['lng'] ?? ''}',
+                                    style: const TextStyle(
+                                      color: kcPrimaryNeutral500,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          selectedAddress.value!['address'] ?? '',
-                          style: const TextStyle(
-                            color: AppColors.neutral500,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        FullButton(
-                          text: 'Verify',
-                          isLoading: ref
-                              .watch(authenticationControllerProvider)
-                              .addressUpdate
-                              .isLoading,
-                          width: double.infinity,
-                          height: 50,
-                          onPressed: () async {
-                            final result = await ref
-                                .read(authenticationControllerProvider.notifier)
-                                .updateAddress(
-                                  AddressPayload(
-                                    address: selectedAddress.value!['address'],
-                                    city: selectedAddress.value!['city'],
-                                    state: selectedAddress.value!['state'],
-                                    lat: selectedAddress.value!['lat'],
-                                    long: selectedAddress.value!['lng'],
-                                  ),
-                                );
-                            if (result == true) {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const DashboardView()));
-                            }
-                          },
-                          color: AppColors.brand400,
-                          textColor: Colors.white,
-                        ),
-                      ],
+                      ),
                     ),
+                    const Gap(12),
+                    FullButton(
+                      text: 'Verify',
+                      width: double.infinity,
+                      height: 48,
+                      color: AppColors.brand400,
+                      textColor: Colors.white,
+                      onPressed: () async {
+                        final addr = selectedAddress.value!;
+                        final ok = await ref
+                            .read(authenticationControllerProvider.notifier)
+                            .updateAddress(
+                              AddressPayload(
+                                address: addr['address'],
+                                city: addr['city'],
+                                state: addr['state'],
+                                long: addr['lng'],
+                                lat: addr['lat'],
+                              ),
+                            );
+                        if (ok == true && context.mounted) {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const DashboardView()));
+                        }
+                      },
+                    ),
+                  ],
+                  const Gap(50),
+                ],
+              ),
             ),
           ),
         ],

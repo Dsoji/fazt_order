@@ -182,7 +182,7 @@ class EditAddressBottomSheet extends HookConsumerWidget {
                 verticalSpaceSmall,
                 CustomFormTextField(
                   controller: addressController,
-                  hintText: 'e.g Lagos, Nigeria',
+                  hintText: 'Full Address',
                   fieldName: '',
                   keyboardType: TextInputType.text,
                   suffixIcon: IconButton(

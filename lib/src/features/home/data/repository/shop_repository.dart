@@ -243,7 +243,7 @@ class ShopRepository {
         return Error(
           data.error ??
               FailureHandler(
-                message: 'Failed to make order',
+                message: 'Failed to make order, check your balance',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to make order'),
               ),

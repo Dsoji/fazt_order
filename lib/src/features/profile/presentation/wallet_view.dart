@@ -1,3 +1,4 @@
+import 'package:fazt_order/src/common/res/app_colors.dart';
 import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -17,10 +18,9 @@ class WalletView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch wallet state from provider
-    final walletState = ref.watch(profileControllerProvider).wallet.valueOrNull;
+    final walletState = ref.watch(profileControllerProvider).wallet;
 
     // Local state
-    final wallet = ref.watch(profileControllerProvider).wallet.valueOrNull;
 
     final transactionHistory =
         ref.watch(profileControllerProvider).transactionHistory;
@@ -37,7 +37,6 @@ class WalletView extends HookConsumerWidget {
     // (removed unused add/delete card helpers)
 
     // Get balance from wallet state or use default
-    final balance = wallet?.wallet?.availableBalance?.toDouble() ?? 0.00;
 
     return Scaffold(
       backgroundColor: kcPrimaryNeutral950,
@@ -64,260 +63,321 @@ class WalletView extends HookConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Available Balance Section
-            Container(
-              width: double.infinity,
-              height: screenHeight(context) * 0.17,
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(25)),
-                image: DecorationImage(
-                  image: AssetImage("asset/images/wallet_background.png"),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(top: 38.0, left: 12),
-                child: Column(
+            walletState.when(
+              data: (walletData) {
+                logger.d("walletdata: $walletData");
+                logger.d("walletdata.data: ${walletData.data}");
+                logger.d("walletdata.data?.wallet: ${walletData.data?.wallet}");
+                logger.d(
+                    "walletdata.data?.wallet?.availableBalance: ${walletData.data?.wallet?.availableBalance}");
+                final balanceValue =
+                    walletData.data?.wallet?.availableBalance?.toDouble() ??
+                        0.0;
+                logger.d(balanceValue);
+                final formattedBalance =
+                    "₦ ${balanceValue.toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}";
+                final bankTransfer = walletData.data?.wallet?.bankTransfer;
+
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "Available Balance",
-                      style: ktBodyRegularSize12.copyWith(
-                        color: kcPrimaryNeutral500,
-                        fontSize: 12,
-                        letterSpacing: 1,
+                    Container(
+                      width: double.infinity,
+                      height: screenHeight(context) * 0.17,
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.all(Radius.circular(25)),
+                        image: DecorationImage(
+                          image:
+                              AssetImage("asset/images/wallet_background.png"),
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                    ),
-                    verticalSpaceTiny,
-                    Text(
-                      "₦ ${balance.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}",
-                      style: ktBodySemiBoldSize20.copyWith(
-                        fontSize: 40,
-                        color: Colors.black,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            verticalSpaceMedium,
-            // Top Up Section
-
-            OutlinButton(
-                text: 'Top Up',
-                width: double.infinity,
-                height: screenHeight(context) * 0.065,
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    barrierDismissible: true,
-                    builder: (context) => Dialog(
-                      backgroundColor: Colors.transparent,
-                      insetPadding: const EdgeInsets.all(20),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: kcPrimaryNeutral990,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: kcBlack.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 38.0, left: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Available Balance",
+                              style: ktBodyRegularSize12.copyWith(
+                                color: kcPrimaryNeutral500,
+                                fontSize: 12,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            verticalSpaceTiny,
+                            Text(
+                              formattedBalance,
+                              style: ktBodySemiBoldSize20.copyWith(
+                                fontSize: 40,
+                                color: Colors.black,
+                                letterSpacing: 1,
+                              ),
                             ),
                           ],
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Header
-                            Container(
-                              padding: const EdgeInsets.all(24),
+                      ),
+                    ),
+                    verticalSpaceMedium,
+                    OutlinButton(
+                      text: 'Top Up',
+                      width: double.infinity,
+                      height: screenHeight(context) * 0.065,
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          builder: (context) => Dialog(
+                            backgroundColor: Colors.transparent,
+                            insetPadding: const EdgeInsets.all(20),
+                            child: Container(
                               decoration: BoxDecoration(
-                                color: kcPrimary400.withOpacity(0.1),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(24),
-                                  topRight: Radius.circular(24),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: kcPrimary400,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: const Icon(
-                                      Icons.account_balance,
-                                      color: kcWhite,
-                                      size: 20,
-                                    ),
-                                  ),
-                                  horizontalSpaceSmall,
-                                  Expanded(
-                                    child: Text(
-                                      'Bank Transfer Details',
-                                      style: ktTitleSemiBoldSize16.copyWith(
-                                        color: kcPrimaryNeutral100,
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    icon: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: kcPrimaryNeutral200
-                                            .withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: kcPrimaryNeutral400,
-                                        size: 16,
-                                      ),
-                                    ),
+                                color: kcPrimaryNeutral990,
+                                borderRadius: BorderRadius.circular(24),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: kcBlack.withOpacity(0.1),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
                                   ),
                                 ],
                               ),
-                            ),
-
-                            // Content
-                            Padding(
-                              padding: const EdgeInsets.all(24),
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  // Instructions
                                   Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(16),
+                                    padding: const EdgeInsets.all(24),
                                     decoration: BoxDecoration(
-                                      color: kcPrimaryBlue400.withOpacity(0.05),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color:
-                                            kcPrimaryBlue400.withOpacity(0.2),
-                                        width: 1,
+                                      color: kcPrimary400.withOpacity(0.1),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(24),
+                                        topRight: Radius.circular(24),
                                       ),
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(
-                                          Icons.info_outline,
-                                          color: kcPrimaryBlue400,
-                                          size: 16,
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: kcPrimary400,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: const Icon(
+                                            Icons.account_balance,
+                                            color: kcWhite,
+                                            size: 20,
+                                          ),
                                         ),
                                         horizontalSpaceSmall,
                                         Expanded(
                                           child: Text(
-                                            'Transfer to the account below to top up your wallet',
+                                            'Bank Transfer Details',
                                             style:
-                                                ktLabelRegularSize12.copyWith(
-                                              color: kcPrimaryBlue400,
+                                                ktTitleSemiBoldSize16.copyWith(
+                                              color: kcPrimaryNeutral100,
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          icon: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: kcPrimaryNeutral200
+                                                  .withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: const Icon(
+                                              Icons.close,
+                                              color: kcPrimaryNeutral400,
+                                              size: 16,
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-
-                                  verticalSpaceMedium,
-
-                                  // Bank Details Cards
-                                  _buildDetailCard(
-                                    context: context,
-                                    icon: Icons.account_balance,
-                                    label: 'Bank Name',
-                                    value: walletState
-                                            ?.wallet?.bankTransfer?.bankName ??
-                                        'N/A',
-                                    iconColor: kcPrimary400,
-                                  ),
-
-                                  verticalSpaceSmall,
-
-                                  _buildDetailCard(
-                                    context: context,
-                                    icon: Icons.credit_card,
-                                    label: 'Account Number',
-                                    value: walletState?.wallet?.bankTransfer
-                                            ?.accountNumber ??
-                                        'N/A',
-                                    iconColor: kcPrimaryBlue400,
-                                    copyable: true,
-                                  ),
-
-                                  verticalSpaceSmall,
-
-                                  _buildDetailCard(
-                                    context: context,
-                                    icon: Icons.person,
-                                    label: 'Account Name',
-                                    value: walletState?.wallet?.bankTransfer
-                                            ?.accountName ??
-                                        'N/A',
-                                    iconColor: kcPrimaryOrange500,
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Footer Actions
-                            Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: const BoxDecoration(
-                                color: kcPrimaryNeutral950,
-                                borderRadius: BorderRadius.only(
-                                  bottomLeft: Radius.circular(24),
-                                  bottomRight: Radius.circular(24),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinButton(
-                                      text: 'Copy Details',
-                                      width: double.infinity,
-                                      height: 48,
-                                      onPressed: () {
-                                        // TODO: add copy-to-clipboard if needed
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                                'Bank details copied to clipboard'),
-                                            backgroundColor: kcPrimary400,
+                                  Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: kcPrimaryBlue400
+                                                .withOpacity(0.05),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: kcPrimaryBlue400
+                                                  .withOpacity(0.2),
+                                              width: 1,
+                                            ),
                                           ),
-                                        );
-                                      },
-                                      color: kcPrimary400,
-                                      bgColor: kcPrimaryNeutral990,
+                                          child: Row(
+                                            children: [
+                                              const Icon(
+                                                Icons.info_outline,
+                                                color: kcPrimaryBlue400,
+                                                size: 16,
+                                              ),
+                                              horizontalSpaceSmall,
+                                              Expanded(
+                                                child: Text(
+                                                  'Transfer to the account below to top up your wallet',
+                                                  style: ktLabelRegularSize12
+                                                      .copyWith(
+                                                    color: kcPrimaryBlue400,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        verticalSpaceMedium,
+                                        _buildDetailCard(
+                                          context: context,
+                                          icon: Icons.account_balance,
+                                          label: 'Bank Name',
+                                          value:
+                                              bankTransfer?.bankName ?? 'N/A',
+                                          iconColor: kcPrimary400,
+                                        ),
+                                        verticalSpaceSmall,
+                                        _buildDetailCard(
+                                          context: context,
+                                          icon: Icons.credit_card,
+                                          label: 'Account Number',
+                                          value: bankTransfer?.accountNumber ??
+                                              'N/A',
+                                          iconColor: kcPrimaryBlue400,
+                                          copyable: true,
+                                        ),
+                                        verticalSpaceSmall,
+                                        _buildDetailCard(
+                                          context: context,
+                                          icon: Icons.person,
+                                          label: 'Account Name',
+                                          value: bankTransfer?.accountName ??
+                                              'N/A',
+                                          iconColor: kcPrimaryOrange500,
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  horizontalSpaceSmall,
-                                  Expanded(
-                                    child: FullButton(
-                                      text: 'Got it',
-                                      width: double.infinity,
-                                      height: 48,
-                                      onPressed: () => Navigator.pop(context),
-                                      color: kcPrimary400,
-                                      textColor: kcWhite,
+                                  Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: const BoxDecoration(
+                                      color: kcPrimaryNeutral950,
+                                      borderRadius: BorderRadius.only(
+                                        bottomLeft: Radius.circular(24),
+                                        bottomRight: Radius.circular(24),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: OutlinButton(
+                                            text: 'Copy Details',
+                                            width: double.infinity,
+                                            height: 48,
+                                            onPressed: () {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                      'Bank details copied to clipboard'),
+                                                  backgroundColor: kcPrimary400,
+                                                ),
+                                              );
+                                            },
+                                            color: kcPrimary400,
+                                            bgColor: kcPrimaryNeutral990,
+                                          ),
+                                        ),
+                                        horizontalSpaceSmall,
+                                        Expanded(
+                                          child: FullButton(
+                                            text: 'Got it',
+                                            width: double.infinity,
+                                            height: 48,
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                            color: kcPrimary400,
+                                            textColor: kcWhite,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
+                      color: kcPrimary400,
+                      bgColor: kcPrimaryNeutral900,
                     ),
-                  );
-                },
-                color: kcPrimary400,
-                bgColor: kcPrimaryNeutral900),
-            verticalSpaceSmall,
+                    verticalSpaceSmall,
+                  ],
+                );
+              },
+              loading: () => Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    height: screenHeight(context) * 0.17,
+                    decoration: BoxDecoration(
+                      color: AppColors.brand950,
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                  ),
+                  verticalSpaceMedium,
+                  SizedBox(
+                    width: double.infinity,
+                    height: screenHeight(context) * 0.065,
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                  verticalSpaceSmall,
+                ],
+              ),
+              error: (error, _) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      'Failed to load wallet balance: $error',
+                      style: ktBodyRegularSize12.copyWith(color: Colors.red),
+                    ),
+                  ),
+                  verticalSpaceSmall,
+                  OutlinButton(
+                    text: 'Retry',
+                    width: double.infinity,
+                    height: screenHeight(context) * 0.065,
+                    onPressed: () {
+                      ref
+                          .read(profileControllerProvider.notifier)
+                          .fetchWallet();
+                    },
+                    color: kcPrimary400,
+                    bgColor: kcPrimaryNeutral900,
+                  ),
+                  verticalSpaceSmall,
+                ],
+              ),
+            ),
 
             // Transaction History Section
             Container(
@@ -339,6 +399,8 @@ class WalletView extends HookConsumerWidget {
                   verticalSpaceSmall,
                   transactionHistory.when(
                     loading: () => ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       itemCount: 10,
                       itemBuilder: (context, index) => Padding(
@@ -439,7 +501,7 @@ class WalletView extends HookConsumerWidget {
                           final isPositive =
                               isCompleted; // credit-like on completion
                           final amountText =
-                              "${isPositive ? '+' : '-'} ₦${amount.abs().toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}";
+                              "${isPositive ? '+' : '-'} ₦${amount.abs().toStringAsFixed(2).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}";
                           final title = (t.type ?? '').replaceAll('_', ' ');
                           final dateText = t.createdAt != null
                               ? '${t.createdAt!.year}-${t.createdAt!.month.toString().padLeft(2, '0')}-${t.createdAt!.day.toString().padLeft(2, '0')} '

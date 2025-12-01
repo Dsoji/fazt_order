@@ -1,23 +1,33 @@
 import 'dart:convert';
 
-import 'wallet.dart';
+import 'data.dart';
 
 class UserWallet {
-  Wallet? wallet;
+  bool? status;
+  String? message;
+  Data? data;
 
-  UserWallet({this.wallet});
+  UserWallet({this.status, this.message, this.data});
 
   @override
-  String toString() => 'UserWallet(wallet: $wallet)';
+  String toString() {
+    return 'UserWallet(status: $status, message: $message, data: $data)';
+  }
 
-  factory UserWallet.fromMap(Map<String, dynamic> data) => UserWallet(
-        wallet: data['wallet'] == null
-            ? null
-            : Wallet.fromMap(data['wallet'] as Map<String, dynamic>),
+  factory UserWallet.fromMap(Map<String, dynamic> map) => UserWallet(
+        status: map['status'] as bool?,
+        message: map['message'] as String?,
+        data: map['data'] != null
+            ? Data.fromMap(map['data'] as Map<String, dynamic>)
+            : map['wallet'] != null
+                ? Data.fromMap({'wallet': map['wallet']})
+                : null,
       );
 
   Map<String, dynamic> toMap() => {
-        'wallet': wallet?.toMap(),
+        'status': status,
+        'message': message,
+        'data': data?.toMap(),
       };
 
   /// `dart:convert`
@@ -33,10 +43,14 @@ class UserWallet {
   String toJson() => json.encode(toMap());
 
   UserWallet copyWith({
-    Wallet? wallet,
+    bool? status,
+    String? message,
+    Data? data,
   }) {
     return UserWallet(
-      wallet: wallet ?? this.wallet,
+      status: status ?? this.status,
+      message: message ?? this.message,
+      data: data ?? this.data,
     );
   }
 }

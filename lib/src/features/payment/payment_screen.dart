@@ -1,6 +1,7 @@
 import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:logger/logger.dart';
@@ -28,10 +29,23 @@ class PaymentScreen extends HookConsumerWidget {
   final String? riderMessage;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Fetch wallet and transaction history when widget is first built
+    useEffect(() {
+      Future.microtask(() {
+        ref.read(profileControllerProvider.notifier).fetchWallet();
+      });
+      return null;
+    }, []);
+
     final selectedPaymentMethod = useState<String>("wallet");
     final userDetails =
         ref.watch(profileControllerProvider).userDetails.valueOrNull;
     final location = userDetails?.user?.location;
+    final walletState = ref.watch(profileControllerProvider).wallet;
+    final balance =
+        walletState.valueOrNull?.data?.wallet?.availableBalance?.toDouble() ??
+            0.0;
+    // final balance
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -195,50 +209,119 @@ class PaymentScreen extends HookConsumerWidget {
             height: 48,
             isLoading: ref.watch(shopControllerProvider).makeOrders.isLoading,
             onPressed: () async {
-              final result = await ref
-                  .read(shopControllerProvider.notifier)
-                  .makeOrder(
-                    selectedItems.id ?? '',
-                    userDetails?.user?.location?.address ?? 'Just an address',
-                    userDetails?.user?.location?.city ?? 'ogba',
-                    userDetails?.user?.location?.state ?? 'Lagos',
-                    userDetails?.user?.location?.coordinates?[0].toString() ??
-                        '333.0',
-                    userDetails?.user?.location?.coordinates?[1].toString() ??
-                        '6.540',
-                    vendorMessage ?? "",
-                    riderMessage ?? "",
-                    selectedPaymentMethod.value,
+              if (selectedPaymentMethod.value == "wallet") {
+                final totalPrice = selectedItems.totalPrice ?? 0.0;
+                if (totalPrice > balance) {
+                  Fluttertoast.showToast(
+                    msg:
+                        'Insufficient balance. Available: ₦${balance.toStringAsFixed(2)}, Required: ₦${totalPrice.toStringAsFixed(2)}',
+                    toastLength: Toast.LENGTH_LONG,
+                    gravity: ToastGravity.TOP,
+                    timeInSecForIosWeb: 1,
+                    backgroundColor: Colors.red,
+                    textColor: Colors.white,
                   );
-              if (result == true) {
-                final orderLink = ref
-                    .read(shopControllerProvider)
-                    .makeOrders
-                    .valueOrNull
-                    ?.payment
-                    ?.paymentUrl;
-                final reference = ref
-                    .read(shopControllerProvider)
-                    .makeOrders
-                    .valueOrNull
-                    ?.payment
-                    ?.reference;
-                logger.d('order link: $orderLink');
-                if (orderLink != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => FaztWebViewScreen(
-                        uri: orderLink,
-                        reference: reference,
-                      ),
-                    ),
-                  );
+                  return; // Prevent order placement
                 } else {
-                  ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
-                  ref.read(shopControllerProvider.notifier).fetchCart();
-                  Navigator.pop(context);
-                  Navigator.pop(context);
+                  final result =
+                      await ref.read(shopControllerProvider.notifier).makeOrder(
+                            selectedItems.id ?? '',
+                            userDetails?.user?.location?.address ??
+                                'Just an address',
+                            userDetails?.user?.location?.city ?? 'ogba',
+                            userDetails?.user?.location?.state ?? 'Lagos',
+                            userDetails?.user?.location?.coordinates?[0]
+                                    .toString() ??
+                                '333.0',
+                            userDetails?.user?.location?.coordinates?[1]
+                                    .toString() ??
+                                '6.540',
+                            vendorMessage ?? "",
+                            riderMessage ?? "",
+                            selectedPaymentMethod.value,
+                          );
+                  if (result == true) {
+                    final orderLink = ref
+                        .read(shopControllerProvider)
+                        .makeOrders
+                        .valueOrNull
+                        ?.payment
+                        ?.paymentUrl;
+                    final reference = ref
+                        .read(shopControllerProvider)
+                        .makeOrders
+                        .valueOrNull
+                        ?.payment
+                        ?.reference;
+                    logger.d('order link: $orderLink');
+                    if (orderLink != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FaztWebViewScreen(
+                            uri: orderLink,
+                            reference: reference,
+                          ),
+                        ),
+                      );
+                    } else {
+                      ref
+                          .read(shopControllerProvider.notifier)
+                          .fetchMyOrdersList();
+                      ref.read(shopControllerProvider.notifier).fetchCart();
+                      Navigator.pop(context);
+                      Navigator.pop(context);
+                    }
+                  }
+                }
+              } else if (selectedPaymentMethod.value == "paystack") {
+                final result = await ref
+                    .read(shopControllerProvider.notifier)
+                    .makeOrder(
+                      selectedItems.id ?? '',
+                      userDetails?.user?.location?.address ?? 'Just an address',
+                      userDetails?.user?.location?.city ?? 'ogba',
+                      userDetails?.user?.location?.state ?? 'Lagos',
+                      userDetails?.user?.location?.coordinates?[0].toString() ??
+                          '333.0',
+                      userDetails?.user?.location?.coordinates?[1].toString() ??
+                          '6.540',
+                      vendorMessage ?? "",
+                      riderMessage ?? "",
+                      selectedPaymentMethod.value,
+                    );
+                if (result == true) {
+                  final orderLink = ref
+                      .read(shopControllerProvider)
+                      .makeOrders
+                      .valueOrNull
+                      ?.payment
+                      ?.paymentUrl;
+                  final reference = ref
+                      .read(shopControllerProvider)
+                      .makeOrders
+                      .valueOrNull
+                      ?.payment
+                      ?.reference;
+                  logger.d('order link: $orderLink');
+                  if (orderLink != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FaztWebViewScreen(
+                          uri: orderLink,
+                          reference: reference,
+                        ),
+                      ),
+                    );
+                  } else {
+                    ref
+                        .read(shopControllerProvider.notifier)
+                        .fetchMyOrdersList();
+                    ref.read(shopControllerProvider.notifier).fetchCart();
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  }
                 }
               }
             },

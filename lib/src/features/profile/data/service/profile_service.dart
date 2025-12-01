@@ -409,6 +409,7 @@ class ProfileeService {
         },
       ),
       parser: (data) {
+        logger.d("wallet data: $data");
         return UserWallet.fromMap(data);
       },
       showErrorToast: true,
