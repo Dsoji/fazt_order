@@ -743,7 +743,19 @@ class RestaurantDetailsView extends HookConsumerWidget {
                   error: (error, stackTrace) {
                     logger
                         .d('Error loading meal variants: $error\n$stackTrace');
-                    return Text('Error: $error');
+                    return const Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: Center(
+                        child: Text(
+                          'Unable to load meals right now.\nPlease try again later.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                    );
                   },
                   loading: () => ListView.builder(
                     shrinkWrap: true,
@@ -951,85 +963,6 @@ class RestaurantDetailsView extends HookConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddToCartBottomSheet(menuItem: menuItem),
-    );
-  }
-
-  // Helper method to build customization sections
-  Widget _buildCustomizationSection(
-    String title,
-    List<String> options, {
-    required bool isRequired,
-    required int maxSelection,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, color: Colors.black),
-            ),
-            if (isRequired) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.red[100],
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'Required',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.red[700],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Select ${maxSelection == 1 ? '1' : 'up to $maxSelection'} from here',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...options.map((option) => _buildOptionTile(option, maxSelection)),
-      ],
-    );
-  }
-
-  // Helper method to build option tiles
-  Widget _buildOptionTile(String option, int maxSelection) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[300]!),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            maxSelection == 1
-                ? Icons.radio_button_unchecked
-                : Icons.check_box_outline_blank,
-            color: Colors.grey[600],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              option,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -1256,8 +1189,7 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                 optionGroup.groupName ?? 'Customization',
                                 optionNames,
                                 items,
-                                isRequired: optionGroup.least != null &&
-                                    optionGroup.least! > 0,
+                                isRequired: optionGroup.isRequired ?? false,
                                 maxSelection: optionGroup.most ?? 1,
                                 groupId: optionGroup.id ?? '',
                                 selectedItemIdsWithQuantity:

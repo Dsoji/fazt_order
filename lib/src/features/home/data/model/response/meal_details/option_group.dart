@@ -8,12 +8,21 @@ class OptionGroup {
   int? least;
   int? most;
   List<Item>? items;
+  bool? isDeleted;
+  bool? isRequired;
 
-  OptionGroup({this.id, this.groupName, this.least, this.most, this.items});
+  OptionGroup(
+      {this.id,
+      this.groupName,
+      this.least,
+      this.most,
+      this.items,
+      this.isDeleted,
+      this.isRequired});
 
   @override
   String toString() {
-    return 'OptionGroup(id: $id, groupName: $groupName, least: $least, most: $most, items: $items)';
+    return 'OptionGroup(id: $id, groupName: $groupName, least: $least, most: $most, items: $items, isDeleted: $isDeleted, isRequired: $isRequired)';
   }
 
   factory OptionGroup.fromMap(Map<String, dynamic> data) => OptionGroup(
@@ -24,6 +33,8 @@ class OptionGroup {
         items: (data['items'] as List<dynamic>?)
             ?.map((e) => Item.fromMap(e as Map<String, dynamic>))
             .toList(),
+        isDeleted: data['isDeleted'] as bool?,
+        isRequired: data['isRequired'] as bool?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -32,6 +43,8 @@ class OptionGroup {
         'least': least,
         'most': most,
         'items': items?.map((e) => e.toMap()).toList(),
+        'isDeleted': isDeleted,
+        'isRequired': isRequired,
       };
 
   /// `dart:convert`
@@ -52,6 +65,8 @@ class OptionGroup {
     int? least,
     int? most,
     List<Item>? items,
+    bool? isDeleted,
+    bool? isRequired,
   }) {
     return OptionGroup(
       id: id ?? this.id,
@@ -59,6 +74,8 @@ class OptionGroup {
       least: least ?? this.least,
       most: most ?? this.most,
       items: items ?? this.items,
+      isDeleted: isDeleted ?? this.isDeleted,
+      isRequired: isRequired ?? this.isRequired,
     );
   }
 }

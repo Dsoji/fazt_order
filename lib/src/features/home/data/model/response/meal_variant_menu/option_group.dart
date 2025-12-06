@@ -10,6 +10,8 @@ class OptionGroup {
   DateTime? createdAt;
   DateTime? updatedAt;
   int? version;
+  bool? isDeleted;
+  bool? isRequired;
 
   OptionGroup({
     this.id,
@@ -21,6 +23,8 @@ class OptionGroup {
     this.createdAt,
     this.updatedAt,
     this.version,
+    this.isDeleted,
+    this.isRequired,
   });
 
   @override
@@ -42,6 +46,8 @@ class OptionGroup {
             ? null
             : DateTime.parse(data['updatedAt'] as String),
         version: data['__v'] as int?,
+        isDeleted: data['isDeleted'] as bool?,
+        isRequired: data['isRequired'] as bool?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -54,6 +60,8 @@ class OptionGroup {
         'createdAt': createdAt?.toIso8601String(),
         'updatedAt': updatedAt?.toIso8601String(),
         '__v': version,
+        'isDeleted': isDeleted,
+        'isRequired': isRequired,
       };
 
   /// `dart:convert`
@@ -78,6 +86,8 @@ class OptionGroup {
     DateTime? createdAt,
     DateTime? updatedAt,
     int? version,
+    bool? isDeleted,
+    bool? isRequired,
   }) {
     return OptionGroup(
       id: id ?? this.id,
@@ -89,6 +99,8 @@ class OptionGroup {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       version: version ?? this.version,
+      isDeleted: isDeleted ?? this.isDeleted,
+      isRequired: isRequired ?? this.isRequired,
     );
   }
 }
