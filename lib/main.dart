@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:fazt_order/redirect_screen.dart';
 import 'package:fazt_order/src/common/api/dio_api_interceptor.dart';
+import 'package:fazt_order/src/common/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,6 +43,7 @@ void main() async {
 
   final navigatorKey = GlobalKey<NavigatorState>();
 
+  await NotificationService.initializeFCM();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

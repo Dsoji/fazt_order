@@ -31,23 +31,23 @@ class AuthenticationService {
 
   // Add getter methods to access Hive data safely
   Box get _box => Hive.box('data');
-  String? get deviceId =>
-      Hive.isBoxOpen('data') ? Hive.box('data').get('device_id') : null;
-  String get storedToken =>
-      Hive.isBoxOpen('data') ? Hive.box('data').get('fcm_token') ?? '' : '';
-  String? get accessToken =>
-      Hive.isBoxOpen('data') ? Hive.box('data').get('accessToken') : null;
+  String? get deviceId => _box.get('device_id');
+  String? get storedToken => _box.get('fcm_token');
+  String? get accessToken => _box.get('accessToken');
+  String? get fcmToken => _box.get('fcm_token');
 
   Future<ResultValue<UserModel>> signInUser({
     required String email,
     required String password,
   }) async {
+    logger.d('fcmToken: $fcmToken');
     return apiRequestHelper.handleApiRequest(
       () => apiClient.post(
         'auth/login',
         data: {
           'email': email,
           'password': password,
+          if (fcmToken != null) 'fcmToken': fcmToken,
         },
       ),
       parser: (data) {
@@ -168,8 +168,6 @@ class AuthenticationService {
   Future<ResultValue<String>> updateProfile({
     ProfilePayload? payload,
   }) async {
-    final String accessToken = await _box.get('accessToken');
-
     return apiRequestHelper.handleApiRequest(
       () => apiClient.post(
         'user/profile/updateProfile',
@@ -190,8 +188,6 @@ class AuthenticationService {
   Future<ResultValue<String>> updateAddress({
     AddressPayload? payload,
   }) async {
-    final String accessToken = await _box.get('accessToken');
-
     return apiRequestHelper.handleApiRequest(
       () => apiClient.patch(
         'users/update',
