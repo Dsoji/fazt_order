@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:fazt_order/redirect_screen.dart';
 import 'package:fazt_order/src/common/api/dio_api_interceptor.dart';
 import 'package:fazt_order/src/common/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -17,6 +19,27 @@ import 'src/common/res/app_colors.dart';
 import 'src/common/utils/dimesnsion.dart';
 
 final logger = Logger();
+
+// Background message handler - must be top-level function
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  final logger = Logger();
+  logger.d('📱 Background message received: ${message.notification?.title}');
+  logger.d('📱 Message data: ${message.data}');
+
+  // Show notification using AwesomeNotifications
+  if (message.notification != null) {
+    await AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        channelKey: 'high_importance_channel',
+        title: message.notification?.title ?? 'New Notification',
+        body: message.notification?.body ?? '',
+        notificationLayout: NotificationLayout.Default,
+      ),
+    );
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
