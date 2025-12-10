@@ -290,6 +290,7 @@ class PaymentScreen extends HookConsumerWidget {
                       riderMessage ?? "",
                       selectedPaymentMethod.value,
                     );
+                logger.d('result: $result');
                 if (result == true) {
                   final orderLink = ref
                       .read(shopControllerProvider)
@@ -297,6 +298,7 @@ class PaymentScreen extends HookConsumerWidget {
                       .valueOrNull
                       ?.payment
                       ?.paymentUrl;
+                  logger.d('order link: $orderLink');
                   final reference = ref
                       .read(shopControllerProvider)
                       .makeOrders

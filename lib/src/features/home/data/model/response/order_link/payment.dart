@@ -11,12 +11,15 @@ class Payment {
     return 'Payment(status: $status, paymentId: $paymentId, paymentUrl: $paymentUrl, reference: $reference)';
   }
 
-  factory Payment.fromJson(Map<String, dynamic> json) => Payment(
-        status: json['status'] as String?,
-        paymentId: json['paymentId'] as String?,
-        paymentUrl: json['paymentUrl'] as String?,
-        reference: json['reference'] as String?,
+  factory Payment.fromMap(Map<String, dynamic> map) => Payment(
+        status: map['status'] as String?,
+        paymentId: map['paymentId'] as String?,
+        paymentUrl: map['paymentUrl'] as String?,
+        reference: map['reference'] as String?,
       );
+
+  // Backwards-compatible alias.
+  factory Payment.fromJson(Map<String, dynamic> json) => Payment.fromMap(json);
 
   Map<String, dynamic> toJson() => {
         'status': status,

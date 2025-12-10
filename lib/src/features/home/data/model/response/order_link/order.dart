@@ -18,13 +18,16 @@ class Order {
     return 'Order(id: $id, orderNumber: $orderNumber, status: $status, total: $total, paymentMethod: $paymentMethod)';
   }
 
-  factory Order.fromJson(Map<String, dynamic> json) => Order(
-        id: json['id'] as String?,
-        orderNumber: json['orderNumber'] as String?,
-        status: json['status'] as String?,
-        total: json['total'] as double?,
-        paymentMethod: json['paymentMethod'] as String?,
+  factory Order.fromMap(Map<String, dynamic> map) => Order(
+        id: map['id'] as String?,
+        orderNumber: map['orderNumber'] as String?,
+        status: map['status'] as String?,
+        total: (map['total'] is num) ? (map['total'] as num).toDouble() : null,
+        paymentMethod: map['paymentMethod'] as String?,
       );
+
+  // Backwards-compatible alias.
+  factory Order.fromJson(Map<String, dynamic> json) => Order.fromMap(json);
 
   Map<String, dynamic> toJson() => {
         'id': id,

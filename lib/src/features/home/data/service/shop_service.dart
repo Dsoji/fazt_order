@@ -193,7 +193,10 @@ class ShopService {
           }
         },
       ),
-      parser: (data) => OrderLink.fromJson(data),
+      parser: (data) {
+        logger.d('order link data: $data');
+        return OrderLink.fromMap(data);
+      },
       showErrorToast: false,
       showSuccessToast: false,
     );

@@ -21,17 +21,21 @@ class OrderLink {
     return 'OrderLink(order: $order, cartCleared: $cartCleared, payment: $payment, redirectRequired: $redirectRequired, message: $message)';
   }
 
-  factory OrderLink.fromJson(Map<String, dynamic> json) => OrderLink(
-        order: json['order'] == null
+  factory OrderLink.fromMap(Map<String, dynamic> map) => OrderLink(
+        order: map['order'] == null
             ? null
-            : Order.fromJson(json['order'] as Map<String, dynamic>),
-        cartCleared: json['cartCleared'] as bool?,
-        payment: json['payment'] == null
+            : Order.fromMap(map['order'] as Map<String, dynamic>),
+        cartCleared: map['cartCleared'] as bool?,
+        payment: map['payment'] == null
             ? null
-            : Payment.fromJson(json['payment'] as Map<String, dynamic>),
-        redirectRequired: json['redirectRequired'] as bool?,
-        message: json['message'] as String?,
+            : Payment.fromMap(map['payment'] as Map<String, dynamic>),
+        redirectRequired: map['redirectRequired'] as bool?,
+        message: map['message'] as String?,
       );
+
+  // Backwards-compatible alias for any older usages.
+  factory OrderLink.fromJson(Map<String, dynamic> json) =>
+      OrderLink.fromMap(json);
 
   Map<String, dynamic> toJson() => {
         'order': order?.toJson(),
