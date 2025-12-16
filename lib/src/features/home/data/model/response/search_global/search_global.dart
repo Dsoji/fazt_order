@@ -1,11 +1,14 @@
 import 'dart:convert';
 
+import 'package:fazt_order/app/search_model/store.dart';
+
 import 'meal.dart';
 import 'shop.dart';
 
 class SearchGlobal {
   List<Shop>? shops;
   List<Meal>? meals;
+  List<Store>? stores;
 
   SearchGlobal({this.shops, this.meals});
 

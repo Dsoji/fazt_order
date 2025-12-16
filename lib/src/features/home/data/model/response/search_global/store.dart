@@ -1,9 +1,12 @@
 import 'dart:convert';
 
+import 'package:fazt_order/src/features/home/data/model/response/shops_model/sales_operation.dart';
+
 class Store {
   String? storeDisplayImage;
   String? storeName;
   String? id;
+  SalesOperation? salesOperation;
 
   Store({this.storeDisplayImage, this.storeName, this.id});
 

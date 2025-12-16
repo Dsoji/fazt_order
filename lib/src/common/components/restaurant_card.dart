@@ -59,70 +59,78 @@ class RestaurantCard extends ConsumerWidget {
       }
     }
 
-    // Helper function to check if restaurant is currently open based on schedule
+    // Helper function to check if restaurant is currently open based on emergency + schedule
     bool isRestaurantOpen() {
-      // If restaurant.isOpen is explicitly set (not null), it overrides the schedule
-      if (restaurant.isOpen != null) {
-        return restaurant.isOpen!;
+      // Emergency override: explicit false always closes
+      if (restaurant.isOpen == false) {
+        return false;
       }
 
-      // Otherwise, check the schedule
       final currentDaySchedule = getCurrentDaySchedule();
+      final now = DateTime.now();
+      logger.d(
+          '[RestaurantCard] shop=${restaurant.id} weekday=${now.weekday} dayOpen=${currentDaySchedule?.open}');
 
-      // Check if the day is marked as open
+      // If no schedule or day marked closed, treat as closed
       if (currentDaySchedule?.open != true) {
         return false;
       }
 
-      // Get time slots for today
       final timeSlots = currentDaySchedule?.time;
 
-      // If no time slots exist, fall back to the open flag
+      // Day is open and no time slots: open 24/7 for that day
       if (timeSlots == null || timeSlots.isEmpty) {
-        return currentDaySchedule?.open ?? false;
+        return true;
       }
 
-      final now = DateTime.now();
-      bool hasValidTimeSlot = false;
-
-      // Check if current time falls within any time slot
-      for (final timeSlot in timeSlots) {
-        if (timeSlot.startTime != null && timeSlot.endTime != null) {
-          hasValidTimeSlot = true;
-          try {
-            // Parse the ISO 8601 time strings
-            final startTime = DateTime.parse(timeSlot.startTime!);
-            final endTime = DateTime.parse(timeSlot.endTime!);
-
-            // Extract only the time portion (hours and minutes) for comparison
-            final currentTime =
-                DateTime(2000, 1, 1, now.hour, now.minute, now.second);
-            final startTimeOnly = DateTime(
-                2000, 1, 1, startTime.hour, startTime.minute, startTime.second);
-            final endTimeOnly = DateTime(
-                2000, 1, 1, endTime.hour, endTime.minute, endTime.second);
-
-            // Check if current time is within the time range
-            if (currentTime.isAfter(
-                    startTimeOnly.subtract(const Duration(seconds: 1))) &&
-                currentTime
-                    .isBefore(endTimeOnly.add(const Duration(seconds: 1)))) {
-              return true;
-            }
-          } catch (e) {
-            // If parsing fails, skip this time slot
-            logger.e('Error parsing time: $e');
-            continue;
-          }
+      Duration? clockFromIso(String iso) {
+        try {
+          // Treat the time portion as a plain clock (ignore timezone in the string)
+          final timePart = iso.split('T').last.replaceAll('Z', '');
+          final segments = timePart.split(':');
+          if (segments.length < 2) return null;
+          final h = int.parse(segments[0]);
+          final m = int.parse(segments[1]);
+          final s =
+              segments.length > 2 ? int.parse(segments[2].split('.').first) : 0;
+          return Duration(hours: h, minutes: m, seconds: s);
+        } catch (e) {
+          logger.e('Error parsing time: $e');
+          return null;
         }
       }
 
-      // If time slots exist but none have valid startTime/endTime, fall back to open flag
-      if (!hasValidTimeSlot) {
-        return currentDaySchedule?.open ?? false;
+      // Use local clock to compare against clock-only slot times
+      final nowClock =
+          Duration(hours: now.hour, minutes: now.minute, seconds: now.second);
+
+      var hasValidSlot = false;
+
+      for (final slot in timeSlots) {
+        if (slot.startTime == null || slot.endTime == null) continue;
+        final start = clockFromIso(slot.startTime!);
+        final end = clockFromIso(slot.endTime!);
+        if (start == null || end == null) continue;
+        hasValidSlot = true;
+
+        final crossesMidnight = end <= start;
+        logger.d(
+            '[RestaurantCard] slot start=$start end=$end crossesMidnight=$crossesMidnight now=$nowClock');
+
+        final inSameDayRange =
+            !crossesMidnight && nowClock >= start && nowClock <= end;
+        final inOvernightRange =
+            crossesMidnight && (nowClock >= start || nowClock <= end);
+
+        if (inSameDayRange || inOvernightRange) {
+          return true;
+        }
       }
 
-      // If we have valid time slots but current time doesn't fall within any, return false
+      // If we had slots but none matched, closed
+      if (hasValidSlot) return false;
+
+      // Slots list existed but all were invalid: treat as closed to be safe
       return false;
     }
 

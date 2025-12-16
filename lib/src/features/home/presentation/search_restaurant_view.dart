@@ -488,6 +488,7 @@ class SearchRestaurantView extends HookConsumerWidget {
                         id: shop.store!.id,
                         storeName: shop.store!.storeName,
                         storeDisplayImage: shop.store!.storeDisplayImage,
+                        salesOperation: shop.store!.salesOperation,
                       )
                     : null,
                 location: shop.location != null
@@ -499,6 +500,7 @@ class SearchRestaurantView extends HookConsumerWidget {
                         city: shop.location!.city,
                       )
                     : null,
+                isOpen: shop.isOpen,
               ),
             ),
           ),
@@ -575,9 +577,11 @@ class SearchRestaurantView extends HookConsumerWidget {
               restaurant: ShopResult(
                 id: meal.shop?.id,
                 shopName: meal.shop?.shopName,
+                isOpen: meal.shop?.isOpen,
                 store: meal.store != null
                     ? shops_model.Store(
                         id: meal.store!.id,
+                        salesOperation: meal.store!.salesOperation,
                         storeName: meal.store!.storeName,
                         storeDisplayImage: meal.store!.storeDisplayImage,
                       )

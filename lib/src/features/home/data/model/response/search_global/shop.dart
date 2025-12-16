@@ -8,12 +8,20 @@ class Shop {
   Store? store;
   String? id;
   String? shopName;
+  String? phone;
+  bool? isOpen;
 
-  Shop({this.location, this.store, this.id, this.shopName});
+  Shop(
+      {this.location,
+      this.store,
+      this.id,
+      this.shopName,
+      this.phone,
+      this.isOpen});
 
   @override
   String toString() =>
-      'Shop(location: $location, store: $store, id: $id, shopName: $shopName)';
+      'Shop(location: $location, store: $store, id: $id, shopName: $shopName, phone: $phone, isOpen: $isOpen)';
 
   factory Shop.fromMap(Map<String, dynamic> data) => Shop(
         location: data['location'] == null
@@ -24,6 +32,8 @@ class Shop {
             : Store.fromMap(data['store'] as Map<String, dynamic>),
         id: data['_id'] as String?,
         shopName: data['shopName'] as String?,
+        phone: data['phone'] as String?,
+        isOpen: data['isOpen'] as bool?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -31,6 +41,8 @@ class Shop {
         'store': store?.toMap(),
         '_id': id,
         'shopName': shopName,
+        'phone': phone,
+        'isOpen': isOpen,
       };
 
   /// `dart:convert`
@@ -50,12 +62,16 @@ class Shop {
     Store? store,
     String? id,
     String? shopName,
+    String? phone,
+    bool? isOpen,
   }) {
     return Shop(
       location: location ?? this.location,
       store: store ?? this.store,
       id: id ?? this.id,
       shopName: shopName ?? this.shopName,
+      phone: phone ?? this.phone,
+      isOpen: isOpen ?? this.isOpen,
     );
   }
 }

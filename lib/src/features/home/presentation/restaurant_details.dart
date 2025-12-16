@@ -45,17 +45,8 @@ class RestaurantDetailsView extends HookConsumerWidget {
     final shopId = restaurant.id;
     logger.d('shopId: $shopId');
     logger.d('storeId: $storeId');
-
-    // Function to get the current time and date on the device
-    String getCurrentDateTime() {
-      final now = DateTime.now();
-      return "${now.year.toString().padLeft(4, '0')}-"
-          "${now.month.toString().padLeft(2, '0')}-"
-          "${now.day.toString().padLeft(2, '0')} "
-          "${now.hour.toString().padLeft(2, '0')}:"
-          "${now.minute.toString().padLeft(2, '0')}:"
-          "${now.second.toString().padLeft(2, '0')}";
-    }
+    logger.d(
+        'restaurant.store?.salesOperation?.schedule: ${restaurant.store?.salesOperation?.schedule}');
 
     // Function to get the current day's schedule and times
     DaySchedule? getCurrentDaySchedule() {
@@ -85,70 +76,81 @@ class RestaurantDetailsView extends HookConsumerWidget {
       }
     }
 
-    // Function to check if restaurant is currently open
+    logger.d('restaurant.isOpen: ${restaurant.isOpen}');
+
+    // Function to check if restaurant is currently open (emergency + schedule)
     bool isRestaurantOpen() {
-      // If restaurant.isOpen is explicitly set (not null), it overrides the schedule
-      if (restaurant.isOpen != null) {
-        return restaurant.isOpen!;
+      // Emergency override: explicit false always closes
+      if (restaurant.isOpen == false) {
+        return false;
       }
 
-      // Otherwise, check the schedule
       final currentDaySchedule = getCurrentDaySchedule();
+      final now = DateTime.now();
+      logger.d(
+          '[RestaurantDetails] shop=${restaurant.id} weekday=${now.weekday} dayOpen=${currentDaySchedule?.open}');
 
-      // Check if the day is marked as open
+      // Closed if no schedule or day marked closed
       if (currentDaySchedule?.open != true) {
         return false;
       }
 
-      // Get time slots for today
       final timeSlots = currentDaySchedule?.time;
 
-      // If no time slots exist, fall back to the open flag
+      // Day open with no time slots: open all day
       if (timeSlots == null || timeSlots.isEmpty) {
-        return currentDaySchedule?.open ?? false;
+        return true;
       }
 
-      final now = DateTime.now();
-      bool hasValidTimeSlot = false;
-
-      // Check if current time falls within any time slot
-      for (final timeSlot in timeSlots) {
-        if (timeSlot.startTime != null && timeSlot.endTime != null) {
-          hasValidTimeSlot = true;
-          try {
-            // Parse the ISO 8601 time strings
-            final startTime = DateTime.parse(timeSlot.startTime!);
-            final endTime = DateTime.parse(timeSlot.endTime!);
-
-            // Extract only the time portion (hours and minutes) for comparison
-            final currentTime =
-                DateTime(2000, 1, 1, now.hour, now.minute, now.second);
-            final startTimeOnly = DateTime(
-                2000, 1, 1, startTime.hour, startTime.minute, startTime.second);
-            final endTimeOnly = DateTime(
-                2000, 1, 1, endTime.hour, endTime.minute, endTime.second);
-
-            // Check if current time is within the time range
-            if (currentTime.isAfter(
-                    startTimeOnly.subtract(const Duration(seconds: 1))) &&
-                currentTime
-                    .isBefore(endTimeOnly.add(const Duration(seconds: 1)))) {
-              return true;
-            }
-          } catch (e) {
-            // If parsing fails, skip this time slot
-            logger.e('Error parsing time: $e');
-            continue;
-          }
+      Duration? clockFromIso(String iso) {
+        try {
+          // Treat the time portion as a plain clock (ignore timezone in the string)
+          final timePart = iso.split('T').last.replaceAll('Z', '');
+          final segments = timePart.split(':');
+          if (segments.length < 2) return null;
+          final h = int.parse(segments[0]);
+          final m = int.parse(segments[1]);
+          final s =
+              segments.length > 2 ? int.parse(segments[2].split('.').first) : 0;
+          return Duration(hours: h, minutes: m, seconds: s);
+        } catch (e) {
+          logger.e('Error parsing time: $e');
+          return null;
         }
       }
 
-      // If time slots exist but none have valid startTime/endTime, fall back to open flag
-      if (!hasValidTimeSlot) {
-        return currentDaySchedule?.open ?? false;
+      // Use local clock to compare against clock-only slot times
+      final nowClock =
+          Duration(hours: now.hour, minutes: now.minute, seconds: now.second);
+
+      var hasValidSlot = false;
+
+      for (final timeSlot in timeSlots) {
+        if (timeSlot.startTime == null || timeSlot.endTime == null) continue;
+
+        final start = clockFromIso(timeSlot.startTime!);
+        final end = clockFromIso(timeSlot.endTime!);
+        if (start == null || end == null) continue;
+
+        hasValidSlot = true;
+        final crossesMidnight = end <= start;
+        logger.d(
+            '[RestaurantDetails] slot start=$start end=$end crossesMidnight=$crossesMidnight now=$nowClock');
+
+        final inSameDayRange =
+            !crossesMidnight && nowClock >= start && nowClock <= end;
+        final inOvernightRange =
+            crossesMidnight && (nowClock >= start || nowClock <= end);
+
+        if (inSameDayRange || inOvernightRange) {
+          return true;
+        }
       }
 
-      // If we have valid time slots but current time doesn't fall within any, return false
+      // We had slots but none matched; treat as closed
+      if (hasValidSlot) return false;
+
+      // Slots list existed but all invalid
       return false;
     }
 
@@ -156,7 +158,8 @@ class RestaurantDetailsView extends HookConsumerWidget {
     String formatTime(String? isoTime) {
       if (isoTime == null) return '';
       try {
-        final dateTime = DateTime.parse(isoTime);
+        // Parse as UTC to avoid TZ drift; only display clock portion
+        final dateTime = DateTime.parse(isoTime).toUtc();
         final hour = dateTime.hour;
         final minute = dateTime.minute;
         final period = hour >= 12 ? 'PM' : 'AM';
@@ -170,39 +173,6 @@ class RestaurantDetailsView extends HookConsumerWidget {
         logger.e('Error formatting time: $e');
         return '';
       }
-    }
-
-    // Function to get opening hours text
-    String getOpeningHoursText() {
-      final currentDaySchedule = getCurrentDaySchedule();
-
-      if (currentDaySchedule?.open != true) {
-        return 'CLOSED';
-      }
-
-      final endTime = currentDaySchedule?.time?.isNotEmpty == true
-          ? currentDaySchedule!.time!.first.endTime
-          : null;
-      final startTime = currentDaySchedule?.time?.isNotEmpty == true
-          ? currentDaySchedule!.time!.first.startTime
-          : null;
-
-      if (endTime != null) {
-        final formattedEndTime = formatTime(endTime);
-        if (formattedEndTime.isNotEmpty) {
-          return 'OPENING UNTIL $formattedEndTime';
-        }
-      }
-
-      // If no endTime but day is open, show generic message
-      if (startTime != null) {
-        final formattedStartTime = formatTime(startTime);
-        if (formattedStartTime.isNotEmpty) {
-          return 'OPEN FROM $formattedStartTime';
-        }
-      }
-
-      return 'OPEN';
     }
 
     // Function to get opening hours display text
@@ -234,16 +204,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
       return 'ALL DAY';
     }
 
-    // Get startTime and endTime for the current day
-    final currentDaySchedule = getCurrentDaySchedule();
-    final startTime = currentDaySchedule?.time?.isNotEmpty == true
-        ? currentDaySchedule!.time!.first.startTime
-        : null;
-    final endTime = currentDaySchedule?.time?.isNotEmpty == true
-        ? currentDaySchedule!.time!.first.endTime
-        : null;
     final isOpenNow = isRestaurantOpen();
-    final openingHoursText = getOpeningHoursText();
     final openingHoursDisplayText = getOpeningHoursDisplayText();
 
     useEffect(() {
@@ -520,7 +481,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          "${restaurant.numberOfFavorites}",
+                          "${restaurant.numberOfFavorites ?? 0}",
                           style: const TextStyle(
                             fontSize: 12,
                             color: kcPrimaryNeutral500,
@@ -540,7 +501,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                         SvgPicture.asset('asset/svgs/delivery_icon.svg'),
                         horizontalSpaceTiny,
                         Text(
-                          "From ₦${restaurant.deliveryFee}",
+                          "From ₦${restaurant.deliveryFee ?? 0}",
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[600],
@@ -956,8 +917,6 @@ class RestaurantDetailsView extends HookConsumerWidget {
   // Add this method to show the bottom sheet
   void _showAddToCartBottomSheet(
       BuildContext context, MealVariantMenuResult menuItem) {
-    final options = menuItem.meal?.optionGroup;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -988,8 +947,6 @@ class AddToCartBottomSheet extends HookConsumerWidget {
     final quantity = useState(1);
     final selectedItemsWithQuantity =
         useState<Map<String, Map<String, int>>>({});
-    final mealVariants =
-        ref.watch(shopControllerProvider).storeMealVariant.valueOrNull?.results;
 
     // Move useMemoized outside of AsyncValue.when
     final totalPrice = useMemoized(() {
@@ -1285,7 +1242,6 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                       final options = mealDetails
                                           .mealVariant?.meal?.optionGroup;
                                       bool hasRequiredSelections = true;
-                                      String? missingRequiredGroup;
 
                                       if (options != null) {
                                         for (final optionGroup in options) {
@@ -1330,8 +1286,6 @@ class AddToCartBottomSheet extends HookConsumerWidget {
 
                                             if (inStockSelectedItems.isEmpty) {
                                               hasRequiredSelections = false;
-                                              missingRequiredGroup =
-                                                  optionGroup.groupName;
                                               break;
                                             }
                                           }
