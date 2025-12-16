@@ -52,67 +52,105 @@ class HomeView extends HookConsumerWidget {
 
   // Helper function to check if restaurant is currently open based on schedule
   bool _isRestaurantOpen(ShopResult shop) {
-    // If shop.isOpen is explicitly set (not null), it overrides the schedule
-    if (shop.isOpen != null) {
-      return shop.isOpen!;
+    // Emergency override: explicit false always closes
+    if (shop.isOpen == false) {
+      return false;
+    }
+
+    // Check if schedule exists at all
+    final schedule = shop.store?.salesOperation?.schedule;
+
+    // If no schedule object exists at all, fall back to shop.isOpen flag
+    if (schedule == null) {
+      // If shop.isOpen is explicitly true, return true
+      // If shop.isOpen is null, default to true (open by default)
+      return shop.isOpen ?? true;
     }
 
     // Otherwise, check the schedule
     final currentDaySchedule = _getCurrentDaySchedule(shop);
 
-    // Check if the day is marked as open
-    if (currentDaySchedule?.open != true) {
+    // If no schedule exists for current day, fall back to shop.isOpen flag
+    if (currentDaySchedule == null) {
+      // If shop.isOpen is explicitly true, return true
+      // If shop.isOpen is null, default to true (open by default)
+      return shop.isOpen ?? true;
+    }
+
+    // If schedule exists but day is marked closed
+    if (currentDaySchedule.open != true) {
       return false;
     }
 
-    // Get time slots for today
-    final timeSlots = currentDaySchedule?.time;
+    final timeSlots = currentDaySchedule.time;
 
-    // If no time slots exist, fall back to the open flag
+    // Day open with no time slots: open all day
+    // When schedule says open:true and time array is empty, shop is open all day
+    // This takes precedence - if schedule says open, respect it
     if (timeSlots == null || timeSlots.isEmpty) {
-      return currentDaySchedule?.open ?? false;
+      return true;
     }
 
-    final now = DateTime.now();
-    bool hasValidTimeSlot = false;
-
-    // Check if current time falls within any time slot
-    for (final timeSlot in timeSlots) {
-      if (timeSlot.startTime != null && timeSlot.endTime != null) {
-        hasValidTimeSlot = true;
+    // Helper function to extract time from ISO string as Duration
+    Duration? clockFromIso(String iso) {
+      try {
+        // Parse as UTC DateTime first, then convert to local time
+        // This handles cases where times are stored in UTC but represent local business hours
+        final dateTime = DateTime.parse(iso).toLocal();
+        return Duration(
+            hours: dateTime.hour,
+            minutes: dateTime.minute,
+            seconds: dateTime.second);
+      } catch (e) {
+        // Fallback: try parsing as plain time (ignore timezone)
         try {
-          // Parse the ISO 8601 time strings
-          final startTime = DateTime.parse(timeSlot.startTime!);
-          final endTime = DateTime.parse(timeSlot.endTime!);
-
-          // Extract only the time portion (hours and minutes) for comparison
-          final currentTime =
-              DateTime(2000, 1, 1, now.hour, now.minute, now.second);
-          final startTimeOnly = DateTime(
-              2000, 1, 1, startTime.hour, startTime.minute, startTime.second);
-          final endTimeOnly = DateTime(
-              2000, 1, 1, endTime.hour, endTime.minute, endTime.second);
-
-          // Check if current time is within the time range
-          if (currentTime.isAfter(
-                  startTimeOnly.subtract(const Duration(seconds: 1))) &&
-              currentTime
-                  .isBefore(endTimeOnly.add(const Duration(seconds: 1)))) {
-            return true;
-          }
-        } catch (e) {
-          // If parsing fails, skip this time slot
-          continue;
+          final timePart = iso.split('T').last.replaceAll('Z', '');
+          final segments = timePart.split(':');
+          if (segments.length < 2) return null;
+          final h = int.parse(segments[0]);
+          final m = int.parse(segments[1]);
+          final s =
+              segments.length > 2 ? int.parse(segments[2].split('.').first) : 0;
+          return Duration(hours: h, minutes: m, seconds: s);
+        } catch (e2) {
+          return null;
         }
       }
     }
 
-    // If time slots exist but none have valid startTime/endTime, fall back to open flag
-    if (!hasValidTimeSlot) {
-      return currentDaySchedule?.open ?? false;
+    final now = DateTime.now();
+    // Use local clock to compare against clock-only slot times
+    final nowClock =
+        Duration(hours: now.hour, minutes: now.minute, seconds: now.second);
+
+    var hasValidSlot = false;
+
+    for (final timeSlot in timeSlots) {
+      if (timeSlot.startTime == null || timeSlot.endTime == null) continue;
+
+      final start = clockFromIso(timeSlot.startTime!);
+      final end = clockFromIso(timeSlot.endTime!);
+      if (start == null || end == null) continue;
+
+      hasValidSlot = true;
+      final crossesMidnight = end <= start;
+
+      // For same-day ranges: current time must be >= start AND < end (exclusive end)
+      // For overnight ranges: current time must be >= start OR < end
+      final inSameDayRange =
+          !crossesMidnight && nowClock >= start && nowClock < end;
+      final inOvernightRange =
+          crossesMidnight && (nowClock >= start || nowClock < end);
+
+      if (inSameDayRange || inOvernightRange) {
+        return true;
+      }
     }
 
-    // If we have valid time slots but current time doesn't fall within any, return false
+    // We had slots but none matched; treat as closed
+    if (hasValidSlot) return false;
+
+    // Slots list existed but all invalid
     return false;
   }
 

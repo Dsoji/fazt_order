@@ -31,6 +31,8 @@ class RestaurantCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Function to get the current day's schedule and times
+    logger.d(
+        'restaurant.store?.salesOperation?.schedule: ${restaurant.store?.salesOperation?.schedule}');
 
     DaySchedule? getCurrentDaySchedule() {
       final schedule = restaurant.store?.salesOperation?.schedule;
@@ -61,80 +63,140 @@ class RestaurantCard extends ConsumerWidget {
 
     // Helper function to check if restaurant is currently open based on emergency + schedule
     bool isRestaurantOpen() {
+      // Check if schedule exists at all - schedule takes precedence
+      final schedule = restaurant.store?.salesOperation?.schedule;
+      final now = DateTime.now();
+
+      // If schedule exists, use it (schedule overrides restaurant.isOpen flag)
+      if (schedule != null) {
+        final currentDaySchedule = getCurrentDaySchedule();
+        logger.d(
+            '[RestaurantCard] shop=${restaurant.id} weekday=${now.weekday} dayOpen=${currentDaySchedule?.open}');
+
+        // If no schedule exists for current day, check emergency override
+        if (currentDaySchedule == null) {
+          logger.d(
+              '[RestaurantCard] shop=${restaurant.id} no day schedule, checking emergency override');
+          // Emergency override: explicit false always closes
+          if (restaurant.isOpen == false) {
+            return false;
+          }
+          // If restaurant.isOpen is explicitly true, return true
+          // If restaurant.isOpen is null, default to true (open by default)
+          return restaurant.isOpen ?? true;
+        }
+
+        // If schedule exists but day is marked closed
+        if (currentDaySchedule.open != true) {
+          logger.d(
+              '[RestaurantCard] shop=${restaurant.id} day marked closed, open=${currentDaySchedule.open}');
+          return false;
+        }
+
+        final timeSlots = currentDaySchedule.time;
+        logger.d('timeSlots: $timeSlots');
+        logger.d(
+            '[RestaurantCard] shop=${restaurant.id} dayOpen=true, timeSlots=${timeSlots?.length ?? 0}, isEmpty=${timeSlots?.isEmpty ?? true}, isNull=${timeSlots == null}');
+
+        // Day open with no time slots: open all day
+        // When schedule says open:true and time array is empty, shop is open all day
+        // This MUST be checked BEFORE processing any time slots
+        // Check for null or empty list - if either is true, return open all day
+        final hasTimeSlots = timeSlots != null && timeSlots.isNotEmpty;
+        if (!hasTimeSlots) {
+          logger.d(
+              '[RestaurantCard] shop=${restaurant.id} open all day (no time slots), returning true immediately');
+          return true;
+        }
+
+        // Only process time slots if the array is NOT empty
+        logger.d(
+            '[RestaurantCard] shop=${restaurant.id} has ${timeSlots.length} time slot(s), processing...');
+
+        Duration? clockFromIso(String iso) {
+          try {
+            // Extract time portion from ISO string (times are stored in UTC format but represent local business hours)
+            // Example: "2025-11-21T09:00:00.000Z" -> extract "09:00:00" -> 9 AM local time
+            final timePart =
+                iso.split('T').last.replaceAll('Z', '').split('.').first;
+            final segments = timePart.split(':');
+            if (segments.length < 2) return null;
+            final h = int.parse(segments[0]);
+            final m = int.parse(segments[1]);
+            final s = segments.length > 2 ? int.parse(segments[2]) : 0;
+            return Duration(hours: h, minutes: m, seconds: s);
+          } catch (e) {
+            logger.e('[RestaurantCard] Error parsing time "$iso": $e');
+            return null;
+          }
+        }
+
+        // Use local clock to compare against clock-only slot times
+        final nowClock =
+            Duration(hours: now.hour, minutes: now.minute, seconds: now.second);
+
+        var hasValidSlot = false;
+
+        for (final slot in timeSlots) {
+          if (slot.startTime == null || slot.endTime == null) continue;
+          final start = clockFromIso(slot.startTime!);
+          final end = clockFromIso(slot.endTime!);
+          if (start == null || end == null) {
+            logger.e(
+                '[RestaurantCard] Failed to parse times: startTime=${slot.startTime}, endTime=${slot.endTime}');
+            continue;
+          }
+          hasValidSlot = true;
+
+          final crossesMidnight = end <= start;
+          logger.d(
+              '[RestaurantCard] shop=${restaurant.id} slot: startTime=${slot.startTime} -> $start, endTime=${slot.endTime} -> $end, nowClock=$nowClock, crossesMidnight=$crossesMidnight');
+
+          // For same-day ranges: current time must be >= start AND < end (exclusive end)
+          // For overnight ranges: current time must be >= start OR < end
+          final inSameDayRange =
+              !crossesMidnight && nowClock >= start && nowClock < end;
+          final inOvernightRange =
+              crossesMidnight && (nowClock >= start || nowClock < end);
+
+          logger.d(
+              '[RestaurantCard] shop=${restaurant.id} inSameDayRange=$inSameDayRange, inOvernightRange=$inOvernightRange');
+
+          if (inSameDayRange || inOvernightRange) {
+            logger.d(
+                '[RestaurantCard] shop=${restaurant.id} is OPEN (within time slot)');
+            return true;
+          }
+        }
+
+        // If we had slots but none matched, closed
+        if (hasValidSlot) {
+          logger.d(
+              '[RestaurantCard] shop=${restaurant.id} is CLOSED (outside time slots)');
+          return false;
+        }
+
+        // Slots list existed but all were invalid: treat as closed to be safe
+        logger.d(
+            '[RestaurantCard] shop=${restaurant.id} is CLOSED (no valid time slots)');
+        return false;
+      }
+
+      // No schedule exists - fall back to restaurant.isOpen flag
+      logger.d(
+          '[RestaurantCard] shop=${restaurant.id} no schedule, isOpen=${restaurant.isOpen}');
       // Emergency override: explicit false always closes
       if (restaurant.isOpen == false) {
         return false;
       }
-
-      final currentDaySchedule = getCurrentDaySchedule();
-      final now = DateTime.now();
-      logger.d(
-          '[RestaurantCard] shop=${restaurant.id} weekday=${now.weekday} dayOpen=${currentDaySchedule?.open}');
-
-      // If no schedule or day marked closed, treat as closed
-      if (currentDaySchedule?.open != true) {
-        return false;
-      }
-
-      final timeSlots = currentDaySchedule?.time;
-
-      // Day is open and no time slots: open 24/7 for that day
-      if (timeSlots == null || timeSlots.isEmpty) {
-        return true;
-      }
-
-      Duration? clockFromIso(String iso) {
-        try {
-          // Treat the time portion as a plain clock (ignore timezone in the string)
-          final timePart = iso.split('T').last.replaceAll('Z', '');
-          final segments = timePart.split(':');
-          if (segments.length < 2) return null;
-          final h = int.parse(segments[0]);
-          final m = int.parse(segments[1]);
-          final s =
-              segments.length > 2 ? int.parse(segments[2].split('.').first) : 0;
-          return Duration(hours: h, minutes: m, seconds: s);
-        } catch (e) {
-          logger.e('Error parsing time: $e');
-          return null;
-        }
-      }
-
-      // Use local clock to compare against clock-only slot times
-      final nowClock =
-          Duration(hours: now.hour, minutes: now.minute, seconds: now.second);
-
-      var hasValidSlot = false;
-
-      for (final slot in timeSlots) {
-        if (slot.startTime == null || slot.endTime == null) continue;
-        final start = clockFromIso(slot.startTime!);
-        final end = clockFromIso(slot.endTime!);
-        if (start == null || end == null) continue;
-        hasValidSlot = true;
-
-        final crossesMidnight = end <= start;
-        logger.d(
-            '[RestaurantCard] slot start=$start end=$end crossesMidnight=$crossesMidnight now=$nowClock');
-
-        final inSameDayRange =
-            !crossesMidnight && nowClock >= start && nowClock <= end;
-        final inOvernightRange =
-            crossesMidnight && (nowClock >= start || nowClock <= end);
-
-        if (inSameDayRange || inOvernightRange) {
-          return true;
-        }
-      }
-
-      // If we had slots but none matched, closed
-      if (hasValidSlot) return false;
-
-      // Slots list existed but all were invalid: treat as closed to be safe
-      return false;
+      // If restaurant.isOpen is explicitly true, return true
+      // If restaurant.isOpen is null, default to true (open by default)
+      return restaurant.isOpen ?? true;
     }
 
     final isOpen = isRestaurantOpen();
+    logger.d(
+        '[RestaurantCard] shop=${restaurant.id} FINAL isOpen=$isOpen, restaurant.isOpen=${restaurant.isOpen}');
 
     return GestureDetector(
       onTap: () {

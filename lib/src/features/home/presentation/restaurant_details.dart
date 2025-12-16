@@ -80,78 +80,136 @@ class RestaurantDetailsView extends HookConsumerWidget {
 
     // Function to check if restaurant is currently open (emergency + schedule)
     bool isRestaurantOpen() {
+      // Check if schedule exists at all - schedule takes precedence
+      final schedule = restaurant.store?.salesOperation?.schedule;
+      final now = DateTime.now();
+
+      // If schedule exists, use it (schedule overrides restaurant.isOpen flag)
+      if (schedule != null) {
+        final currentDaySchedule = getCurrentDaySchedule();
+        logger.d(
+            '[RestaurantDetails] shop=${restaurant.id} weekday=${now.weekday} dayOpen=${currentDaySchedule?.open}');
+
+        // If no schedule exists for current day, check emergency override
+        if (currentDaySchedule == null) {
+          logger.d(
+              '[RestaurantDetails] shop=${restaurant.id} no day schedule, checking emergency override');
+          // Emergency override: explicit false always closes
+          if (restaurant.isOpen == false) {
+            return false;
+          }
+          // If restaurant.isOpen is explicitly true, return true
+          // If restaurant.isOpen is null, default to true (open by default)
+          return restaurant.isOpen ?? true;
+        }
+
+        // If schedule exists but day is marked closed
+        if (currentDaySchedule.open != true) {
+          logger.d(
+              '[RestaurantDetails] shop=${restaurant.id} day marked closed, open=${currentDaySchedule.open}');
+          return false;
+        }
+
+        final timeSlots = currentDaySchedule.time;
+        logger.d('timeSlots: $timeSlots');
+        logger.d(
+            '[RestaurantDetails] shop=${restaurant.id} dayOpen=true, timeSlots=${timeSlots?.length ?? 0}, isEmpty=${timeSlots?.isEmpty ?? true}, isNull=${timeSlots == null}');
+
+        // Day open with no time slots: open all day
+        // When schedule says open:true and time array is empty, shop is open all day
+        // This MUST be checked BEFORE processing any time slots
+        // Check for null or empty list - if either is true, return open all day
+        final hasTimeSlots = timeSlots != null && timeSlots.isNotEmpty;
+        if (!hasTimeSlots) {
+          logger.d(
+              '[RestaurantDetails] shop=${restaurant.id} open all day (no time slots), returning true immediately');
+          return true;
+        }
+
+        // Only process time slots if the array is NOT empty
+        logger.d(
+            '[RestaurantDetails] shop=${restaurant.id} has ${timeSlots.length} time slot(s), processing...');
+
+        Duration? clockFromIso(String iso) {
+          try {
+            // Extract time portion from ISO string (times are stored in UTC format but represent local business hours)
+            // Example: "2025-11-21T09:00:00.000Z" -> extract "09:00:00" -> 9 AM local time
+            final timePart =
+                iso.split('T').last.replaceAll('Z', '').split('.').first;
+            final segments = timePart.split(':');
+            if (segments.length < 2) return null;
+            final h = int.parse(segments[0]);
+            final m = int.parse(segments[1]);
+            final s = segments.length > 2 ? int.parse(segments[2]) : 0;
+            return Duration(hours: h, minutes: m, seconds: s);
+          } catch (e) {
+            logger.e('[RestaurantDetails] Error parsing time "$iso": $e');
+            return null;
+          }
+        }
+
+        // Use local clock to compare against clock-only slot times
+        final nowClock =
+            Duration(hours: now.hour, minutes: now.minute, seconds: now.second);
+
+        var hasValidSlot = false;
+
+        for (final timeSlot in timeSlots) {
+          if (timeSlot.startTime == null || timeSlot.endTime == null) continue;
+
+          final start = clockFromIso(timeSlot.startTime!);
+          final end = clockFromIso(timeSlot.endTime!);
+          if (start == null || end == null) {
+            logger.e(
+                '[RestaurantDetails] Failed to parse times: startTime=${timeSlot.startTime}, endTime=${timeSlot.endTime}');
+            continue;
+          }
+
+          hasValidSlot = true;
+          final crossesMidnight = end <= start;
+          logger.d(
+              '[RestaurantDetails] shop=${restaurant.id} slot: startTime=${timeSlot.startTime} -> $start, endTime=${timeSlot.endTime} -> $end, nowClock=$nowClock, crossesMidnight=$crossesMidnight');
+
+          // For same-day ranges: current time must be >= start AND < end (exclusive end)
+          // For overnight ranges: current time must be >= start OR < end
+          final inSameDayRange =
+              !crossesMidnight && nowClock >= start && nowClock < end;
+          final inOvernightRange =
+              crossesMidnight && (nowClock >= start || nowClock < end);
+
+          logger.d(
+              '[RestaurantDetails] shop=${restaurant.id} inSameDayRange=$inSameDayRange, inOvernightRange=$inOvernightRange');
+
+          if (inSameDayRange || inOvernightRange) {
+            logger.d(
+                '[RestaurantDetails] shop=${restaurant.id} is OPEN (within time slot)');
+            return true;
+          }
+        }
+
+        // We had slots but none matched; treat as closed
+        if (hasValidSlot) {
+          logger.d(
+              '[RestaurantDetails] shop=${restaurant.id} is CLOSED (outside time slots)');
+          return false;
+        }
+
+        // Slots list existed but all invalid: treat as closed to be safe
+        logger.d(
+            '[RestaurantDetails] shop=${restaurant.id} is CLOSED (no valid time slots)');
+        return false;
+      }
+
+      // No schedule exists - fall back to restaurant.isOpen flag
+      logger.d(
+          '[RestaurantDetails] shop=${restaurant.id} no schedule, isOpen=${restaurant.isOpen}');
       // Emergency override: explicit false always closes
       if (restaurant.isOpen == false) {
         return false;
       }
-
-      final currentDaySchedule = getCurrentDaySchedule();
-      final now = DateTime.now();
-      logger.d(
-          '[RestaurantDetails] shop=${restaurant.id} weekday=${now.weekday} dayOpen=${currentDaySchedule?.open}');
-
-      // Closed if no schedule or day marked closed
-      if (currentDaySchedule?.open != true) {
-        return false;
-      }
-
-      final timeSlots = currentDaySchedule?.time;
-
-      // Day open with no time slots: open all day
-      if (timeSlots == null || timeSlots.isEmpty) {
-        return true;
-      }
-
-      Duration? clockFromIso(String iso) {
-        try {
-          // Treat the time portion as a plain clock (ignore timezone in the string)
-          final timePart = iso.split('T').last.replaceAll('Z', '');
-          final segments = timePart.split(':');
-          if (segments.length < 2) return null;
-          final h = int.parse(segments[0]);
-          final m = int.parse(segments[1]);
-          final s =
-              segments.length > 2 ? int.parse(segments[2].split('.').first) : 0;
-          return Duration(hours: h, minutes: m, seconds: s);
-        } catch (e) {
-          logger.e('Error parsing time: $e');
-          return null;
-        }
-      }
-
-      // Use local clock to compare against clock-only slot times
-      final nowClock =
-          Duration(hours: now.hour, minutes: now.minute, seconds: now.second);
-
-      var hasValidSlot = false;
-
-      for (final timeSlot in timeSlots) {
-        if (timeSlot.startTime == null || timeSlot.endTime == null) continue;
-
-        final start = clockFromIso(timeSlot.startTime!);
-        final end = clockFromIso(timeSlot.endTime!);
-        if (start == null || end == null) continue;
-
-        hasValidSlot = true;
-        final crossesMidnight = end <= start;
-        logger.d(
-            '[RestaurantDetails] slot start=$start end=$end crossesMidnight=$crossesMidnight now=$nowClock');
-
-        final inSameDayRange =
-            !crossesMidnight && nowClock >= start && nowClock <= end;
-        final inOvernightRange =
-            crossesMidnight && (nowClock >= start || nowClock <= end);
-
-        if (inSameDayRange || inOvernightRange) {
-          return true;
-        }
-      }
-
-      // We had slots but none matched; treat as closed
-      if (hasValidSlot) return false;
-
-      // Slots list existed but all invalid
-      return false;
+      // If restaurant.isOpen is explicitly true, return true
+      // If restaurant.isOpen is null, default to true (open by default)
+      return restaurant.isOpen ?? true;
     }
 
     // Function to format time from ISO string to readable format (e.g., "2PM")
@@ -205,6 +263,8 @@ class RestaurantDetailsView extends HookConsumerWidget {
     }
 
     final isOpenNow = isRestaurantOpen();
+    logger.d(
+        '[RestaurantDetails] shop=${restaurant.id} FINAL isOpenNow=$isOpenNow, restaurant.isOpen=${restaurant.isOpen}');
     final openingHoursDisplayText = getOpeningHoursDisplayText();
 
     useEffect(() {
