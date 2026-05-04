@@ -23,12 +23,14 @@ class AuthenticationRepository {
 
   Future<Result<FailureHandler, UserModel>> authSignIn({
     required String email,
-    required String pswrd,
+    String? pswrd,
+    String? code,
   }) async {
     try {
       final data = await authService.signInUser(
         email: email,
         password: pswrd,
+        code: code,
       );
 
       if (data.isSuccess) {
@@ -37,9 +39,9 @@ class AuthenticationRepository {
         return Error(
           data.error ??
               FailureHandler(
-                message: 'Failed to fetch products',
+                message: 'Failed to log in',
                 stackTrace: StackTrace.current,
-                exception: Exception('Failed to fetch products'),
+                exception: Exception('Failed to log in'),
               ),
         );
       }
@@ -50,18 +52,23 @@ class AuthenticationRepository {
 
   Future<Result<FailureHandler, UserModel>> authSignUp({
     required String email,
-    required String password,
     required String firstName,
     required String lastName,
     required String phone,
+    String? password,
+    String? signupOtpToken,
+    String? referralCode,
   }) async {
     try {
       final data = await authService.registerUser(
-          email: email,
-          password: password,
-          firstName: firstName,
-          lastName: lastName,
-          phone: phone);
+        email: email,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+        phone: phone,
+        signupOtpToken: signupOtpToken,
+        referralCode: referralCode,
+      );
 
       if (data.isSuccess) {
         return Success(data.value ?? UserModel());
@@ -72,6 +79,60 @@ class AuthenticationRepository {
                 message: 'Failed to register user',
                 stackTrace: StackTrace.current,
                 exception: Exception('Failed to register user'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, String>> sendEmailOtp({
+    required String email,
+    required String purpose,
+  }) async {
+    try {
+      final data =
+          await authService.sendEmailOtp(email: email, purpose: purpose);
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Failed to send OTP',
+                stackTrace: StackTrace.current,
+                exception: Exception('Failed to send OTP'),
+              ),
+        );
+      }
+    } on FailureHandler catch (failure) {
+      return Error(failure);
+    }
+  }
+
+  Future<Result<FailureHandler, String>> verifyEmailOtp({
+    required String email,
+    required String otp,
+    required String purpose,
+  }) async {
+    try {
+      final data = await authService.verifyEmailOtp(
+        email: email,
+        otp: otp,
+        purpose: purpose,
+      );
+
+      if (data.isSuccess) {
+        return Success(data.value ?? '');
+      } else {
+        return Error(
+          data.error ??
+              FailureHandler(
+                message: 'Invalid or expired OTP',
+                stackTrace: StackTrace.current,
+                exception: Exception('Invalid or expired OTP'),
               ),
         );
       }

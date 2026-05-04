@@ -14,6 +14,58 @@ import '../home/data/model/response/my_orders_list/result.dart';
 
 final logger = Logger();
 
+class OngoingParcelStatusHelper {
+  static String getGifAsset(String? status) {
+    switch (status) {
+      case 'paid':
+      case 'ready':
+      case 'accepted':
+        return 'asset/gif/onboard1.gif';
+      case 'preparing':
+      case 'in_transit':
+        return 'asset/gif/onboard3.gif';
+      case 'arrived':
+      case 'delivered':
+        return 'asset/gif/onboard2.gif';
+      default:
+        return 'asset/gif/onboard1.gif';
+    }
+  }
+
+  static String getStatusDescription(String? status) {
+    switch (status) {
+      case 'pending':
+        return "Waiting for payment to be processed.";
+      case 'paid':
+      case 'ready':
+        return "Parcel has been paid for, waiting for a rider to accept your order.";
+      case 'accepted':
+        return "Parcel is accepted by rider and on their way to the pickup location.";
+      case 'in_transit':
+        return "Parcel has been picked up and is on the way to you.";
+      case 'arrived':
+        return "Rider has arrived.";
+      case 'delivered':
+        return "Order has been delivered.";
+      default:
+        return "Waiting for rider to accept your order.";
+    }
+  }
+
+  static int getProgressStep(String? status) {
+    switch (status) {
+      case 'pending': return 0;
+      case 'paid': return 1;
+      case 'ready': return 1;
+      case 'accepted': return 1; // FIX: Was missed in progress bar, jumping to 5
+      case 'in_transit': return 2;
+      case 'arrived': return 3;
+      case 'delivered': return 4;
+      default: return 0;
+    }
+  }
+}
+
 class OngoingParcelOrderView extends HookConsumerWidget {
   final OrderResult orderItems;
 
@@ -21,20 +73,6 @@ class OngoingParcelOrderView extends HookConsumerWidget {
     super.key,
     required this.orderItems,
   });
-
-  // Helper to select Lottie animation based on currentStep
-  String _getLottieAsset(int step) {
-    if (step == 1 || step == 2) {
-      return 'asset/gif/onboard1.gif';
-    } else if (step == 3 || step == 4) {
-      return 'asset/gif/onboard3.gif';
-    } else if (step == 5 || step == 6) {
-      return 'asset/gif/onboard2.gif';
-    } else if (step == 7 || step == 8) {
-      return 'asset/gif/onboard4.gif';
-    }
-    return 'asset/gif/onboard1.gif';
-  }
 
   void _showCancelOrderDialog(BuildContext context) {
     showDialog(
@@ -85,30 +123,16 @@ class OngoingParcelOrderView extends HookConsumerWidget {
                 child: Column(
                   children: [
                     Image.asset(
+                        OngoingParcelStatusHelper.getGifAsset(orderItems.status),
                         height: 250,
                         width: 250,
-                        _getLottieAsset(orderItems.status == 'paid'
-                            ? 1
-                            : orderItems.status == 'preparing'
-                                ? 2
-                                : orderItems.status == 'in_transit'
-                                    ? 3
-                                    : 4)),
+                    ),
                     verticalSpaceSmall,
 
                     verticalSpaceSmall,
                     Text(
                       textAlign: TextAlign.center,
-                      orderItems.status == 'paid' ||
-                              orderItems.status == 'ready'
-                          ? "Parcel has been paid for, waiting for rider accept your order."
-                          : orderItems.status == 'accepted'
-                              ? "Parcel is accepted by ridera and on his way to the pickup location`"
-                              : orderItems.status == 'in_transit'
-                                  ? "Parcel has been picked up and is on the way to you"
-                                  : orderItems.status == 'arrived'
-                                      ? "Rider has arrived"
-                                      : "Order has been delivered",
+                      OngoingParcelStatusHelper.getStatusDescription(orderItems.status),
                       style: const TextStyle(
                           fontSize: 16,
                           color: kcPrimaryNeutral200,
@@ -124,16 +148,7 @@ class OngoingParcelOrderView extends HookConsumerWidget {
                     // ),
                     verticalSpaceSmall,
                     DashProgressBar(
-                        currentStep: orderItems.status == 'paid' ||
-                                orderItems.status == 'ready'
-                            ? 1
-                            : orderItems.status == 'in_transit'
-                                ? 2
-                                : orderItems.status == 'arrived'
-                                    ? 3
-                                    : orderItems.status == 'delivered'
-                                        ? 4
-                                        : 5,
+                        currentStep: OngoingParcelStatusHelper.getProgressStep(orderItems.status),
                         totalSteps: 5,
                         activeColor: kcPrimary200,
                         inactiveColor: kcPrimary800),

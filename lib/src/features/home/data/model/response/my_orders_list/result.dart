@@ -10,12 +10,14 @@ import 'status_history.dart';
 
 class OrderResult {
   DeliveryLocation? deliveryLocation;
+  DeliveryLocation? pickupLocation;
   String? orderNumber;
   String? orderType;
   String? orderStatus;
+  bool? isDeleted;
   User? user;
   Shop? shop;
-  String? store; // Changed back to String? since API returns string
+  String? store;
   List<Item>? items;
   int? packCount;
   String? deliveryType;
@@ -31,8 +33,11 @@ class OrderResult {
 
   OrderResult({
     this.deliveryLocation,
+    this.pickupLocation,
     this.orderNumber,
     this.orderType,
+    this.orderStatus,
+    this.isDeleted,
     this.user,
     this.shop,
     this.store,
@@ -52,7 +57,7 @@ class OrderResult {
 
   @override
   String toString() {
-    return 'Result(deliveryLocation: $deliveryLocation, orderNumber: $orderNumber, user: $user, shop: $shop, store: $store, items: $items, packCount: $packCount, deliveryType: $deliveryType, storeMessage: $storeMessage, status: $status, statusHistory: $statusHistory, payment: $payment, orderPlacedAt: $orderPlacedAt, createdAt: $createdAt, updatedAt: $updatedAt, id: $id, rideerOtp: $riderOtp)';
+    return 'OrderResult(deliveryLocation: $deliveryLocation, pickupLocation: $pickupLocation, orderNumber: $orderNumber, orderType: $orderType, orderStatus: $orderStatus, isDeleted: $isDeleted, user: $user, shop: $shop, store: $store, items: $items, packCount: $packCount, deliveryType: $deliveryType, storeMessage: $storeMessage, status: $status, statusHistory: $statusHistory, payment: $payment, orderPlacedAt: $orderPlacedAt, createdAt: $createdAt, updatedAt: $updatedAt, id: $id, riderOtp: $riderOtp)';
   }
 
   factory OrderResult.fromMap(Map<String, dynamic> data) => OrderResult(
@@ -60,15 +65,21 @@ class OrderResult {
             ? null
             : DeliveryLocation.fromMap(
                 data['deliveryLocation'] as Map<String, dynamic>),
+        pickupLocation: data['pickupLocation'] == null
+            ? null
+            : DeliveryLocation.fromMap(
+                data['pickupLocation'] as Map<String, dynamic>),
         orderNumber: data['orderNumber'] as String?,
         orderType: data['orderType'] as String?,
+        orderStatus: data['orderStatus'] as String?,
+        isDeleted: data['isDeleted'] as bool?,
         user: data['user'] == null
             ? null
             : User.fromMap(data['user'] as Map<String, dynamic>),
         shop: data['shop'] == null
             ? null
             : Shop.fromMap(data['shop'] as Map<String, dynamic>),
-        store: data['store'] as String?, // Changed back to String?
+        store: data['store'] as String?,
         items: (data['items'] as List<dynamic>?)
             ?.map((e) => Item.fromMap(e as Map<String, dynamic>))
             .toList(),
@@ -92,16 +103,19 @@ class OrderResult {
             ? null
             : DateTime.parse(data['updatedAt'] as String),
         id: data['id'] as String?,
-        riderOtp: data['riderOTP'] as int,
+        riderOtp: data['riderOTP'] as int?,
       );
 
   Map<String, dynamic> toMap() => {
         'deliveryLocation': deliveryLocation?.toMap(),
+        'pickupLocation': pickupLocation?.toMap(),
         'orderNumber': orderNumber,
         'orderType': orderType,
+        'orderStatus': orderStatus,
+        'isDeleted': isDeleted,
         'user': user?.toMap(),
         'shop': shop?.toMap(),
-        'store': store, // Changed back to just store (not store?.toMap())
+        'store': store,
         'items': items?.map((e) => e.toMap()).toList(),
         'packCount': packCount,
         'deliveryType': deliveryType,
@@ -118,23 +132,26 @@ class OrderResult {
 
   /// `dart:convert`
   ///
-  /// Parses the string and returns the resulting Json object as [Result].
+  /// Parses the string and returns the resulting Json object as [OrderResult].
   factory OrderResult.fromJson(String data) {
     return OrderResult.fromMap(json.decode(data) as Map<String, dynamic>);
   }
 
   /// `dart:convert`
   ///
-  /// Converts [Result] to a JSON string.
+  /// Converts [OrderResult] to a JSON string.
   String toJson() => json.encode(toMap());
 
   OrderResult copyWith({
     DeliveryLocation? deliveryLocation,
+    DeliveryLocation? pickupLocation,
     String? orderNumber,
     String? orderType,
+    String? orderStatus,
+    bool? isDeleted,
     User? user,
     Shop? shop,
-    String? store, // Changed back to String?
+    String? store,
     List<Item>? items,
     int? packCount,
     String? deliveryType,
@@ -150,10 +167,13 @@ class OrderResult {
   }) {
     return OrderResult(
       deliveryLocation: deliveryLocation ?? this.deliveryLocation,
+      pickupLocation: pickupLocation ?? this.pickupLocation,
       orderNumber: orderNumber ?? this.orderNumber,
+      orderType: orderType ?? this.orderType,
+      orderStatus: orderStatus ?? this.orderStatus,
+      isDeleted: isDeleted ?? this.isDeleted,
       user: user ?? this.user,
       shop: shop ?? this.shop,
-      orderType: orderType ?? this.orderType,
       store: store ?? this.store,
       items: items ?? this.items,
       packCount: packCount ?? this.packCount,

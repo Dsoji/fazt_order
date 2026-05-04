@@ -1,24 +1,34 @@
 import 'dart:async';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 import '../../../../common/res/app_assets.dart';
 import '../../../../common/res/app_colors.dart';
 import '../../../../common/widgets/reusable_buttons.dart';
+import '../../../profile/data/controller/profile_controller.dart';
 import '../../data/controller/authentication_controller.dart';
-import '../../map/map_location_screen.dart';
 
 // Separate widget for countdown to isolate rebuilds
 class AccountVerificationScreen extends ConsumerStatefulWidget {
   const AccountVerificationScreen({
     super.key,
     required this.email,
+    this.firstName,
+    this.lastName,
+    this.phone,
+    this.referralCode,
+    this.purpose = 'signup',
   });
   final String email;
+  final String? firstName;
+  final String? lastName;
+  final String? phone;
+  final String? referralCode;
+  final String purpose;
 
   @override
   ConsumerState<AccountVerificationScreen> createState() =>
@@ -180,89 +190,141 @@ class _AccountVerificationScreenState
                 ),
               ),
               const Gap(24),
-              // Isolated countdown widget
-              RichText(
-                text: TextSpan(
-                  text: "Didn't receive the OTP? ",
-                  style: const TextStyle(
-                      color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400),
-                  children: <TextSpan>[
-                    TextSpan(
-                      text: ' Resend OTP',
-                      style: const TextStyle(
-                          color: Color(0xFF903E9D),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400),
-                      recognizer: TapGestureRecognizer()
-                        ..onTap = () {
-                          if (_start == 0) {
-                            // _reverifyUser(context);
-                            otpController.clear();
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                duration: Duration(seconds: 5),
-                                backgroundColor: Colors.black,
-                                content: Text(
-                                  'Please wait for the timer',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 16),
+              Builder(
+                builder: (context) {
+                  final isResending = ref.watch(authenticationControllerProvider
+                      .select((s) => s.sendOtp.isLoading));
+                  final canResend = _start == 0 && !isResending;
+
+                  Future<void> handleResend() async {
+                    otpController.clear();
+                    final sent = await ref
+                        .read(authenticationControllerProvider.notifier)
+                        .sendEmailOtp(
+                          email: widget.email,
+                          purpose: widget.purpose,
+                        );
+                    if (!mounted || !sent) return;
+                    setState(() {
+                      _start = 60;
+                    });
+                    startTimer();
+                  }
+
+                  return Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Didn't receive the OTP? ",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          if (isResending)
+                            const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF903E9D),
+                              ),
+                            )
+                          else
+                            GestureDetector(
+                              onTap: canResend ? handleResend : null,
+                              child: Text(
+                                canResend
+                                    ? 'Resend OTP'
+                                    : 'Resend OTP in ${_start}s',
+                                style: TextStyle(
+                                  color: canResend
+                                      ? const Color(0xFF903E9D)
+                                      : Colors.grey[700],
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            );
-                          }
-                        },
-                    ),
-                    const TextSpan(
-                      text: ' or ',
-                      style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400),
-                    ),
-                    TextSpan(
-                      text: '\nChange Email Address',
-                      style: const TextStyle(
-                          color: AppColors.brand400,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400),
-                      recognizer: TapGestureRecognizer()
-                        ..onTap = () {
-                          Navigator.pop(context);
-                        },
-                    ),
-                  ],
-                ),
+                            ),
+                        ],
+                      ),
+                      const Gap(8),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: const Text(
+                          'Change Email Address',
+                          style: TextStyle(
+                            color: AppColors.brand400,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
 
               const Gap(48),
               // Submit button
-              FullButton(
-                text: "Continue",
-                width: double.infinity,
-                height: 48,
-                onPressed: () async {
-                  if (!formKey.currentState!.validate()) {
-                    return;
-                  }
-                  final result = await authService.emailConfirm(
-                    widget.email,
-                    otpController.text.trim(),
-                  );
+              Consumer(
+                builder: (context, ref, _) {
+                  final authState = ref.watch(authenticationControllerProvider);
+                  final isBusy = authState.verifyOtp.isLoading ||
+                      authState.signUp.isLoading;
+                  return FullButton(
+                    text: "Continue",
+                    width: double.infinity,
+                    height: 48,
+                    isLoading: isBusy,
+                    onPressed: () async {
+                      if (!formKey.currentState!.validate()) {
+                        return;
+                      }
 
-                  if (result == true) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const MapLocationScreen(),
-                      ),
-                    );
-                  }
+                      final proofToken = await authService.verifyEmailOtp(
+                        email: widget.email,
+                        otp: otpController.text.trim(),
+                        purpose: widget.purpose,
+                      );
+
+                      if (!context.mounted) return;
+                      if (proofToken == null || proofToken.isEmpty) return;
+
+                      final firstName = widget.firstName;
+                      final lastName = widget.lastName;
+                      final phone = widget.phone;
+                      if (firstName == null ||
+                          lastName == null ||
+                          phone == null) {
+                        return;
+                      }
+
+                      final signedUp = await authService.signUp(
+                        email: widget.email,
+                        firstName: firstName,
+                        lastName: lastName,
+                        phone: phone,
+                        referralCode: widget.referralCode,
+                        signupOtpToken: proofToken,
+                      );
+
+                      if (!context.mounted) return;
+                      if (signedUp) {
+                        await ref
+                            .read(profileControllerProvider.notifier)
+                            .fetchProfile();
+                        if (!context.mounted) return;
+                        context.go('/set-location');
+                      }
+                    },
+                    color: AppColors.brand400,
+                    textColor: Colors.white,
+                  );
                 },
-                color: AppColors.brand400,
-                textColor: Colors.white,
               ),
               const Gap(16),
             ],

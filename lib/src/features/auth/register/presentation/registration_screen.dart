@@ -1,8 +1,8 @@
-import 'package:fazt_order/src/features/auth/register/presentation/account_verification.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:logger/logger.dart';
 
@@ -11,7 +11,6 @@ import '../../../../common/utils/validator.dart';
 import '../../../../common/widgets/custom_textfield.dart';
 import '../../../../common/widgets/reusable_buttons.dart';
 import '../../data/controller/authentication_controller.dart';
-import '../../login/presentation/login_screen.dart';
 
 final logger = Logger();
 
@@ -20,18 +19,16 @@ class RegistrationScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Using hooks for controllers and state
     final firstNameController = useTextEditingController();
     final lastNameController = useTextEditingController();
     final emailController = useTextEditingController();
-    final createPasswordController = useTextEditingController();
-    final confirmPasswordController = useTextEditingController();
     final numberController = useTextEditingController();
-    // State hooks for password visibility
-    final isCreatePasswordVisible = useState(false);
-    final isConfirmPasswordVisible = useState(false);
-//
+    final referralCodeController = useTextEditingController();
+
     final formKey = GlobalKey<FormState>();
+
+    final isSendingOtp =
+        ref.watch(authenticationControllerProvider).sendOtp.isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.brand900,
@@ -74,39 +71,38 @@ class RegistrationScreen extends HookConsumerWidget {
                   const Text(
                     'Let get you onboarded by creating an account with us',
                     style: TextStyle(color: AppColors.neutral300, fontSize: 16),
+                    textAlign: TextAlign.center,
                   ),
                   const Gap(24),
-                  CustomFormTextField(
-                    fillColor: AppColors.brand980,
-                    labelText: 'First name',
-                    hintText: "First name",
-                    fieldName: "First name",
-                    keyboardType: TextInputType.text,
-                    controller: firstNameController, // First name controller
-                    validator: (value) =>
-                        Validators.requiredField(value, "First name"),
-                  ),
-                  const Gap(16),
-                  CustomFormTextField(
-                    fillColor: AppColors.brand980,
-                    labelText: 'Last name',
-                    hintText: "Last name",
-                    fieldName: "Last name",
-                    keyboardType: TextInputType.text,
-                    controller: lastNameController, // Last name controller
-                    validator: (value) =>
-                        Validators.requiredField(value, "Last name"),
-                  ),
-                  const Gap(16),
-                  CustomFormTextField(
-                    fillColor: AppColors.brand980,
-                    labelText: 'Phone number',
-                    hintText: "08012345678",
-                    fieldName: "Phone number",
-                    keyboardType: TextInputType.phone,
-                    controller: numberController, // Last name controller
-                    validator: (value) =>
-                        Validators.requiredField(value, "Phone number"),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: CustomFormTextField(
+                          fillColor: AppColors.brand980,
+                          labelText: 'First name',
+                          hintText: "First name",
+                          fieldName: "First name",
+                          keyboardType: TextInputType.text,
+                          controller: firstNameController,
+                          validator: (value) =>
+                              Validators.requiredField(value, "First name"),
+                        ),
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: CustomFormTextField(
+                          fillColor: AppColors.brand980,
+                          labelText: 'Last name',
+                          hintText: "Last name",
+                          fieldName: "Last name",
+                          keyboardType: TextInputType.text,
+                          controller: lastNameController,
+                          validator: (value) =>
+                              Validators.requiredField(value, "Last name"),
+                        ),
+                      ),
+                    ],
                   ),
                   const Gap(16),
                   CustomFormTextField(
@@ -115,41 +111,33 @@ class RegistrationScreen extends HookConsumerWidget {
                     hintText: "Email Address",
                     fieldName: "Email Address",
                     keyboardType: TextInputType.emailAddress,
-                    controller: emailController, // Email address controller
+                    controller: emailController,
                     validator: Validators.emailValidator,
                   ),
                   const Gap(16),
                   CustomFormTextField(
-                    fillColor: AppColors.neutral950,
-                    labelText: 'Create Password',
-                    hintText: "*******",
-                    fieldName: "Create Password",
-                    keyboardType: TextInputType.text,
-                    controller:
-                        createPasswordController, // Create password controller
-                    isPassword: true,
-                    validator: Validators.passwordValidator,
+                    fillColor: AppColors.brand980,
+                    labelText: 'Phone number',
+                    hintText: "08012345678",
+                    fieldName: "Phone number",
+                    keyboardType: TextInputType.phone,
+                    controller: numberController,
+                    validator: Validators.phoneValidator,
                   ),
                   const Gap(16),
                   CustomFormTextField(
-                    fillColor: AppColors.neutral950,
-                    labelText: 'Confirm Password',
-                    hintText: "*******",
-                    fieldName: "Confirm Password",
+                    fillColor: AppColors.brand980,
+                    labelText: 'Referral code (optional)',
+                    hintText: "Enter referral code",
+                    fieldName: "Referral code",
                     keyboardType: TextInputType.text,
-                    controller:
-                        confirmPasswordController, // Confirm password controller
-                    isPassword: true,
-                    validator: Validators.passwordValidator,
+                    controller: referralCodeController,
                   ),
                   const Gap(48),
                   FullButton(
                     text: "Continue",
                     width: double.infinity,
-                    isLoading: ref
-                        .watch(authenticationControllerProvider)
-                        .signUp
-                        .isLoading,
+                    isLoading: isSendingOtp,
                     height: 48,
                     onPressed: () async {
                       final authService =
@@ -158,24 +146,30 @@ class RegistrationScreen extends HookConsumerWidget {
                       if (!formKey.currentState!.validate()) {
                         return;
                       }
-                      final result = await authService.signUp(
-                        email: emailController.text.trim(),
-                        password: createPasswordController.text.trim(),
-                        firstName: firstNameController.text.trim(),
-                        lastName: lastNameController.text.trim(),
-                        phone: numberController.text.trim(),
+
+                      final email = emailController.text.trim();
+                      final firstName = firstNameController.text.trim();
+                      final lastName = lastNameController.text.trim();
+                      final phone = numberController.text.trim();
+                      final referralCode =
+                          referralCodeController.text.trim();
+
+                      final sent = await authService.sendEmailOtp(
+                        email: email,
+                        purpose: 'signup',
                       );
-                      logger.d(result);
-                      if (result == true) {
-                        logger.d('Navigating...');
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AccountVerificationScreen(
-                              email: emailController.text.trim(),
-                            ),
-                          ),
-                        );
+
+                      if (!context.mounted) return;
+                      if (sent) {
+                        context.push('/verify-otp', extra: {
+                          'email': email,
+                          'firstName': firstName,
+                          'lastName': lastName,
+                          'phone': phone,
+                          if (referralCode.isNotEmpty)
+                            'referralCode': referralCode,
+                          'purpose': 'signup',
+                        });
                       }
                     },
                     color: AppColors.brand400,
@@ -187,62 +181,26 @@ class RegistrationScreen extends HookConsumerWidget {
                       text: TextSpan(
                         text: 'Already have an account? ',
                         style: const TextStyle(
-                          color: Colors.black, // Normal text color
-                          fontSize: 12, // Normal text size
+                          color: Colors.black,
+                          fontSize: 12,
                         ),
                         children: [
                           TextSpan(
                             text: 'Log In',
                             style: const TextStyle(
-                              color: AppColors
-                                  .brand400, // Green color for "Log In"
+                              color: AppColors.brand400,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              decoration: TextDecoration
-                                  .underline, // Underline "Log In"
+                              decoration: TextDecoration.underline,
                             ),
                             recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                // Navigate to login screen or handle login action
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const LoginScreen(),
-                                  ),
-                                );
-                              },
+                              ..onTap = () => context.go('/login'),
                           ),
                         ],
                       ),
                     ),
                   ),
                   const Gap(16),
-                  // const OrDivider(),
-                  // const Gap(16),
-                  // Row(
-                  //   mainAxisAlignment: MainAxisAlignment.center,
-                  //   children: [
-                  //     ImgBton(
-                  //       width: 160,
-                  //       height: 48,
-                  //       onPressed: () {},
-                  //       color: AppColors.brand800,
-                  //       image: ImageAssets.google,
-                  //       bgColor: AppColors.brand980,
-                  //       radius: 50,
-                  //     ),
-                  //     const Gap(24),
-                  //     ImgBton(
-                  //       width: 160,
-                  //       height: 48,
-                  //       onPressed: () {},
-                  //       color: AppColors.brand800,
-                  //       image: ImageAssets.apple,
-                  //       bgColor: AppColors.brand980,
-                  //       radius: 50,
-                  //     ),
-                  //   ],
-                  // ),
                 ],
               ),
             ),

@@ -71,19 +71,23 @@ class NotificationService {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
     // Step 4: Save FCM Token
-    String? newToken = await FirebaseMessaging.instance.getToken();
-    if (newToken != null) {
-      var box = Hive.box('data');
-      String? savedToken = box.get('fcm_token');
-      _logger.d("Current saved token: $savedToken, New token: $newToken");
-      if (savedToken != newToken) {
-        await box.put('fcm_token', newToken);
-        _logger.d("✅ FCM Token saved: $newToken");
+    try {
+      String? newToken = await FirebaseMessaging.instance.getToken();
+      if (newToken != null) {
+        var box = Hive.box('data');
+        String? savedToken = box.get('fcm_token');
+        _logger.d("Current saved token: $savedToken, New token: $newToken");
+        if (savedToken != newToken) {
+          await box.put('fcm_token', newToken);
+          _logger.d("✅ FCM Token saved: $newToken");
+        } else {
+          _logger.d("✅ FCM Token already saved (same value)");
+        }
       } else {
-        _logger.d("✅ FCM Token already saved (same value)");
+        _logger.w("⚠️ FCM Token is null!");
       }
-    } else {
-      _logger.w("⚠️ FCM Token is null!");
+    } catch (e) {
+      _logger.w("⚠️ Could not get FCM token (expected on simulator): $e");
     }
 
     // Step 5: Listen for token refresh

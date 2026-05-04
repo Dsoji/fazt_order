@@ -1,33 +1,54 @@
 import 'package:fazt_order/src/common/widgets/or_divider.dart';
 import 'package:fazt_order/src/features/auth/data/controller/authentication_controller.dart';
-import 'package:fazt_order/src/features/dashboard_view.dart';
-import 'package:fazt_order/src/features/home/presentation/home_preview.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:pin_code_fields/pin_code_fields.dart';
 
 import '../../../../common/res/app_assets.dart';
 import '../../../../common/res/app_colors.dart';
 import '../../../../common/utils/validator.dart';
 import '../../../../common/widgets/custom_textfield.dart';
+import '../../../../router/app_router.dart';
+import '../../../profile/data/controller/profile_controller.dart';
 import '../../../../common/widgets/reusable_buttons.dart';
-import '../../register/presentation/registration_screen.dart';
 
 class LoginScreen extends HookConsumerWidget {
   const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Using hooks for controllers and state
     final emailController = useTextEditingController();
-    final passwordController = useTextEditingController();
+    final formKey = GlobalKey<FormState>();
 
-    // State hooks for password visibility
-    final isPasswordVisible = useState(false);
+    final isSendingOtp =
+        ref.watch(authenticationControllerProvider).sendOtp.isLoading;
+
+    Future<void> handleContinue() async {
+      if (!formKey.currentState!.validate()) return;
+
+      final email = emailController.text.trim();
+      final sent = await ref
+          .read(authenticationControllerProvider.notifier)
+          .sendEmailOtp(email: email, purpose: 'login');
+
+      if (!context.mounted || !sent) return;
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => LoginCodeBottomSheet(email: email),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.brand900,
@@ -47,7 +68,6 @@ class LoginScreen extends HookConsumerWidget {
       ),
       body: Column(
         children: [
-          // Image Banner
           Container(
             height: 222,
             width: double.infinity,
@@ -70,219 +90,82 @@ class LoginScreen extends HookConsumerWidget {
               ),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Gap(24),
-                    const Text(
-                      'Let’s continue from where you stopped',
-                      style: TextStyle(
-                        color: AppColors.neutral300,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const Gap(24),
-
-                    // Email Field
-                    CustomFormTextField(
-                      fillColor: AppColors.neutral950,
-                      labelText: 'Email Address',
-                      hintText: "Email Address",
-                      fieldName: "email",
-                      keyboardType: TextInputType.emailAddress,
-                      controller: emailController,
-                      validator: Validators.emailValidator,
-                    ),
-                    const Gap(16),
-
-                    // Password Field
-                    CustomFormTextField(
-                      fillColor: AppColors.neutral950,
-                      labelText: 'Password',
-                      hintText: "*******",
-                      fieldName: "password",
-                      keyboardType: TextInputType.text,
-                      controller: passwordController,
-                      isPassword: true,
-                      validator: Validators.passwordValidator,
-                    ),
-                    const Gap(48),
-
-                    // Continue Button
-                    FullButton(
-                      text: "Continue",
-                      width: double.infinity,
-                      height: 48,
-                      isLoading: ref
-                          .watch(authenticationControllerProvider)
-                          .login
-                          .isLoading,
-                      onPressed: () async {
-                        final email = emailController.text.trim();
-                        final password = passwordController.text.trim();
-
-                        if (email.isEmpty || password.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Please fill all fields."),
-                            ),
-                          );
-                          return;
-                        }
-
-                        final result = await ref
-                            .read(authenticationControllerProvider.notifier)
-                            .signIn(email, password);
-                        if (result == true) {
-                          final user = ref
-                              .watch(authenticationControllerProvider)
-                              .login
-                              .valueOrNull;
-
-                          final userRole = user?.user?.role;
-
-                          final userVerified = user?.user?.verified;
-                          if (userVerified == false) {
-                            await ref
-                                .read(authenticationControllerProvider.notifier)
-                                .resendEmailVerification(email);
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.white,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(20),
-                                ),
-                              ),
-                              builder: (context) => VerificationBottomSheet(
-                                email: emailController.text.trim(),
-                              ),
-                            );
-                          } else {
-                            if (userRole == 'user') {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const DashboardView(),
-                                ),
-                              );
-                            } else {
-                              final box = Hive.box('data');
-                              await box.clear();
-                              Fluttertoast.showToast(
-                                msg:
-                                    "You are not authorized as a user and cannot access this app",
-                                toastLength: Toast.LENGTH_LONG,
-                                gravity: ToastGravity.TOP,
-                                backgroundColor:
-                                    const Color.fromARGB(255, 228, 212, 62),
-                                textColor: Colors.black,
-                                fontSize: 14.0,
-                              );
-                            }
-                          }
-
-                          // Handle login logic
-                        }
-                      },
-                      color: AppColors.brand400,
-                      textColor: Colors.white,
-                    ),
-                    const Gap(8),
-
-                    // Sign Up Text with Navigation
-                    Center(
-                      child: RichText(
-                        text: TextSpan(
-                          text: "Don't have an account? ",
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: 'Sign Up',
-                              style: const TextStyle(
-                                color: AppColors.brand400,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                decoration: TextDecoration.underline,
-                              ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const RegistrationScreen(),
-                                    ),
-                                  );
-                                },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const Gap(16),
-                    const OrDivider(),
-                    const Gap(16),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const HomePreview(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        'Login as a guest',
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Gap(24),
+                      const Text(
+                        'Let’s continue from where you stopped',
                         style: TextStyle(
-                          color: AppColors.brand400,
+                          color: AppColors.neutral300,
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          decoration: TextDecoration.underline,
                         ),
                       ),
-                    ),
-                    const Gap(16),
-
-                    // OR Divider
-                    // const OrDivider(),
-                    // const Gap(16),
-
-                    // // Social Login Buttons
-
-                    // Row(
-                    //   mainAxisAlignment: MainAxisAlignment.center,
-                    //   children: [
-                    //     ImgBton(
-                    //       width: 160,
-                    //       height: 48,
-                    //       onPressed: () {
-                    //         print("Google Login");
-                    //       },
-                    //       color: AppColors.brand800,
-                    //       image: ImageAssets.google,
-                    //       bgColor: AppColors.brand980,
-                    //       radius: 50,
-                    //     ),
-                    //     const Gap(24),
-                    //     ImgBton(
-                    //       width: 160,
-                    //       height: 48,
-                    //       onPressed: () {
-                    //         print("Apple Login");
-                    //       },
-                    //       color: AppColors.brand800,
-                    //       image: ImageAssets.apple,
-                    //       bgColor: AppColors.brand980,
-                    //       radius: 50,
-                    //     ),
-                    //   ],
-                    // ),
-                  ],
+                      const Gap(24),
+                      CustomFormTextField(
+                        fillColor: AppColors.neutral950,
+                        labelText: 'Email Address',
+                        hintText: "Email Address",
+                        fieldName: "email",
+                        keyboardType: TextInputType.emailAddress,
+                        controller: emailController,
+                        validator: Validators.emailValidator,
+                      ),
+                      const Gap(48),
+                      FullButton(
+                        text: "Continue",
+                        width: double.infinity,
+                        height: 48,
+                        isLoading: isSendingOtp,
+                        onPressed: handleContinue,
+                        color: AppColors.brand400,
+                        textColor: Colors.white,
+                      ),
+                      const Gap(8),
+                      Center(
+                        child: RichText(
+                          text: TextSpan(
+                            text: "Don't have an account? ",
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 12,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Sign Up',
+                                style: const TextStyle(
+                                  color: AppColors.brand400,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () => context.push('/register'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const Gap(16),
+                      const OrDivider(),
+                      const Gap(16),
+                      GestureDetector(
+                        onTap: () => context.go('/guest'),
+                        child: const Text(
+                          'Login as a guest',
+                          style: TextStyle(
+                            color: AppColors.brand400,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      const Gap(16),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -293,18 +176,63 @@ class LoginScreen extends HookConsumerWidget {
   }
 }
 
-class VerificationBottomSheet extends HookConsumerWidget {
+class LoginCodeBottomSheet extends HookConsumerWidget {
   final String email;
 
-  const VerificationBottomSheet({
-    super.key,
-    required this.email,
-  });
+  const LoginCodeBottomSheet({super.key, required this.email});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final verificationCodeController = useTextEditingController();
+    final codeController = useTextEditingController();
+    final formKey = useMemoized(() => GlobalKey<FormState>());
+
+    final authState = ref.watch(authenticationControllerProvider);
+    final isBusy =
+        authState.login.isLoading || authState.sendOtp.isLoading;
+
+    Future<void> handleVerify() async {
+      if (!(formKey.currentState?.validate() ?? false)) return;
+      final authService = ref.read(authenticationControllerProvider.notifier);
+      final profileNotifier =
+          ref.read(profileControllerProvider.notifier);
+      final router = ref.read(routerProvider);
+
+      final result = await authService.signIn(
+        email,
+        code: codeController.text.trim(),
+      );
+
+      if (!context.mounted) return;
+      if (!result) {
+        codeController.clear();
+        return;
+      }
+
+      final user = ref
+          .read(authenticationControllerProvider)
+          .login
+          .valueOrNull;
+      final userRole = user?.user?.role;
+
+      Navigator.pop(context);
+
+      if (userRole == 'user') {
+        await profileNotifier.fetchProfile();
+        router.go('/dashboard');
+      } else {
+        await Hive.box('data').clear();
+        Fluttertoast.showToast(
+          msg: "You are not authorized as a user and cannot access this app",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.TOP,
+          backgroundColor: const Color.fromARGB(255, 228, 212, 62),
+          textColor: Colors.black,
+          fontSize: 14.0,
+        );
+      }
+    }
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: keyboardHeight,
@@ -313,71 +241,87 @@ class VerificationBottomSheet extends HookConsumerWidget {
         top: 24,
       ),
       child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Account Not Verified',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter login code',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
               ),
-            ),
-            const Gap(16),
-            const Text(
-              'Your account has not been verified. Please verify your account to continue.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
+              const Gap(8),
+              Text(
+                'We sent a 6-digit code to $email',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: Colors.black54),
               ),
-            ),
-            const Gap(24),
-            CustomFormTextField(
-              hintText: 'Input PIN',
-              fieldName: 'Verification Code',
-              keyboardType: TextInputType.number,
-              controller: verificationCodeController,
-              validator: (value) => Validators.requiredField(
-                value,
-                'Verification Code',
+              const Gap(24),
+              PinCodeTextField(
+                appContext: context,
+                length: 6,
+                controller: codeController,
+                keyboardType: TextInputType.number,
+                animationType: AnimationType.fade,
+                animationDuration: const Duration(milliseconds: 250),
+                enableActiveFill: true,
+                validator: (v) {
+                  if (v == null || v.length < 6) return "Enter the 6-digit code";
+                  return null;
+                },
+                pinTheme: PinTheme(
+                  shape: PinCodeFieldShape.box,
+                  borderRadius: BorderRadius.circular(8),
+                  fieldHeight: 44,
+                  fieldWidth: 40,
+                  activeFillColor: Colors.transparent,
+                  inactiveFillColor: Colors.transparent,
+                  selectedFillColor: Colors.transparent,
+                  inactiveColor: Colors.grey,
+                  selectedColor: AppColors.brand200,
+                  activeColor: Colors.black,
+                ),
               ),
-            ),
-            const Gap(24),
-            FullButton(
-              text: "Verify Account",
-              width: double.infinity,
-              height: 48,
-              isLoading: ref
-                  .watch(authenticationControllerProvider)
-                  .emailConfirmation
-                  .isLoading,
-              onPressed: () async {
-                final authService =
-                    ref.read(authenticationControllerProvider.notifier);
-                final result = await authService.emailConfirm(
-                  email,
-                  verificationCodeController.text.trim(),
-                );
-
-                if (result == true && context.mounted) {
-                  verificationCodeController.clear();
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DashboardView(),
-                    ),
-                  );
-                } else {
-                  verificationCodeController.clear();
-                }
-              },
-              color: AppColors.brand400,
-              textColor: Colors.white,
-            ),
-            const Gap(24), // Extra gap at bottom for better spacing
-          ],
+              const Gap(8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: authState.sendOtp.isLoading
+                      ? null
+                      : () async {
+                          await ref
+                              .read(authenticationControllerProvider.notifier)
+                              .sendEmailOtp(email: email, purpose: 'login');
+                          if (!context.mounted) return;
+                          codeController.clear();
+                          Fluttertoast.showToast(
+                            msg: "Code resent",
+                            gravity: ToastGravity.BOTTOM,
+                          );
+                        },
+                  child: const Text(
+                    'Resend code',
+                    style: TextStyle(color: AppColors.brand400),
+                  ),
+                ),
+              ),
+              const Gap(16),
+              FullButton(
+                text: "Log In",
+                width: double.infinity,
+                height: 48,
+                isLoading: isBusy,
+                onPressed: handleVerify,
+                color: AppColors.brand400,
+                textColor: Colors.white,
+              ),
+              const Gap(24),
+            ],
+          ),
         ),
       ),
     );

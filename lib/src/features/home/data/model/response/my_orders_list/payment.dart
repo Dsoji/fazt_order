@@ -5,6 +5,10 @@ class Payment {
   int? deliveryFee;
   int? serviceFee;
   int? total;
+  int? discount;
+  int? payableDeliveryFee;
+  int? freeDeliverySubsidy;
+  int? platformSubsidyAmount;
   String? paymentMethod;
   String? paymentStatus;
   DateTime? initiatedAt;
@@ -18,6 +22,10 @@ class Payment {
     this.deliveryFee,
     this.serviceFee,
     this.total,
+    this.discount,
+    this.payableDeliveryFee,
+    this.freeDeliverySubsidy,
+    this.platformSubsidyAmount,
     this.paymentMethod,
     this.paymentStatus,
     this.initiatedAt,
@@ -27,32 +35,28 @@ class Payment {
     this.transactionId,
   });
 
+  static int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is num) return value.toInt();
+    return null;
+  }
+
   @override
   String toString() {
-    return 'Payment(subtotal: $subtotal, deliveryFee: $deliveryFee, serviceFee: $serviceFee, total: $total, paymentMethod: $paymentMethod, paymentStatus: $paymentStatus, initiatedAt: $initiatedAt, id: $id, completedAt: $completedAt, paymentReference: $paymentReference, transactionId: $transactionId)';
+    return 'Payment(subtotal: $subtotal, deliveryFee: $deliveryFee, serviceFee: $serviceFee, total: $total, discount: $discount, payableDeliveryFee: $payableDeliveryFee, freeDeliverySubsidy: $freeDeliverySubsidy, platformSubsidyAmount: $platformSubsidyAmount, paymentMethod: $paymentMethod, paymentStatus: $paymentStatus, initiatedAt: $initiatedAt, id: $id, completedAt: $completedAt, paymentReference: $paymentReference, transactionId: $transactionId)';
   }
 
   factory Payment.fromMap(Map<String, dynamic> data) => Payment(
-        subtotal: data['subtotal'] != null
-            ? (data['subtotal'] is double
-                ? (data['subtotal'] as double).toInt()
-                : data['subtotal'] as int)
-            : null,
-        deliveryFee: data['deliveryFee'] != null
-            ? (data['deliveryFee'] is double
-                ? (data['deliveryFee'] as double).toInt()
-                : data['deliveryFee'] as int)
-            : null,
-        serviceFee: data['serviceFee'] != null
-            ? (data['serviceFee'] is double
-                ? (data['serviceFee'] as double).toInt()
-                : data['serviceFee'] as int)
-            : null,
-        total: data['total'] != null
-            ? (data['total'] is double
-                ? (data['total'] as double).toInt()
-                : data['total'] as int)
-            : null,
+        subtotal: _toInt(data['subtotal']),
+        deliveryFee: _toInt(data['deliveryFee']),
+        serviceFee: _toInt(data['serviceFee']),
+        total: _toInt(data['total']),
+        discount: _toInt(data['discount']),
+        payableDeliveryFee: _toInt(data['payableDeliveryFee']),
+        freeDeliverySubsidy: _toInt(data['freeDeliverySubsidy']),
+        platformSubsidyAmount: _toInt(data['platformSubsidyAmount']),
         paymentMethod: data['paymentMethod'] as String?,
         paymentStatus: data['paymentStatus'] as String?,
         initiatedAt: data['initiatedAt'] == null
@@ -71,6 +75,10 @@ class Payment {
         'deliveryFee': deliveryFee,
         'serviceFee': serviceFee,
         'total': total,
+        'discount': discount,
+        'payableDeliveryFee': payableDeliveryFee,
+        'freeDeliverySubsidy': freeDeliverySubsidy,
+        'platformSubsidyAmount': platformSubsidyAmount,
         'paymentMethod': paymentMethod,
         'paymentStatus': paymentStatus,
         'initiatedAt': initiatedAt?.toIso8601String(),
@@ -97,6 +105,10 @@ class Payment {
     int? deliveryFee,
     int? serviceFee,
     int? total,
+    int? discount,
+    int? payableDeliveryFee,
+    int? freeDeliverySubsidy,
+    int? platformSubsidyAmount,
     String? paymentMethod,
     String? paymentStatus,
     DateTime? initiatedAt,
@@ -110,6 +122,11 @@ class Payment {
       deliveryFee: deliveryFee ?? this.deliveryFee,
       serviceFee: serviceFee ?? this.serviceFee,
       total: total ?? this.total,
+      discount: discount ?? this.discount,
+      payableDeliveryFee: payableDeliveryFee ?? this.payableDeliveryFee,
+      freeDeliverySubsidy: freeDeliverySubsidy ?? this.freeDeliverySubsidy,
+      platformSubsidyAmount:
+          platformSubsidyAmount ?? this.platformSubsidyAmount,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       initiatedAt: initiatedAt ?? this.initiatedAt,

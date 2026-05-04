@@ -38,15 +38,21 @@ class AuthenticationService {
 
   Future<ResultValue<UserModel>> signInUser({
     required String email,
-    required String password,
+    String? password,
+    String? code,
   }) async {
+    assert(
+      (password != null) ^ (code != null),
+      'Provide exactly one of password or code',
+    );
     logger.d('fcmToken: $fcmToken');
     return apiRequestHelper.handleApiRequest(
       () => apiClient.post(
         'auth/login',
         data: {
           'email': email,
-          'password': password,
+          if (password != null && password.isNotEmpty) 'password': password,
+          if (code != null && code.isNotEmpty) 'code': code,
           if (fcmToken != null) 'fcmToken': fcmToken,
         },
       ),
@@ -66,10 +72,12 @@ class AuthenticationService {
 
   Future<ResultValue<UserModel>> registerUser({
     required String email,
-    required String password,
     required String firstName,
     required String lastName,
     required String phone,
+    String? password,
+    String? signupOtpToken,
+    String? referralCode,
   }) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.post(
@@ -80,11 +88,14 @@ class AuthenticationService {
           'email': email,
           'phone': phone,
           'role': "user",
-          'password': password,
+          if (password != null && password.isNotEmpty) 'password': password,
+          if (signupOtpToken != null && signupOtpToken.isNotEmpty)
+            'signupOtpToken': signupOtpToken,
+          if (referralCode != null && referralCode.isNotEmpty)
+            'referredByCode': referralCode,
         },
       ),
       parser: (data) {
-        print(data);
         final token = data['accessToken'];
 
         var box = Hive.box('data');
@@ -95,6 +106,44 @@ class AuthenticationService {
         return UserModel.fromMap(data);
       },
       showErrorToast: true,
+    );
+  }
+
+  Future<ResultValue<String>> sendEmailOtp({
+    required String email,
+    required String purpose,
+  }) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'auth/send-email-otp',
+        data: {
+          'email': email,
+          'purpose': purpose,
+        },
+      ),
+      parser: (data) => BaseModel.toRawString(data),
+      showErrorToast: true,
+      showSuccessToast: false,
+    );
+  }
+
+  Future<ResultValue<String>> verifyEmailOtp({
+    required String email,
+    required String otp,
+    required String purpose,
+  }) async {
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'auth/verify-email-otp',
+        data: {
+          'email': email,
+          'otp': otp,
+          'purpose': purpose,
+        },
+      ),
+      parser: (data) => (data?['otpProofToken'] ?? '').toString(),
+      showErrorToast: true,
+      showSuccessToast: false,
     );
   }
 

@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:fazt_order/redirect_screen.dart';
-import 'package:fazt_order/src/common/api/dio_api_interceptor.dart';
 import 'package:fazt_order/src/common/notification_service.dart';
+import 'package:fazt_order/src/features/profile/data/service/permission_service.dart';
+import 'package:fazt_order/src/router/app_router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -64,28 +64,18 @@ void main() async {
   await Hive.initFlutter();
   await Hive.openBox('data');
 
-  final navigatorKey = GlobalKey<NavigatorState>();
-
   await NotificationService.initializeFCM();
+  await PermissionService().requestAllPermissions();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]).then((_) {
-    runApp(
-      ProviderScope(
-        overrides: [
-          navigatorKeyProvider.overrideWithValue(navigatorKey),
-        ],
-        child: MyApp(navigatorKey: navigatorKey),
-      ),
-    );
+    runApp(const ProviderScope(child: MyApp()));
   });
 }
 
 class MyApp extends HookConsumerWidget {
-  final GlobalKey<NavigatorState> navigatorKey;
-
-  const MyApp({super.key, required this.navigatorKey});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,13 +84,13 @@ class MyApp extends HookConsumerWidget {
         mediaQuery.textScaler.clamp(minScaleFactor: 0.8, maxScaleFactor: 1.2);
     Animate.restartOnHotReload = true;
 
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey,
+      routerConfig: ref.watch(routerProvider),
       title: 'Fazt Vendor',
       theme: ThemeData(
-        appBarTheme: const AppBarTheme(backgroundColor: AppColors.neutral950),
-        scaffoldBackgroundColor: AppColors.neutral950,
+        appBarTheme: const AppBarTheme(backgroundColor: AppColors.neutral990),
+        scaffoldBackgroundColor: AppColors.neutral990,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
@@ -114,7 +104,6 @@ class MyApp extends HookConsumerWidget {
           },
         ),
       ),
-      home: const RedirectScreen(),
     );
   }
 }

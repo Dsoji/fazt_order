@@ -22,6 +22,8 @@ class AuthenticationState {
   final AsyncValue<String> emailConfirmation;
   final AsyncValue<String> forgotPassword;
   final AsyncValue<String> addressUpdate;
+  final AsyncValue<String> sendOtp;
+  final AsyncValue<String> verifyOtp;
   // final AsyncValue<ProfilePayload> profilePayload;
   // final AsyncValue<UserProfileModel> userDetails;
   final AsyncValue<String> userName;
@@ -41,6 +43,8 @@ class AuthenticationState {
     required this.emailChange,
     required this.resetPin,
     required this.addressUpdate,
+    required this.sendOtp,
+    required this.verifyOtp,
   });
 
   factory AuthenticationState.initial() {
@@ -56,6 +60,8 @@ class AuthenticationState {
       emailChange: const AsyncValue.data(''),
       resetPin: const AsyncValue.data(''),
       addressUpdate: const AsyncValue.data(''),
+      sendOtp: const AsyncValue.data(''),
+      verifyOtp: const AsyncValue.data(''),
     );
   }
 
@@ -71,6 +77,8 @@ class AuthenticationState {
     AsyncValue<String>? emailChange,
     AsyncValue<String>? resetPin,
     AsyncValue<String>? addressUpdate,
+    AsyncValue<String>? sendOtp,
+    AsyncValue<String>? verifyOtp,
   }) {
     return AuthenticationState(
       login: login ?? this.login,
@@ -84,6 +92,8 @@ class AuthenticationState {
       emailChange: emailChange ?? this.emailChange,
       resetPin: resetPin ?? this.resetPin,
       addressUpdate: addressUpdate ?? this.addressUpdate,
+      sendOtp: sendOtp ?? this.sendOtp,
+      verifyOtp: verifyOtp ?? this.verifyOtp,
     );
   }
 

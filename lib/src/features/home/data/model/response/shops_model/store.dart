@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'promotion_display.dart';
 import 'sales_operation.dart';
 
 class Store {
@@ -7,12 +8,19 @@ class Store {
   String? storeName;
   String? id;
   SalesOperation? salesOperation;
+  PromotionDisplay? promotionDisplay;
 
-  Store({this.storeDisplayImage, this.storeName, this.id, this.salesOperation});
+  Store({
+    this.storeDisplayImage,
+    this.storeName,
+    this.id,
+    this.salesOperation,
+    this.promotionDisplay,
+  });
 
   @override
   String toString() {
-    return 'Store(storeDisplayImage: $storeDisplayImage, storeName: $storeName, id: $id, salesOperation: $salesOperation)';
+    return 'Store(storeDisplayImage: $storeDisplayImage, storeName: $storeName, id: $id, salesOperation: $salesOperation, promotionDisplay: $promotionDisplay)';
   }
 
   factory Store.fromMap(Map<String, dynamic> data) => Store(
@@ -23,6 +31,10 @@ class Store {
             ? null
             : SalesOperation.fromMap(
                 data['salesOperation'] as Map<String, dynamic>),
+        promotionDisplay: data['promotionDisplay'] == null
+            ? null
+            : PromotionDisplay.fromMap(
+                data['promotionDisplay'] as Map<String, dynamic>),
       );
 
   Map<String, dynamic> toMap() => {
@@ -30,6 +42,7 @@ class Store {
         'storeName': storeName,
         'id': id,
         'salesOperation': salesOperation?.toMap(),
+        'promotionDisplay': promotionDisplay?.toMap(),
       };
 
   /// `dart:convert`
@@ -49,12 +62,14 @@ class Store {
     String? storeName,
     String? id,
     SalesOperation? salesOperation,
+    PromotionDisplay? promotionDisplay,
   }) {
     return Store(
       storeDisplayImage: storeDisplayImage ?? this.storeDisplayImage,
       storeName: storeName ?? this.storeName,
       id: id ?? this.id,
       salesOperation: salesOperation ?? this.salesOperation,
+      promotionDisplay: promotionDisplay ?? this.promotionDisplay,
     );
   }
 }

@@ -43,6 +43,21 @@ class Validators {
     return null;
   }
 
+  static String? phoneValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return "Phone number is required";
+    }
+    final digitsOnly = value.replaceAll(RegExp(r'[\s\-()]'), '');
+    if (!RegExp(r'^\+?\d+$').hasMatch(digitsOnly)) {
+      return "Enter a valid phone number";
+    }
+    final digitCount = digitsOnly.replaceAll('+', '').length;
+    if (digitCount < 10 || digitCount > 15) {
+      return "Enter a valid phone number";
+    }
+    return null;
+  }
+
   static String? requiredField(String? value, String fieldName) {
     if (value == null || value.isEmpty) {
       return "$fieldName is required";

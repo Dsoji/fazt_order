@@ -39,21 +39,28 @@ class ShopRepository {
     return ShopsModel.fromJson(cachedData);
   }
 
-  Future<Result<FailureHandler, ShopsModel>> fetchShops(
-      {bool forceRefresh = false}) async {
+  Future<Result<FailureHandler, ShopsModel>> fetchShops({
+    bool forceRefresh = false,
+    int page = 1,
+    int limit = 20,
+  }) async {
     try {
       final box = Hive.box('data');
-      final cachedData = forceRefresh ? null : box.get('shops');
+      final isFirstPage = page == 1;
+      final cachedData =
+          (forceRefresh || !isFirstPage) ? null : box.get('shops');
 
       if (cachedData != null) {
         return Success(ShopsModel.fromJson(cachedData));
       }
 
-      final data = await authService.fetchShops();
+      final data = await authService.fetchShops(page: page, limit: limit);
 
       if (data.isSuccess) {
         final shopsData = data.value ?? ShopsModel();
-        await box.put('shops', shopsData.toJson());
+        if (isFirstPage) {
+          await box.put('shops', shopsData.toJson());
+        }
         return Success(shopsData);
       } else {
         return Error(
@@ -71,9 +78,13 @@ class ShopRepository {
   }
 
   Future<Result<FailureHandler, StoreCategories>> fetchShopFoodCategory(
-      String shopId) async {
+    String shopId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     try {
-      final data = await authService.fetchShopFoodCategory(shopId);
+      final data = await authService.fetchShopFoodCategory(shopId,
+          page: page, limit: limit);
 
       if (data.isSuccess) {
         return Success(data.value ?? StoreCategories());
@@ -117,10 +128,13 @@ class ShopRepository {
 
   Future<Result<FailureHandler, StoreMeals>> fetchShopFood(
     String storeId,
-    String categoryId,
-  ) async {
+    String categoryId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     try {
-      final data = await authService.fetchShopFood(storeId, categoryId);
+      final data = await authService.fetchShopFood(storeId, categoryId,
+          page: page, limit: limit);
 
       if (data.isSuccess) {
         return Success(data.value ?? StoreMeals());
@@ -254,9 +268,13 @@ class ShopRepository {
     }
   }
 
-  Future<Result<FailureHandler, MyOrdersList>> fetchMyOrdersList() async {
+  Future<Result<FailureHandler, MyOrdersList>> fetchMyOrdersList({
+    int page = 1,
+    int limit = 20,
+  }) async {
     try {
-      final data = await authService.fetchMyOrdersList();
+      final data =
+          await authService.fetchMyOrdersList(page: page, limit: limit);
 
       if (data.isSuccess) {
         return Success(data.value ?? MyOrdersList());
@@ -297,9 +315,13 @@ class ShopRepository {
   }
 
   Future<Result<FailureHandler, StoreMealVariant>> fetchStoreMealVariant(
-      String shopId) async {
+    String shopId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     try {
-      final data = await authService.fetchStoreMealVariant(shopId);
+      final data = await authService.fetchStoreMealVariant(shopId,
+          page: page, limit: limit);
 
       if (data.isSuccess) {
         return Success(data.value ?? StoreMealVariant());
@@ -321,11 +343,15 @@ class ShopRepository {
   Future<Result<FailureHandler, MealVariantMenu>> fetchMealVariantMenu({
     String? categoryId,
     String? shopId,
+    int page = 1,
+    int limit = 20,
   }) async {
     try {
       final data = await authService.fetchMealVariantMenu(
         categoryId: categoryId,
         shopId: shopId,
+        page: page,
+        limit: limit,
       );
 
       if (data.isSuccess) {
@@ -443,9 +469,13 @@ class ShopRepository {
     }
   }
 
-  Future<Result<FailureHandler, CourierListResponse>> fetchCourierList() async {
+  Future<Result<FailureHandler, CourierListResponse>> fetchCourierList({
+    int page = 1,
+    int limit = 20,
+  }) async {
     try {
-      final data = await authService.fetchCourierList();
+      final data =
+          await authService.fetchCourierList(page: page, limit: limit);
 
       if (data.isSuccess) {
         return Success(data.value ?? CourierListResponse());

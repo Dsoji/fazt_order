@@ -12,12 +12,15 @@ import '../../../common/components/restaurant_card.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/shimmer_restaurant_card.dart';
 import '../../../common/widgets/text_styles.dart';
+import '../../auth/data/model/response/user_model/promotion_state.dart';
 import '../../bottom_sheets/filters_sheet.dart';
 import '../../bottom_sheets/location_sheet.dart';
 import '../../profile/data/controller/profile_controller.dart';
 import '../data/controller/shop_controller.dart';
 import '../data/model/response/shops_model/day_schedule.dart';
 import 'search_restaurant_view.dart';
+
+final _promoDialogShownProvider = StateProvider<bool>((_) => false);
 
 class HomeView extends HookConsumerWidget {
   const HomeView({super.key});
@@ -230,9 +233,52 @@ class HomeView extends HookConsumerWidget {
 
     final userDetails = ref.watch(profileControllerProvider).userDetails;
 
+    final promotionState = userDetails.value?.user?.promotionState;
+
+    useEffect(() {
+      final freeDelivery = promotionState?.freeDeliveryRemaining ?? 0;
+      final discount = promotionState?.discountRemaining ?? 0;
+      if (freeDelivery <= 0 && discount <= 0) return null;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        if (ref.read(_promoDialogShownProvider)) return;
+        ref.read(_promoDialogShownProvider.notifier).state = true;
+        showDialog<void>(
+          context: context,
+          barrierDismissible: true,
+          builder: (_) =>
+              _PromotionAnnouncementDialog(promotionState: promotionState!),
+        );
+      });
+      return null;
+    }, [
+      promotionState?.freeDeliveryRemaining,
+      promotionState?.discountRemaining,
+    ]);
+
     final shops = ref.watch(shopControllerProvider).shops;
+    final shopsHasMore =
+        ref.watch(shopControllerProvider.select((s) => s.shopsHasMore));
+    final isLoadingMoreShops =
+        ref.watch(shopControllerProvider.select((s) => s.isLoadingMoreShops));
     final isFilterApplied = useState(false);
     final selectedFilter = useState<String?>(null);
+    final scrollController = useScrollController();
+
+    useEffect(() {
+      void onScroll() {
+        if (!scrollController.hasClients) return;
+        final position = scrollController.position;
+        if (position.pixels >= position.maxScrollExtent - 300) {
+          ref.read(shopControllerProvider.notifier).loadMoreShops();
+        }
+      }
+
+      scrollController.addListener(onScroll);
+      return () => scrollController.removeListener(onScroll);
+    }, [scrollController]);
+
     Future<void> handleRefresh() async {
       await ref.read(profileControllerProvider.notifier).fetchProfile();
       await ref.read(shopControllerProvider.notifier).revalidateShops();
@@ -542,11 +588,36 @@ class HomeView extends HookConsumerWidget {
                       ],
                     );
                   }
+                  final showFooter = !isFilterApplied.value &&
+                      (isLoadingMoreShops || !shopsHasMore);
                   return ListView.builder(
+                    controller: scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    itemCount: filteredShops.length,
+                    itemCount: filteredShops.length + (showFooter ? 1 : 0),
                     itemBuilder: (context, index) {
+                      if (index >= filteredShops.length) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: Center(
+                            child: isLoadingMoreShops
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: kcPrimary300,
+                                    ),
+                                  )
+                                : Text(
+                                    'No more shops',
+                                    style: ktBodyRegularSize14.copyWith(
+                                      color: kcPrimaryNeutral500,
+                                    ),
+                                  ),
+                          ),
+                        );
+                      }
                       final shop = filteredShops[index];
                       return RestaurantCard(
                         restaurant: shop,
@@ -559,6 +630,154 @@ class HomeView extends HookConsumerWidget {
             ),
           ),
           const Gap(92),
+        ],
+      ),
+    );
+  }
+}
+
+class _PromotionAnnouncementDialog extends StatelessWidget {
+  const _PromotionAnnouncementDialog({required this.promotionState});
+
+  final PromotionState promotionState;
+
+  @override
+  Widget build(BuildContext context) {
+    final freeDelivery = promotionState.freeDeliveryRemaining ?? 0;
+    final discount = promotionState.discountRemaining ?? 0;
+    final percent = promotionState.percentDiscount ?? 0;
+
+    return Dialog(
+      backgroundColor: Colors.white,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).pop(),
+                child: const Icon(Icons.close,
+                    size: 20, color: kcPrimaryNeutral500),
+              ),
+            ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.asset(
+                'asset/gif/onboard3.gif',
+                height: 140,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const Gap(16),
+            Text(
+              'You\'ve got perks!',
+              style: ktBodySemiBoldSize20.copyWith(
+                fontSize: 18,
+                color: Colors.black,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const Gap(6),
+            const Text(
+              'Use them on your next orders before they run out.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: kcPrimaryNeutral500,
+                height: 1.4,
+              ),
+            ),
+            const Gap(16),
+            if (freeDelivery > 0)
+              _PerkRow(
+                icon: Iconsax.truck_fast,
+                accent: kcPrimary400,
+                title: 'Free Delivery',
+                subtitle: '$freeDelivery left',
+              ),
+            if (freeDelivery > 0 && discount > 0) const Gap(8),
+            if (discount > 0)
+              _PerkRow(
+                icon: Iconsax.discount_shape,
+                accent: kcPrimaryOrange300,
+                title: percent > 0
+                    ? '${percent.toStringAsFixed(0)}% Off'
+                    : 'Discount',
+                subtitle: '$discount left',
+              ),
+            const Gap(20),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  backgroundColor: kcPrimary400,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Got it',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PerkRow extends StatelessWidget {
+  const _PerkRow({
+    required this.icon,
+    required this.accent,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final Color accent;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: accent),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+            ),
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: accent,
+            ),
+          ),
         ],
       ),
     );

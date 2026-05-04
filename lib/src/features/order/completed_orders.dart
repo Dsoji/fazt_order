@@ -1,6 +1,7 @@
 import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
 import 'package:fazt_order/src/features/order/completed_order_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -17,13 +18,33 @@ class CompletedOrders extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final myOrdersList = ref.watch(shopControllerProvider).myOrdersList;
+    final hasMore = ref.watch(
+        shopControllerProvider.select((s) => s.myOrdersListHasMore));
+    final isLoadingMore = ref.watch(
+        shopControllerProvider.select((s) => s.isLoadingMoreMyOrdersList));
+    final scrollController = useScrollController();
+
+    useEffect(() {
+      void onScroll() {
+        if (!scrollController.hasClients) return;
+        final position = scrollController.position;
+        if (position.pixels >= position.maxScrollExtent - 300) {
+          ref.read(shopControllerProvider.notifier).loadMoreMyOrdersList();
+        }
+      }
+
+      scrollController.addListener(onScroll);
+      return () => scrollController.removeListener(onScroll);
+    }, [scrollController]);
 
     return myOrdersList.when(
       data: (ordersData) {
-        // Filter completed orders (delivered or cancelled)
+        // Filter completed orders (delivered, cancelled, or rejected)
         final completedOrders = ordersData.results
                 ?.where((order) =>
-                    order.status == 'delivered' || order.status == 'cancelled')
+                    order.status == 'delivered' ||
+                    order.status == 'cancelled' ||
+                    order.status == 'rejected')
                 .toList() ??
             [];
 
@@ -47,6 +68,7 @@ class CompletedOrders extends HookConsumerWidget {
         }
 
         return SingleChildScrollView(
+          controller: scrollController,
           child: Column(
             children: [
               ListView.builder(
@@ -142,6 +164,29 @@ class CompletedOrders extends HookConsumerWidget {
                   );
                 },
               ),
+              if (isLoadingMore)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: kcPrimary300,
+                    ),
+                  ),
+                )
+              else if (!hasMore)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Text(
+                    'No more orders',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
               const Gap(150),
             ],
           ),

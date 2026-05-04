@@ -3,18 +3,20 @@ import 'package:fazt_order/src/features/home/presentation/customer_support.dart'
 import 'package:fazt_order/src/features/profile/presentation/settings_view.dart';
 import 'package:fazt_order/src/features/profile/presentation/wallet_view.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gap/gap.dart';
-import 'package:hive/hive.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../common/app_colors.dart';
 import '../../../common/ui_helpers.dart';
+import '../../../common/utils/cache.dart';
 import '../../../common/widgets/text_styles.dart';
-import '../../auth/login/presentation/login_screen.dart';
+import '../../auth/data/controller/authentication_controller.dart';
+import '../../auth/data/model/response/user_model/promotion_state.dart';
 import '../../home/presentation/favorites_view.dart';
 import '../data/controller/profile_controller.dart';
 import 'edit_profile.dart';
@@ -25,7 +27,7 @@ class ProfileView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userDetails = ref.watch(profileControllerProvider).userDetails;
-    final String? link = dotenv.env['CHAT_LINK'];
+
     Widget buildUserProfileSection(dynamic userDetails,
         {bool isLoading = false, bool hasError = false}) {
       final opacity = isLoading ? 0.7 : (hasError ? 0.8 : 1.0);
@@ -186,8 +188,9 @@ class ProfileView extends HookConsumerWidget {
                 ),
               ),
             ),
-            verticalSpaceMedium,
-
+            _buildReferralCodeCard(userDetails?.user?.referralCode),
+            _buildPromotionTags(userDetails?.user?.promotionState),
+            const Gap(10),
             // Edit Button
             Opacity(
               opacity: opacity,
@@ -251,11 +254,15 @@ class ProfileView extends HookConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: kcPrimaryNeutral950,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
+        child: RefreshIndicator(
+          color: kcPrimary600,
+          onRefresh: () =>
+              ref.read(profileControllerProvider.notifier).fetchProfile(),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
             children: [
               // Header Section
               Center(
@@ -344,8 +351,7 @@ class ProfileView extends HookConsumerWidget {
                           context,
                           MaterialPageRoute(
                               builder: (context) =>
-                                  CustomerSupportWebViewScreen(
-                                      uri: link ?? '')),
+                                  const CustomerSupportScreen()),
                         );
                       },
                     ),
@@ -372,13 +378,11 @@ class ProfileView extends HookConsumerWidget {
                           userId: userDetails.value?.user?.id ?? '',
                         );
                     if (result == true) {
-                      var box = Hive.box('data');
-                      box.clear();
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const LoginScreen()),
-                      );
+                      await wipeLocalCache();
+                      await ref
+                          .read(authenticationControllerProvider.notifier)
+                          .signOut();
+                      if (context.mounted) context.go('/login');
                       Fluttertoast.showToast(
                         msg: "Account deleted successfully",
                         toastLength: Toast.LENGTH_SHORT,
@@ -405,20 +409,18 @@ class ProfileView extends HookConsumerWidget {
                 text: 'Log Out',
                 width: 150,
                 height: 48,
-                onPressed: () {
-                  var box = Hive.box('data');
-                  box.clear();
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const LoginScreen()),
-                  );
+                onPressed: () async {
+                  await ref
+                      .read(authenticationControllerProvider.notifier)
+                      .signOut();
+                  if (context.mounted) context.go('/login');
                 },
                 color: Colors.red,
                 textColor: Colors.white,
               ),
               const Gap(100),
             ],
+          ),
           ),
         ),
       ),
@@ -584,6 +586,134 @@ class ProfileView extends HookConsumerWidget {
     );
   }
 
+  Widget _buildReferralCodeCard(String? referralCode) {
+    if (referralCode == null || referralCode.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () async {
+            await Clipboard.setData(ClipboardData(text: referralCode));
+            await Fluttertoast.showToast(
+              msg: "Referral code copied",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              backgroundColor: kcPrimary600,
+              textColor: kcWhite,
+            );
+          },
+          child: Ink(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: kcPrimary600.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: kcPrimary400.withOpacity(0.4),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: kcPrimary600.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Iconsax.gift,
+                    size: 16,
+                    color: kcPrimary400,
+                  ),
+                ),
+                horizontalSpaceSmall,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Referral Code",
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: kcPrimaryNeutral500,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        referralCode,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Iconsax.copy,
+                  size: 18,
+                  color: kcPrimary400,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromotionTags(PromotionState? promotionState) {
+    final freeDeliveryCount = promotionState?.freeDeliveryRemaining ?? 0;
+    final discountCount = promotionState?.discountRemaining ?? 0;
+    final percent = promotionState?.percentDiscount ?? 0;
+
+    final showFreeDelivery = freeDeliveryCount > 0;
+    final showDiscount = discountCount > 0;
+
+    if (!showFreeDelivery && !showDiscount) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (showFreeDelivery)
+            Flexible(
+              child: _PromotionTag(
+                icon: Iconsax.truck_fast,
+                label: 'Free Delivery',
+                count: freeDeliveryCount,
+                foregroundColor: kcPrimary400,
+              ),
+            ),
+          if (showFreeDelivery && showDiscount) const SizedBox(width: 8),
+          if (showDiscount)
+            Flexible(
+              child: _PromotionTag(
+                icon: Iconsax.discount_shape,
+                label: percent > 0
+                    ? '${percent.toStringAsFixed(0)}% Off'
+                    : 'Discount',
+                count: discountCount,
+                foregroundColor: kcPrimaryOrange300,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildListItem({
     required IconData icon,
     required Color iconColor,
@@ -616,3 +746,49 @@ class ProfileView extends HookConsumerWidget {
     );
   }
 }
+
+class _PromotionTag extends StatelessWidget {
+  const _PromotionTag({
+    required this.icon,
+    required this.label,
+    required this.count,
+    required this.foregroundColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final int count;
+  final Color foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: foregroundColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: foregroundColor),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              '$label · $count left',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                color: foregroundColor,
+                letterSpacing: 0.1,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

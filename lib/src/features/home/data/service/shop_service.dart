@@ -45,12 +45,19 @@ class ShopService {
     required this.apiRequestHelper,
   });
 
-  Future<ResultValue<ShopsModel>> fetchShops() async {
+  Future<ResultValue<ShopsModel>> fetchShops({
+    int page = 1,
+    int limit = 20,
+  }) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.get(
         'shops',
         headers: {
           'Authorization': 'Bearer $accessToken',
+        },
+        queryParameters: {
+          'page': page,
+          'limit': limit,
         },
       ),
       parser: (data) => ShopsModel.fromMap(data),
@@ -58,12 +65,20 @@ class ShopService {
   }
 
   Future<ResultValue<StoreCategories>> fetchShopFoodCategory(
-      String shopId) async {
+    String shopId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.get(
-        'categories?store=$shopId',
+        'categories',
         headers: {
           'Authorization': 'Bearer $accessToken',
+        },
+        queryParameters: {
+          'store': shopId,
+          'page': page,
+          'limit': limit,
         },
       ),
       parser: (data) => StoreCategories.fromMap(data),
@@ -95,8 +110,10 @@ class ShopService {
 
   Future<ResultValue<StoreMeals>> fetchShopFood(
     String storeId,
-    String categoryId,
-  ) async {
+    String categoryId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.get(
         'meals',
@@ -106,6 +123,8 @@ class ShopService {
         queryParameters: {
           'store': storeId,
           if (categoryId.isNotEmpty) 'category': categoryId,
+          'page': page,
+          'limit': limit,
         },
       ),
       parser: (data) => StoreMeals.fromMap(data),
@@ -202,10 +221,19 @@ class ShopService {
     );
   }
 
-  Future<ResultValue<MyOrdersList>> fetchMyOrdersList() async {
+  Future<ResultValue<MyOrdersList>> fetchMyOrdersList({
+    int page = 1,
+    int limit = 20,
+  }) async {
     return apiRequestHelper.handleApiRequest(
-      () => apiClient
-          .get('orders', headers: {'Authorization': 'Bearer $accessToken'}),
+      () => apiClient.get(
+        'orders',
+        headers: {'Authorization': 'Bearer $accessToken'},
+        queryParameters: {
+          'page': page,
+          'limit': limit,
+        },
+      ),
       parser: (data) => MyOrdersList.fromMap(data),
       showErrorToast: false,
       showSuccessToast: false,
@@ -228,11 +256,19 @@ class ShopService {
   }
 
   Future<ResultValue<StoreMealVariant>> fetchStoreMealVariant(
-      String shopId) async {
+    String shopId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.get(
-        'meal-variants?shop=$shopId',
+        'meal-variants',
         headers: {'Authorization': 'Bearer $accessToken'},
+        queryParameters: {
+          'shop': shopId,
+          'page': page,
+          'limit': limit,
+        },
       ),
       parser: (data) => StoreMealVariant.fromMap(data),
     );
@@ -241,6 +277,8 @@ class ShopService {
   Future<ResultValue<MealVariantMenu>> fetchMealVariantMenu({
     String? categoryId,
     String? shopId,
+    int page = 1,
+    int limit = 20,
   }) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.get(
@@ -250,6 +288,8 @@ class ShopService {
           'category': categoryId,
           'shop': shopId,
           'inStock': true,
+          'page': page,
+          'limit': limit,
         },
       ),
       parser: (data) => MealVariantMenu.fromMap(data),
@@ -338,11 +378,18 @@ class ShopService {
     );
   }
 
-  Future<ResultValue<CourierListResponse>> fetchCourierList() async {
+  Future<ResultValue<CourierListResponse>> fetchCourierList({
+    int page = 1,
+    int limit = 20,
+  }) async {
     return apiRequestHelper.handleApiRequest(
       () => apiClient.get(
         'couriers',
         headers: {'Authorization': 'Bearer $accessToken'},
+        queryParameters: {
+          'page': page,
+          'limit': limit,
+        },
       ),
       parser: (data) => CourierListResponse.fromMap(data),
     );

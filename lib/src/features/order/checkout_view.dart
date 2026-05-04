@@ -442,10 +442,16 @@ class CheckoutScreen extends HookConsumerWidget {
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(color: kcPrimary400)),
                 child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.add, color: kcPrimary400),
-                    Text("Add Another Pack",
-                        style: TextStyle(color: kcPrimary400)),
+                    Flexible(
+                      child: Text(
+                        "Add Another Pack",
+                        style: TextStyle(color: kcPrimary400),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -539,22 +545,80 @@ class CheckoutScreen extends HookConsumerWidget {
                         fontWeight: FontWeight.w500),
                   ),
                   verticalSpaceSmall,
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Subtotal (${selectedItems.items?.length ?? 0} items)",
-                        style: ktBodyRegularSize14.copyWith(
-                            color: kcPrimaryNeutral300),
-                      ),
-                      Text(
-                        "₦${selectedItems.subtotal?.toStringAsFixed(0) ?? "0"}",
-                        style: ktBodyRegularSize14.copyWith(
-                            color: kcPrimaryNeutral300,
-                            fontWeight: FontWeight.w400),
-                      ),
-                    ],
-                  ),
+                  Builder(builder: (context) {
+                    final subtotal = selectedItems.subtotal ?? 0;
+                    final num discount = selectedItems.discount ?? 0;
+                    final discounted = subtotal - discount;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Subtotal (${selectedItems.items?.length ?? 0} items)",
+                              style: ktBodyRegularSize14.copyWith(
+                                  color: kcPrimaryNeutral300),
+                            ),
+                            if (discount > 0)
+                              Row(
+                                children: [
+                                  Text(
+                                    "₦${subtotal.toStringAsFixed(0)}",
+                                    style: ktBodyRegularSize14.copyWith(
+                                      color: kcPrimaryNeutral300,
+                                      fontWeight: FontWeight.w400,
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
+                                  horizontalSpaceTiny,
+                                  Text(
+                                    "₦${discounted.toStringAsFixed(0)}",
+                                    style: ktBodyRegularSize14.copyWith(
+                                        color: kcPrimaryNeutral100,
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              )
+                            else
+                              Text(
+                                "₦${subtotal.toStringAsFixed(0)}",
+                                style: ktBodyRegularSize14.copyWith(
+                                    color: kcPrimaryNeutral300,
+                                    fontWeight: FontWeight.w400),
+                              ),
+                          ],
+                        ),
+                        if (discount > 0) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.local_offer_outlined,
+                                    size: 12, color: Colors.green.shade700),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "You saved ₦${discount.toStringAsFixed(0)}",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.green.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  }),
                   verticalSpaceTiny,
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -565,7 +629,9 @@ class CheckoutScreen extends HookConsumerWidget {
                             color: kcPrimaryNeutral300),
                       ),
                       Text(
-                        "₦${selectedItems.deliveryFee?.toStringAsFixed(0) ?? "0"}",
+                        (selectedItems.payableDeliveryFee ?? 0) == 0
+                            ? "Free"
+                            : "₦${selectedItems.payableDeliveryFee!.toStringAsFixed(0)}",
                         style: ktBodyRegularSize14.copyWith(
                             color: kcPrimaryNeutral100,
                             fontWeight: FontWeight.w400),

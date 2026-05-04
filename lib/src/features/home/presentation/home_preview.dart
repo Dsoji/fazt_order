@@ -1,8 +1,8 @@
-import 'package:fazt_order/src/features/auth/login/presentation/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
@@ -55,12 +55,7 @@ class HomePreview extends HookConsumerWidget {
 
     return Scaffold(
       floatingActionButton: GestureDetector(
-          onTap: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-            );
-          },
+          onTap: () => context.go('/login'),
           child: Container(
             width: 82,
             padding: const EdgeInsets.all(10),

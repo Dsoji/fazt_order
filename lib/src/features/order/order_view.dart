@@ -1,4 +1,5 @@
 import 'package:animated_segmented_tab_control/animated_segmented_tab_control.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fazt_order/src/common/res/app_colors.dart';
 import 'package:fazt_order/src/features/order/checkout_view.dart';
 import 'package:fazt_order/src/features/order/completed_orders.dart';
@@ -118,12 +119,34 @@ class OrderView extends HookConsumerWidget {
                               // Image
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  item.shop?.store?.storeDisplayImage ??
-                                      "asset/images/placeholder.png",
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
+                                child: Builder(
+                                  builder: (context) {
+                                    final imageUrl =
+                                        item.shop?.store?.storeDisplayImage;
+                                    Widget fallback() => Container(
+                                          width: 80,
+                                          height: 80,
+                                          color: Colors.grey[300],
+                                          child: Icon(
+                                            Icons.storefront,
+                                            color: Colors.grey[600],
+                                            size: 30,
+                                          ),
+                                        );
+                                    if (imageUrl == null || imageUrl.isEmpty) {
+                                      return fallback();
+                                    }
+                                    return CachedNetworkImage(
+                                      imageUrl: imageUrl,
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) =>
+                                          fallback(),
+                                      errorWidget: (context, url, error) =>
+                                          fallback(),
+                                    );
+                                  },
                                 ),
                               ),
                               const SizedBox(width: 7),
@@ -178,6 +201,35 @@ class OrderView extends HookConsumerWidget {
                                           fontWeight: FontWeight.w400,
                                           color: kcPrimaryNeutral300),
                                     ),
+                                    if ((item.discount ?? 0) > 0) ...[
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green.shade50,
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.local_offer_outlined,
+                                                size: 11,
+                                                color: Colors.green.shade700),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              "You saved ₦${item.discount!.toStringAsFixed(0)}",
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.green.shade700,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),

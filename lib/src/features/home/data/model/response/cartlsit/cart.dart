@@ -9,6 +9,8 @@ class Cart {
   List<Item>? items;
   num? subtotal;
   num? deliveryFee;
+  num? payableDeliveryFee;
+  num? discount;
   num? serviceFee;
   num? totalPrice;
   num? packCount;
@@ -23,6 +25,8 @@ class Cart {
     this.items,
     this.subtotal,
     this.deliveryFee,
+    this.payableDeliveryFee,
+    this.discount,
     this.serviceFee,
     this.totalPrice,
     this.packCount,
@@ -34,7 +38,7 @@ class Cart {
 
   @override
   String toString() {
-    return 'Cart(user: $user, shop: $shop, items: $items, subtotal: $subtotal, deliveryFee: $deliveryFee, serviceFee: $serviceFee, totalPrice: $totalPrice, packCount: $packCount, lastUpdated: $lastUpdated, createdAt: $createdAt, updatedAt: $updatedAt, id: $id)';
+    return 'Cart(user: $user, shop: $shop, items: $items, subtotal: $subtotal, deliveryFee: $deliveryFee, payableDeliveryFee: $payableDeliveryFee, discount: $discount, serviceFee: $serviceFee, totalPrice: $totalPrice, packCount: $packCount, lastUpdated: $lastUpdated, createdAt: $createdAt, updatedAt: $updatedAt, id: $id)';
   }
 
   factory Cart.fromMap(Map<String, dynamic> data) => Cart(
@@ -47,6 +51,8 @@ class Cart {
             .toList(),
         subtotal: data['subtotal'] as num?,
         deliveryFee: data['deliveryFee'] as num?,
+        payableDeliveryFee: data['payableDeliveryFee'] as num?,
+        discount: data['discount'] as num?,
         serviceFee: data['serviceFee'] as num?,
         totalPrice: data['totalPrice'] as num?,
         packCount: data['packCount'] as num?,
@@ -68,6 +74,8 @@ class Cart {
         'items': items?.map((e) => e.toMap()).toList(),
         'subtotal': subtotal,
         'deliveryFee': deliveryFee,
+        'payableDeliveryFee': payableDeliveryFee,
+        'discount': discount,
         'serviceFee': serviceFee,
         'totalPrice': totalPrice,
         'packCount': packCount,
@@ -95,6 +103,8 @@ class Cart {
     List<Item>? items,
     num? subtotal,
     num? deliveryFee,
+    num? payableDeliveryFee,
+    num? discount,
     num? serviceFee,
     num? totalPrice,
     num? packCount,
@@ -109,6 +119,8 @@ class Cart {
       items: items ?? this.items,
       subtotal: subtotal ?? this.subtotal,
       deliveryFee: deliveryFee ?? this.deliveryFee,
+      payableDeliveryFee: payableDeliveryFee ?? this.payableDeliveryFee,
+      discount: discount ?? this.discount,
       serviceFee: serviceFee ?? this.serviceFee,
       totalPrice: totalPrice ?? this.totalPrice,
       packCount: packCount ?? this.packCount,

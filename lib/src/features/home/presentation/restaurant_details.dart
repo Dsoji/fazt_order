@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fazt_order/providers/navigation_provider.dart';
 import 'package:fazt_order/src/common/widgets/reusable_buttons.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
@@ -12,10 +14,10 @@ import 'package:logger/logger.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../common/app_colors.dart';
+import '../../../common/components/restaurant_card.dart';
 import '../../../common/res/app_colors.dart';
 import '../../../common/ui_helpers.dart';
 import '../../../common/widgets/text_styles.dart';
-import '../../auth/login/presentation/login_screen.dart';
 import '../../profile/data/controller/profile_controller.dart';
 import '../data/controller/shop_controller.dart';
 import '../data/model/response/meal_details/item.dart' as meal_details;
@@ -43,16 +45,34 @@ class RestaurantDetailsView extends HookConsumerWidget {
     final searchQuery = useState<String>('');
     final searchController = useTextEditingController();
     final isSearching = useState(false);
+    final selectedCategoryId = useState<String?>(null);
     final storeId = restaurant.store?.id;
     final shopId = restaurant.id;
-    logger.d('shopId: $shopId');
-    logger.d('storeId: $storeId');
-    logger.d(
-        'restaurant.store?.salesOperation?.schedule: ${restaurant.store?.salesOperation?.schedule}');
+    final scrollController = useScrollController();
+    final mealsHasMore = ref.watch(
+        shopControllerProvider.select((s) => s.mealVariantMenuHasMore));
+    final isLoadingMoreMeals = ref.watch(
+        shopControllerProvider.select((s) => s.isLoadingMoreMealVariantMenu));
+
+    useEffect(() {
+      void onScroll() {
+        if (!scrollController.hasClients) return;
+        final position = scrollController.position;
+        if (position.pixels >= position.maxScrollExtent - 300) {
+          ref.read(shopControllerProvider.notifier).loadMoreMealVariantMenu(
+                categoryId: selectedCategory.value == "All"
+                    ? null
+                    : selectedCategoryId.value,
+                shopId: shopId,
+              );
+        }
+      }
+
+      scrollController.addListener(onScroll);
+      return () => scrollController.removeListener(onScroll);
+    }, [scrollController, shopId]);
 
     final isOpenNow = restaurant.isOpenNow;
-    logger.d(
-        '[RestaurantDetails] shop=${restaurant.id} FINAL isOpenNow=$isOpenNow, restaurant.isOpen=${restaurant.isOpen}');
     final openingHoursDisplayText = restaurant.openingHoursDisplayText;
 
     useEffect(() {
@@ -70,19 +90,13 @@ class RestaurantDetailsView extends HookConsumerWidget {
       return null;
     }, [shopId]);
 
-    final selectedItems =
-        ref.watch(shopControllerProvider).shopFoodCategory.valueOrNull?.results;
-    final cartItemAsync = ref.watch(shopControllerProvider).fetchCart;
-    logger.d('cartItemAsync: $cartItemAsync');
+    final selectedItems = ref.watch(shopControllerProvider
+        .select((s) => s.shopFoodCategory.valueOrNull?.results));
+    final cartItemAsync =
+        ref.watch(shopControllerProvider.select((s) => s.fetchCart));
     final cartItem = cartItemAsync.valueOrNull?.carts ?? [];
-    logger.d('cartItem: $cartItem');
     final totalItems = cartItemAsync.valueOrNull?.availableCarts ?? 0;
-    logger.d('totalItems: $totalItems');
 
-    // Add this state for selected category ID
-    final selectedCategoryId = useState<String?>(null);
-
-    // Alternative: Fetch all meals when "All" is selected
     Future<void> fetchShopFood() async {
       if (selectedCategory.value == "All") {
         await ref.read(shopControllerProvider.notifier).fetchMealVariantMenu(
@@ -96,21 +110,35 @@ class RestaurantDetailsView extends HookConsumerWidget {
       }
     }
 
-    final mealVariants = ref.watch(shopControllerProvider).mealVariantMenu;
+    final mealVariants =
+        ref.watch(shopControllerProvider.select((s) => s.mealVariantMenu));
 
-    logger.d('cartItem: $cartItem');
+    final filteredResults = useMemoized(() {
+      var filtered = mealVariants.valueOrNull?.results ??
+          const <MealVariantMenuResult>[];
+      if (searchQuery.value.isNotEmpty) {
+        final q = searchQuery.value.toLowerCase();
+        filtered = filtered.where((item) {
+          final name = item.meal?.mealName?.toLowerCase() ?? '';
+          final desc = item.meal?.mealDescription?.toLowerCase() ?? '';
+          return name.contains(q) || desc.contains(q);
+        }).toList();
+      }
+      if (selectedCategory.value != "All") {
+        filtered = filtered
+            .where((item) =>
+                item.meal?.category?.categoryName == selectedCategory.value)
+            .toList();
+      }
+      return filtered;
+    }, [mealVariants, searchQuery.value, selectedCategory.value]);
 
     return Scaffold(
       backgroundColor: kcWhite,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: isLoggedIn == false
           ? GestureDetector(
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              },
+              onTap: () => context.go('/login'),
               child: Container(
                 width: 82,
                 padding: const EdgeInsets.all(10),
@@ -139,7 +167,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 4),
                       ),
@@ -228,24 +256,58 @@ class RestaurantDetailsView extends HookConsumerWidget {
             ),
         ],
       ),
-      body: ListView(
-        shrinkWrap: true,
-        children: [
+      body: RefreshIndicator(
+        color: AppColors.brand400,
+        onRefresh: () async {
+          if (isLoggedIn == true) {
+            await ref.read(shopControllerProvider.notifier).fetchCart();
+          }
+          await Future.wait([
+            ref
+                .read(shopControllerProvider.notifier)
+                .fetchShopFoodCategory(storeId!),
+            fetchShopFood(),
+          ]);
+        },
+        child: CustomScrollView(
+          controller: scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
           // Header Image
-          Image.network(
-            restaurant.store?.storeDisplayImage ??
-                'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRjzZwJLYpHj9aghuqOmOuLUjpqMT2yrfmQhw&s',
-            width: double.infinity,
-            height: 200,
-            fit: BoxFit.cover,
+          SliverToBoxAdapter(
+            child: Builder(
+              builder: (context) {
+                final imageUrl = restaurant.store?.storeDisplayImage;
+                Widget fallback() => Container(
+                      width: double.infinity,
+                      height: 200,
+                      color: Colors.grey[300],
+                      child: Icon(
+                        Icons.storefront,
+                        color: Colors.grey[600],
+                        size: 48,
+                      ),
+                    );
+                if (imageUrl == null || imageUrl.isEmpty) return fallback();
+                return CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  width: double.infinity,
+                  height: 200,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => fallback(),
+                  errorWidget: (context, url, error) => fallback(),
+                );
+              },
+            ),
           ),
-          // Draggable Scrollable Sheet
-          Padding(
+          // Info section
+          SliverPadding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Drag Handle
                 Center(
                   child: Container(
@@ -358,21 +420,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                       ],
                     ),
                     const SizedBox(width: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isOpenNow ? kcPrimaryOrange500 : kcPrimaryRed500,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        isOpenNow ? "OPEN" : "CLOSED",
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: kcWhite,
-                        ),
-                      ),
-                    ),
+                    RestaurantStatusPill(isOpen: isOpenNow),
                   ],
                 ),
                 verticalSpaceSmall,
@@ -473,7 +521,7 @@ class RestaurantDetailsView extends HookConsumerWidget {
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: kcPrimary300.withOpacity(0.3),
+                                      color: kcPrimary300.withValues(alpha: 0.3),
                                       blurRadius: 8,
                                       offset: const Offset(0, 2),
                                     ),
@@ -500,174 +548,184 @@ class RestaurantDetailsView extends HookConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                mealVariants.when(
-                  data: (data) {
-                    // Filter results based on search query
-                    List<MealVariantMenuResult> filteredResults =
-                        data.results ?? [];
-
-                    if (searchQuery.value.isNotEmpty) {
-                      filteredResults = filteredResults.where((item) {
-                        final mealName =
-                            item.meal?.mealName?.toLowerCase() ?? '';
-                        final mealDescription =
-                            item.meal?.mealDescription?.toLowerCase() ?? '';
-                        final query = searchQuery.value.toLowerCase();
-                        return mealName.contains(query) ||
-                            mealDescription.contains(query);
-                      }).toList();
-                    }
-
-                    // Also filter by selected category if not "All"
-                    if (selectedCategory.value != "All") {
-                      filteredResults = filteredResults.where((item) {
-                        return item.meal?.category?.categoryName ==
-                            selectedCategory.value;
-                      }).toList();
-                    }
-
-                    if (filteredResults.isEmpty &&
-                        searchQuery.value.isNotEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Center(
-                          child: Text(
-                            'No meals found matching your search',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-
-                    return Column(
-                      children: filteredResults
-                          .map((item) =>
-                              _buildMenuItem(context, item, isOpenNow))
-                          .toList(),
-                    );
-                  },
-                  error: (error, stackTrace) {
-                    logger
-                        .d('Error loading meal variants: $error\n$stackTrace');
-                    return const Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Center(
-                        child: Text(
-                          'Unable to load meals right now.\nPlease try again later.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  loading: () => ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: 5,
-                    itemBuilder: (context, index) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: Row(
-                        children: [
-                          Shimmer.fromColors(
-                            baseColor: Colors.grey[300]!,
-                            highlightColor: Colors.grey[100]!,
-                            child: Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Shimmer.fromColors(
-                                  baseColor: Colors.grey[300]!,
-                                  highlightColor: Colors.grey[100]!,
-                                  child: Container(
-                                    width: double.infinity,
-                                    height: 16,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Shimmer.fromColors(
-                                  baseColor: Colors.grey[300]!,
-                                  highlightColor: Colors.grey[100]!,
-                                  child: Container(
-                                    width: 100,
-                                    height: 14,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                ],
+              ),
+            ),
+          ),
+          // Meals
+          mealVariants.when(
+            data: (_) {
+              if (filteredResults.isEmpty && searchQuery.value.isNotEmpty) {
+                return const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Center(
+                      child: Text(
+                        'No meals found matching your search',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
                       ),
                     ),
                   ),
+                );
+              }
+              return SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                sliver: SliverList.builder(
+                  itemCount: filteredResults.length,
+                  itemBuilder: (context, i) => _MenuItemTile(
+                    menuItem: filteredResults[i],
+                    isOpenNow: isOpenNow,
+                    isLoggedIn: isLoggedIn,
+                  ),
                 ),
-                verticalSpaceMassive,
-              ],
+              );
+            },
+            error: (error, stackTrace) {
+              logger.d('Error loading meal variants: $error\n$stackTrace');
+              return const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Center(
+                    child: Text(
+                      'Unable to load meals right now.\nPlease try again later.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  ),
+                ),
+              );
+            },
+            loading: () => SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              sliver: SliverList.builder(
+                itemCount: 5,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Row(
+                    children: [
+                      Shimmer.fromColors(
+                        baseColor: Colors.grey[300]!,
+                        highlightColor: Colors.grey[100]!,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Shimmer.fromColors(
+                              baseColor: Colors.grey[300]!,
+                              highlightColor: Colors.grey[100]!,
+                              child: Container(
+                                width: double.infinity,
+                                height: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Shimmer.fromColors(
+                              baseColor: Colors.grey[300]!,
+                              highlightColor: Colors.grey[100]!,
+                              child: Container(
+                                width: 100,
+                                height: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
+          if (mealVariants.hasValue && filteredResults.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Center(
+                  child: isLoadingMoreMeals
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: kcPrimary300,
+                          ),
+                        )
+                      : !mealsHasMore
+                          ? Text(
+                              'No more meals',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          const SliverToBoxAdapter(child: verticalSpaceMassive),
         ],
+        ),
       ),
     );
   }
 
-  Widget _buildMenuItem(
-    BuildContext context,
-    MealVariantMenuResult menuItem,
-    bool isOpenNow,
-  ) {
+}
+
+class _MenuItemTile extends StatelessWidget {
+  const _MenuItemTile({
+    required this.menuItem,
+    required this.isOpenNow,
+    required this.isLoggedIn,
+  });
+
+  final MealVariantMenuResult menuItem;
+  final bool isOpenNow;
+  final bool? isLoggedIn;
+
+  Widget _fallbackThumb() => Container(
+        width: 80,
+        height: 80,
+        color: Colors.grey[300],
+        child: Icon(
+          Icons.fastfood,
+          color: Colors.grey[600],
+          size: 30,
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = menuItem.meal?.mealImage;
+    final hasImage = imageUrl != null && imageUrl.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Row(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: (menuItem.meal?.mealImage != null &&
-                    menuItem.meal!.mealImage!.isNotEmpty)
-                ? Image.network(
-                    menuItem.meal!.mealImage!,
+            child: hasImage
+                ? CachedNetworkImage(
+                    imageUrl: imageUrl,
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 80,
-                        height: 80,
-                        color: Colors.grey[300],
-                        child: Icon(
-                          Icons.fastfood,
-                          color: Colors.grey[600],
-                          size: 30,
-                        ),
-                      );
-                    },
+                    placeholder: (context, url) => _fallbackThumb(),
+                    errorWidget: (context, url, error) => _fallbackThumb(),
                   )
-                : Container(
-                    width: 80,
-                    height: 80,
-                    color: Colors.grey[300],
-                    child: Icon(
-                      Icons.fastfood,
-                      color: Colors.grey[600],
-                      size: 30,
-                    ),
-                  ),
+                : _fallbackThumb(),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -702,12 +760,9 @@ class RestaurantDetailsView extends HookConsumerWidget {
               ],
             ),
           ),
-          // menuItem.inStock == true
-          //     ?
           GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: () {
-              // Check if shop is closed first
               if (!isOpenNow) {
                 Fluttertoast.showToast(
                   msg: '⚠️ Shop is currently closed',
@@ -719,9 +774,13 @@ class RestaurantDetailsView extends HookConsumerWidget {
                 );
                 return;
               }
-
               if (isLoggedIn == true) {
-                _showAddToCartBottomSheet(context, menuItem as dynamic);
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => AddToCartBottomSheet(menuItem: menuItem),
+                );
               } else {
                 Fluttertoast.showToast(
                   msg: 'Please login to add to cart',
@@ -744,32 +803,9 @@ class RestaurantDetailsView extends HookConsumerWidget {
                 style: ktBodyRegularSize16.copyWith(color: kcWhite),
               ),
             ),
-          )
-          // : Container(
-          //     padding:
-          //         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          //     decoration: BoxDecoration(
-          //       color: kcPrimary800,
-          //       borderRadius: BorderRadius.circular(30),
-          //     ),
-          //     child: Text(
-          //       "Out of Stock",
-          //       style: ktBodyRegularSize16.copyWith(color: kcPrimary300),
-          //     ),
-          // ),
+          ),
         ],
       ),
-    );
-  }
-
-  // Add this method to show the bottom sheet
-  void _showAddToCartBottomSheet(
-      BuildContext context, MealVariantMenuResult menuItem) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AddToCartBottomSheet(menuItem: menuItem),
     );
   }
 }

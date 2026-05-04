@@ -15,6 +15,63 @@ import '../home/data/model/response/my_orders_list/result.dart';
 
 final logger = Logger();
 
+class OrderStatusHelper {
+  static String getLottieAsset(String? status) {
+    switch (status) {
+      case 'paid':
+      case 'accepted':
+        return 'asset/lottie/delivery-accepted.json';
+      case 'preparing':
+      case 'ready':
+        return 'asset/lottie/rice-cooker.json';
+      case 'in_transit':
+      case 'arrived':
+        return 'asset/lottie/yes-brruu.json';
+      case 'delivered':
+        return 'asset/lottie/rice-cooker.json';
+      default:
+        return 'asset/lottie/delivery-accepted.json';
+    }
+  }
+
+  static String getStatusDescription(String? status) {
+    switch (status) {
+      case 'pending':
+        return "Waiting for payment to be processed.";
+      case 'paid':
+        return "Order has been paid for, waiting for vendor to confirm your order.";
+      case 'accepted':
+        return "Order is accepted by vendor";
+      case 'preparing':
+        return "Your order is being prepared by the vendor";
+      case 'ready':
+        return "Order ready and will be picked up by the rider";
+      case 'in_transit':
+        return "Order has been picked up and is on the way to you";
+      case 'arrived':
+        return "Rider has arrived";
+      case 'delivered':
+        return "Order has been delivered";
+      default:
+        return "Waiting for vendor to confirm your order.";
+    }
+  }
+
+  static int getProgressStep(String? status) {
+    switch (status) {
+      case 'pending': return 0;
+      case 'paid': return 1;
+      case 'accepted': return 2;
+      case 'preparing': return 2; // FIX: previously missed, skipped to 7
+      case 'ready': return 3;
+      case 'in_transit': return 4;
+      case 'arrived': return 5;
+      case 'delivered': return 6;
+      default: return 0;
+    }
+  }
+}
+
 class OngoingOrderView extends HookConsumerWidget {
   final OrderResult orderItems;
 
@@ -22,20 +79,6 @@ class OngoingOrderView extends HookConsumerWidget {
     super.key,
     required this.orderItems,
   });
-
-  // Helper to select Lottie animation based on currentStep
-  String _getLottieAsset(int step) {
-    if (step == 1 || step == 2) {
-      return 'asset/lottie/delivery-accepted.json';
-    } else if (step == 3 || step == 4) {
-      return 'asset/lottie/rice-cooker.json';
-    } else if (step == 5 || step == 6) {
-      return 'asset/lottie/yes-brruu.json';
-    } else if (step == 7 || step == 8) {
-      return 'asset/lottie/rice-cooker.json';
-    }
-    return 'asset/lottie/delivery-accepted.json';
-  }
 
   void _showCancelOrderDialog(BuildContext context) {
     showDialog(
@@ -86,32 +129,13 @@ class OngoingOrderView extends HookConsumerWidget {
                     SizedBox(
                         height: 150,
                         width: 150,
-                        child: Lottie.asset(
-                            _getLottieAsset(orderItems.status == 'paid'
-                                ? 1
-                                : orderItems.status == 'preparing'
-                                    ? 2
-                                    : orderItems.status == 'in_transit'
-                                        ? 3
-                                        : 4))),
+                        child: Lottie.asset(OrderStatusHelper.getLottieAsset(orderItems.status))),
                     verticalSpaceSmall,
 
                     verticalSpaceSmall,
                     Text(
                       textAlign: TextAlign.center,
-                      orderItems.status == 'paid'
-                          ? "Order has been paid for, waiting for vendor to confirm your order."
-                          : orderItems.status == 'accepted'
-                              ? "Order is accepted by vendor"
-                              : orderItems.status == 'preparing'
-                                  ? "Your order is being prepared by the vendor"
-                                  : orderItems.status == 'ready'
-                                      ? "Order ready and will be picked up by the rider"
-                                      : orderItems.status == 'in_transit'
-                                          ? "Order has been picked up and is on the way to you"
-                                          : orderItems.status == 'arrived'
-                                              ? "Rider has arrived"
-                                              : "Order has been delivered",
+                      OrderStatusHelper.getStatusDescription(orderItems.status),
                       style: const TextStyle(
                           fontSize: 16,
                           color: kcPrimaryNeutral200,
@@ -127,19 +151,7 @@ class OngoingOrderView extends HookConsumerWidget {
                     // ),
                     verticalSpaceSmall,
                     DashProgressBar(
-                        currentStep: orderItems.status == 'paid'
-                            ? 1
-                            : orderItems.status == 'accepted'
-                                ? 2
-                                : orderItems.status == 'ready'
-                                    ? 3
-                                    : orderItems.status == 'in_transit'
-                                        ? 4
-                                        : orderItems.status == 'arrived'
-                                            ? 5
-                                            : orderItems.status == 'delivered'
-                                                ? 6
-                                                : 7,
+                        currentStep: OrderStatusHelper.getProgressStep(orderItems.status),
                         totalSteps: 7,
                         activeColor: kcPrimary200,
                         inactiveColor: kcPrimary800),

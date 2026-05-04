@@ -10,6 +10,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 // import 'package:geocoding/geocoding.dart'; // Removed
 // import 'package:geolocator/geolocator.dart'; // Removed
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:iconsax_plus/iconsax_plus.dart';
@@ -19,7 +20,6 @@ import '../../../common/location_service.dart';
 import '../../../common/res/app_assets.dart';
 import '../../../common/res/app_colors.dart';
 import '../../../common/widgets/custom_textfield.dart';
-import '../../dashboard_view.dart';
 import '../data/model/payload/address_payload.dart';
 
 final logger = Logger();
@@ -110,246 +110,232 @@ class MapLocationScreen extends HookConsumerWidget {
       }
     }
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(
-                  ImageAssets.mapBackground,
-                ),
-                fit: BoxFit.fill,
-              ),
-            ),
-          ),
-          Positioned(
-            top: 40,
-            left: 20,
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.brand950,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ),
-          ),
-          // Bottom-aligned container overlay
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.all(16),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        body: Stack(
+          children: [
+            Container(
               decoration: const BoxDecoration(
-                color: AppColors.brand980,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
+                image: DecorationImage(
+                  image: AssetImage(
+                    ImageAssets.mapBackground,
+                  ),
+                  fit: BoxFit.fill,
                 ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Set current location",
-                    style: TextStyle(
-                      color: kcPrimaryNeutral100,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1,
-                    ),
+            ),
+            // Bottom-aligned container overlay
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: AppColors.brand980,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "This let us show nearby restaurants, stores you can order from and address to deliver to.",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: kcPrimaryNeutral300,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Set current location",
+                      style: TextStyle(
+                        color: kcPrimaryNeutral100,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () {
-                      getCurrentPosition(context);
-                    },
-                    child: const Text(
-                      'Use Current Location',
-                      style: TextStyle(color: AppColors.brand300),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "This let us show nearby restaurants, stores you can order from and address to deliver to.",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: kcPrimaryNeutral300,
+                      ),
                     ),
-                  ),
-                  CustomFormTextField(
-                    controller: controller,
-                    hintText: 'Full Address',
-                    fieldName: '',
-                    keyboardType: TextInputType.text,
-                    suffixIcon: IconButton(
+                    const SizedBox(height: 16),
+                    TextButton(
                       onPressed: () {
-                        debounceTimer.value?.cancel();
-                        debounceTimer.value =
-                            Timer(const Duration(milliseconds: 400), () {
-                          searchPlaces(controller.text);
-                        });
+                        getCurrentPosition(context);
                       },
-                      icon: const Icon(IconsaxPlusLinear.search_normal),
+                      child: const Text(
+                        'Use Current Location',
+                        style: TextStyle(color: AppColors.brand300),
+                      ),
                     ),
-                  ),
-                  const Gap(12),
-                  if (places.value.isNotEmpty)
-                    SizedBox(
-                      height: 350,
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: places.value.length,
-                        itemBuilder: (context, index) {
-                          final place = places.value[index];
-                          final pp = place['placePrediction'];
-                          return ListTile(
-                            title: Text(pp?['text']?['text'] ?? ''),
-                            onTap: () async {
-                              isLoading.value = true;
-                              try {
-                                final addressData =
-                                    await LocationService.getPlaceDetails(
-                                  pp?['placeId'],
-                                  pp?['text']?['text'] ?? '',
-                                );
-                                if (addressData != null) {
-                                  lat.value = addressData.lat;
-                                  long.value = addressData.lng;
-                                  city.value = addressData.city;
-                                  state.value = addressData.state;
-                                  selectedAddress.value = addressData.toMap();
-                                }
-                                places.value = [];
-                              } catch (e) {
-                                logger.e('Error getting place details: $e');
-                              } finally {
-                                isLoading.value = false;
-                              }
-                            },
-                          );
+                    CustomFormTextField(
+                      controller: controller,
+                      hintText: 'Full Address',
+                      fieldName: '',
+                      keyboardType: TextInputType.text,
+                      suffixIcon: IconButton(
+                        onPressed: () {
+                          debounceTimer.value?.cancel();
+                          debounceTimer.value =
+                              Timer(const Duration(milliseconds: 400), () {
+                            searchPlaces(controller.text);
+                          });
                         },
+                        icon: const Icon(IconsaxPlusLinear.search_normal),
                       ),
                     ),
-                  if (selectedAddress.value != null) ...[
                     const Gap(12),
-                    Card(
-                      color: kcPrimary980,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: kcPrimary400, width: 1),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              selectedAddress.value!['title'] ?? '',
-                              style: const TextStyle(
-                                color: kcPrimaryNeutral100,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const Gap(6),
-                            Text(
-                              selectedAddress.value!['address'] ?? '',
-                              style: const TextStyle(
-                                color: kcPrimaryNeutral300,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const Gap(8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'City: ${selectedAddress.value!['city'] ?? ''}',
-                                    style: const TextStyle(
-                                      color: kcPrimaryNeutral400,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    'State: ${selectedAddress.value!['state'] ?? ''}',
-                                    style: const TextStyle(
-                                      color: kcPrimaryNeutral400,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Gap(6),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Lat: ${selectedAddress.value!['lat'] ?? ''}',
-                                    style: const TextStyle(
-                                      color: kcPrimaryNeutral500,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    'Lng: ${selectedAddress.value!['lng'] ?? ''}',
-                                    style: const TextStyle(
-                                      color: kcPrimaryNeutral500,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                    if (places.value.isNotEmpty)
+                      SizedBox(
+                        height: 350,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: places.value.length,
+                          itemBuilder: (context, index) {
+                            final place = places.value[index];
+                            final pp = place['placePrediction'];
+                            return ListTile(
+                              title: Text(pp?['text']?['text'] ?? ''),
+                              onTap: () async {
+                                isLoading.value = true;
+                                try {
+                                  final addressData =
+                                      await LocationService.getPlaceDetails(
+                                    pp?['placeId'],
+                                    pp?['text']?['text'] ?? '',
+                                  );
+                                  if (addressData != null) {
+                                    lat.value = addressData.lat;
+                                    long.value = addressData.lng;
+                                    city.value = addressData.city;
+                                    state.value = addressData.state;
+                                    selectedAddress.value = addressData.toMap();
+                                  }
+                                  places.value = [];
+                                } catch (e) {
+                                  logger.e('Error getting place details: $e');
+                                } finally {
+                                  isLoading.value = false;
+                                }
+                              },
+                            );
+                          },
                         ),
                       ),
-                    ),
-                    const Gap(12),
-                    FullButton(
-                      text: 'Verify',
-                      width: double.infinity,
-                      height: 48,
-                      color: AppColors.brand400,
-                      textColor: Colors.white,
-                      onPressed: () async {
-                        final addr = selectedAddress.value!;
-                        final ok = await ref
-                            .read(authenticationControllerProvider.notifier)
-                            .updateAddress(
-                              AddressPayload(
-                                address: addr['address'],
-                                city: addr['city'],
-                                state: addr['state'],
-                                long: addr['lng'],
-                                lat: addr['lat'],
+                    if (selectedAddress.value != null) ...[
+                      const Gap(12),
+                      Card(
+                        color: kcPrimary980,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: kcPrimary400, width: 1),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                selectedAddress.value!['title'] ?? '',
+                                style: const TextStyle(
+                                  color: kcPrimaryNeutral100,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            );
-                        if (ok == true && context.mounted) {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const DashboardView()));
-                        }
-                      },
-                    ),
+                              const Gap(6),
+                              Text(
+                                selectedAddress.value!['address'] ?? '',
+                                style: const TextStyle(
+                                  color: kcPrimaryNeutral300,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const Gap(8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'City: ${selectedAddress.value!['city'] ?? ''}',
+                                      style: const TextStyle(
+                                        color: kcPrimaryNeutral400,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'State: ${selectedAddress.value!['state'] ?? ''}',
+                                      style: const TextStyle(
+                                        color: kcPrimaryNeutral400,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Gap(6),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Lat: ${selectedAddress.value!['lat'] ?? ''}',
+                                      style: const TextStyle(
+                                        color: kcPrimaryNeutral500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      'Lng: ${selectedAddress.value!['lng'] ?? ''}',
+                                      style: const TextStyle(
+                                        color: kcPrimaryNeutral500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const Gap(12),
+                      FullButton(
+                        text: 'Verify',
+                        width: double.infinity,
+                        height: 48,
+                        color: AppColors.brand400,
+                        textColor: Colors.white,
+                        onPressed: () async {
+                          final addr = selectedAddress.value!;
+                          final ok = await ref
+                              .read(authenticationControllerProvider.notifier)
+                              .updateAddress(
+                                AddressPayload(
+                                  address: addr['address'],
+                                  city: addr['city'],
+                                  state: addr['state'],
+                                  long: addr['lng'],
+                                  lat: addr['lat'],
+                                ),
+                              );
+                          if (ok == true && context.mounted) {
+                            context.go('/dashboard');
+                          }
+                        },
+                      ),
+                    ],
+                    const Gap(50),
                   ],
-                  const Gap(50),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

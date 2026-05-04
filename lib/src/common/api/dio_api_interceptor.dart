@@ -10,23 +10,13 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:logger/logger.dart';
 
-import '../../features/onboarding/presentation/onboarding_screen.dart';
+import '../../router/app_router.dart';
 import '../res/base.dart';
 
 final logger = Logger();
-final navigatorKeyProvider = Provider<GlobalKey<NavigatorState>>((ref) {
-  return GlobalKey<NavigatorState>();
-});
 
 final dioApiInterceptorProvider = Provider<DioApiInterceptor>((ref) {
-  // final authLocalService = ref.read(authenticationLocalServiceProvider);
-  // final appRouter = ref.read(appRouteProvider);
-
-  return DioApiInterceptor(
-    // authLocalService: authLocalService,
-    // appRouter: appRouter,
-    ref: ref,
-  );
+  return DioApiInterceptor(ref: ref);
 });
 
 class DioApiInterceptor extends Interceptor {
@@ -53,8 +43,6 @@ class DioApiInterceptor extends Interceptor {
     // final token = await authLocalService.getToken();
     var box = Hive.box('data');
     final token = box.get('accessToken');
-    final nav = ref.read(navigatorKeyProvider).currentState;
-    log('navigator is null: ${nav == null}');
     if (kDebugMode) {
       log('Url🔗: ${options.uri}');
 
@@ -189,10 +177,7 @@ class DioApiInterceptor extends Interceptor {
         );
         final box = Hive.box('data');
         await box.clear();
-        Navigator.of(ref.read(navigatorKeyProvider).currentContext!)
-            .pushReplacement(
-          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-        );
+        ref.read(routerProvider).go('/onboarding');
       }
       rethrow;
     } catch (e) {

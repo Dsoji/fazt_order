@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconsax_plus/iconsax_plus.dart';
 
 import '../../../common/res/app_assets.dart';
 import '../../../common/res/app_colors.dart';
-import '../../auth/login/presentation/login_screen.dart';
 
 class OnboardingScreen extends HookWidget {
   const OnboardingScreen({super.key});
@@ -93,12 +93,7 @@ class OnboardingScreen extends HookWidget {
                 CustomGetStartedButton(
                   onPressed: () {
                     if (currentPage.value == pages.length - 1) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                      );
+                      context.go('/login');
                     } else {
                       pageController.nextPage(
                         duration: const Duration(milliseconds: 300),
