@@ -180,18 +180,25 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                         const Gap(16),
 
                         // Dynamic customization sections based on optionGroup
-                        if (options != null && options.isNotEmpty)
-                          ListView.separated(
+                        if (options != null &&
+                            options.any((g) => (g.items ?? []).any(
+                                (i) => i.variant?.inStock == true)))
+                          Builder(builder: (_) {
+                            final visibleOptions = options
+                                .where((g) => (g.items ?? []).any(
+                                    (i) => i.variant?.inStock == true))
+                                .toList();
+                            return ListView.separated(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            itemCount: options.length,
+                            itemCount: visibleOptions.length,
                             separatorBuilder: (context, index) => const Divider(
                               color: AppColors.neutral200,
                               thickness: 0.5,
                               height: 32,
                             ),
                             itemBuilder: (context, index) {
-                              final optionGroup = options[index];
+                              final optionGroup = visibleOptions[index];
                               final items = optionGroup.items ?? [];
 
                               final optionNames = items.map((item) {
@@ -206,7 +213,10 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                 optionNames,
                                 items,
                                 isRequired: optionGroup.isRequired ?? false,
-                                maxSelection: optionGroup.most ?? 1,
+                                maxSelection: (optionGroup.most != null &&
+                                        optionGroup.most! > 0)
+                                    ? optionGroup.most
+                                    : null,
                                 groupId: optionGroup.id ?? '',
                                 selectedItemIdsWithQuantity:
                                     cartState.selectedItemsWithQuantity[
@@ -220,7 +230,8 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                 },
                               );
                             },
-                          )
+                          );
+                          })
                         else
                           const Column(
                             children: [],
@@ -300,9 +311,24 @@ class AddToCartBottomSheet extends HookConsumerWidget {
 
                                       if (options != null) {
                                         for (final optionGroup in options) {
-                                          final isRequired = (optionGroup.isRequired == true) || 
-                                              (optionGroup.least != null && optionGroup.least! > 0);
+                                          final groupItems =
+                                              optionGroup.items ?? [];
+                                          final hasInStockItem =
+                                              groupItems.any((i) =>
+                                                  i.variant?.inStock == true);
+                                          if (!hasInStockItem) {
+                                            continue;
+                                          }
+                                          final hasLeast =
+                                              optionGroup.least != null &&
+                                                  optionGroup.least! > 0;
+                                          final isRequired =
+                                              (optionGroup.isRequired == true) ||
+                                                  hasLeast;
                                           if (isRequired) {
+                                            final minRequired = hasLeast
+                                                ? optionGroup.least!
+                                                : 1;
                                             final selectedItemsForGroup =
                                                 cartState.selectedItemsWithQuantity[
                                                         optionGroup.id ?? ''] ??
@@ -336,7 +362,8 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                                               }
                                             }
 
-                                            if (inStockSelectedItems.isEmpty) {
+                                            if (inStockSelectedItems.length <
+                                                minRequired) {
                                               hasRequiredSelections = false;
                                               break;
                                             }
@@ -539,7 +566,7 @@ class AddToCartBottomSheet extends HookConsumerWidget {
     List<String> options,
     List<meal_details.Item> items, {
     required bool isRequired,
-    required int maxSelection,
+    required int? maxSelection,
     required String groupId,
     required Map<String, int> selectedItemIdsWithQuantity,
     required Function(Map<String, int>) onSelectionChanged,
@@ -579,7 +606,11 @@ class AddToCartBottomSheet extends HookConsumerWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Select ${maxSelection == 1 ? '1' : 'up to $maxSelection'} from here',
+          maxSelection == null
+              ? 'Select as many as you\'d like'
+              : maxSelection == 1
+                  ? 'Select 1 from here'
+                  : 'Select up to $maxSelection from here',
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey[600],
@@ -618,8 +649,19 @@ class AddToCartBottomSheet extends HookConsumerWidget {
                 if (isSelected) {
                   newSelection.remove(itemVariantId);
                 } else {
-                  if (newSelection.length < maxSelection) {
+                  if (maxSelection == null ||
+                      newSelection.length < maxSelection) {
                     newSelection[itemVariantId] = 1;
+                  } else {
+                    Fluttertoast.showToast(
+                      msg: 'You can only select up to $maxSelection',
+                      toastLength: Toast.LENGTH_SHORT,
+                      gravity: ToastGravity.TOP,
+                      backgroundColor: Colors.yellow[600],
+                      textColor: Colors.black,
+                      fontSize: 14.0,
+                    );
+                    return;
                   }
                 }
               }
@@ -647,7 +689,7 @@ class AddToCartBottomSheet extends HookConsumerWidget {
   Widget buildOptionTileWithQuantity(
     String option,
     bool inStock,
-    int maxSelection, {
+    int? maxSelection, {
     required bool isSelected,
     required int quantity,
     required VoidCallback onTap,

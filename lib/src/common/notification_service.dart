@@ -1,27 +1,32 @@
-import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:fazt_order/src/common/res/app_colors.dart';
+import 'dart:io';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:logger/logger.dart';
 
-// Background message handler - must be top-level function
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+const AndroidNotificationChannel highImportanceChannel =
+    AndroidNotificationChannel(
+  'high_importance_channel',
+  'High Importance Notifications',
+  description: 'Used for important alerts',
+  importance: Importance.max,
+  playSound: true,
+);
+
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   final logger = Logger();
   logger.d('📱 Background message received: ${message.notification?.title}');
   logger.d('📱 Message data: ${message.data}');
 
-  // Show notification using AwesomeNotifications
   if (message.notification != null) {
-    await AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        channelKey: 'high_importance_channel',
-        title: message.notification?.title ?? 'New Notification',
-        body: message.notification?.body ?? '',
-        notificationLayout: NotificationLayout.Default,
-      ),
+    await NotificationService.showLocalNotification(
+      title: message.notification?.title,
+      body: message.notification?.body,
     );
   }
 }
@@ -30,27 +35,21 @@ class NotificationService {
   static final _logger = Logger();
 
   static Future<void> initializeFCM() async {
-    // Step 1: Initialize Awesome Notifications
-    await AwesomeNotifications().initialize(
-      'resource://drawable/notify_icon',
-      [
-        NotificationChannel(
-          channelKey: 'high_importance_channel',
-          channelGroupKey: 'high_importance_channel',
-          channelName: 'High Importance Notifications',
-          channelDescription: 'Used for important alerts',
-          defaultColor: AppColors.brand400,
-          ledColor: Colors.white,
-          importance: NotificationImportance.Max,
-          channelShowBadge: true,
-          onlyAlertOnce: false,
-          criticalAlerts: true,
-        ),
-      ],
-      debug: true,
+    const androidInit = AndroidInitializationSettings('notify_icon');
+    const iosInit = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    await flutterLocalNotificationsPlugin.initialize(
+      const InitializationSettings(android: androidInit, iOS: iosInit),
     );
 
-    // Step 2: Request Firebase Notification Permission
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(highImportanceChannel);
+
     final permission = await FirebaseMessaging.instance.requestPermission(
       alert: true,
       badge: true,
@@ -59,7 +58,6 @@ class NotificationService {
     );
     _logger.d('Notification permission: ${permission.authorizationStatus}');
 
-    // Step 2.5: Set iOS foreground presentation options
     await FirebaseMessaging.instance
         .setForegroundNotificationPresentationOptions(
       alert: true,
@@ -67,10 +65,38 @@ class NotificationService {
       sound: true,
     );
 
-    // Step 3: Register background message handler
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-    // Step 4: Save FCM Token
+    // iOS: Firebase can't mint an FCM token until it has received an APNS token from
+    // Apple. Under Flutter 3.35+'s UIScene lifecycle the APNS token can take longer
+    // than a single 5s wait to arrive on a cold start, so retry before giving up.
+    if (Platform.isIOS) {
+      const maxAttempts = 6;
+      String? apnsToken;
+      for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          apnsToken = await FirebaseMessaging.instance
+              .getAPNSToken()
+              .timeout(const Duration(seconds: 5));
+        } catch (e) {
+          _logger.w("⚠️ APNS token attempt $attempt/$maxAttempts failed: $e");
+        }
+        if (apnsToken != null) {
+          _logger.d("✅ APNS token received on attempt $attempt: $apnsToken");
+          break;
+        }
+        if (attempt < maxAttempts) {
+          _logger.d(
+              "… APNS token not ready (attempt $attempt/$maxAttempts), retrying in 2s");
+          await Future.delayed(const Duration(seconds: 2));
+        }
+      }
+      if (apnsToken == null) {
+        _logger.w(
+            "⚠️ APNS token unavailable after $maxAttempts attempts (likely simulator) — FCM token may be null.");
+      }
+    }
+
     try {
       String? newToken = await FirebaseMessaging.instance.getToken();
       if (newToken != null) {
@@ -90,19 +116,16 @@ class NotificationService {
       _logger.w("⚠️ Could not get FCM token (expected on simulator): $e");
     }
 
-    // Step 5: Listen for token refresh
     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
       _logger.d('🔄 FCM Token refreshed: $newToken');
       var box = Hive.box('data');
       box.put('fcm_token', newToken);
     });
 
-    // Step 6: Listen for foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       _logger.d("📥 Foreground FCM message: ${message.notification?.title}");
       _logger.d("📥 Message data: ${message.data}");
 
-      // Show local notification when app is in foreground
       if (message.notification != null) {
         showLocalNotification(
           title: message.notification?.title,
@@ -111,33 +134,42 @@ class NotificationService {
       }
     });
 
-    // Step 7: Handle notification tap from background
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       _logger.i("🔔 Notification clicked from background: ${message.data}");
-      // Handle navigation here if needed
     });
 
-    // Step 8: Handle notification when app is opened from terminated state
     FirebaseMessaging.instance.getInitialMessage().then((message) {
       if (message != null) {
         _logger.i("🔔 App opened from terminated state: ${message.data}");
-        // Handle navigation here if needed
       }
     });
   }
 
-  static void showLocalNotification({
+  static Future<void> showLocalNotification({
     required String? title,
     required String? body,
-  }) {
-    AwesomeNotifications().createNotification(
-      content: NotificationContent(
-        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        channelKey: 'high_importance_channel',
-        title: title ?? 'New Notification',
-        body: body ?? '',
-        notificationLayout: NotificationLayout.Default,
+  }) async {
+    final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        highImportanceChannel.id,
+        highImportanceChannel.name,
+        channelDescription: highImportanceChannel.description,
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: 'notify_icon',
       ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
+    );
+    await flutterLocalNotificationsPlugin.show(
+      id,
+      title ?? 'New Notification',
+      body ?? '',
+      details,
     );
   }
 }
