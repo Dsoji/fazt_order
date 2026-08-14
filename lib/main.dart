@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:fazt_order/src/common/device_metadata.dart';
 import 'package:fazt_order/src/common/notification_service.dart';
 import 'package:fazt_order/src/features/profile/data/service/permission_service.dart';
 import 'package:fazt_order/src/router/app_router.dart';
@@ -40,6 +41,10 @@ void main() async {
 
   await Hive.initFlutter();
   await Hive.openBox('data');
+
+  // Reads the device id / build name once so auth calls don't have to wait on
+  // the platform channels.
+  await DeviceMetadata.warmUp();
 
   await NotificationService.initializeFCM();
   await PermissionService().requestAllPermissions();
