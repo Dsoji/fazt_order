@@ -121,11 +121,17 @@ class PaymentInfo {
   final String? paymentUrl;
   final String? reference;
 
+  /// Set by a wallet payment, which settles inline — there is no redirect and
+  /// no webview to open. A paystack payment leaves this false and hands back a
+  /// [paymentUrl] instead.
+  final bool completed;
+
   const PaymentInfo({
     this.status,
     this.paymentId,
     this.paymentUrl,
     this.reference,
+    this.completed = false,
   });
 
   factory PaymentInfo.fromMap(Map<String, dynamic> data) => PaymentInfo(
@@ -133,6 +139,7 @@ class PaymentInfo {
         paymentId: data['paymentId'] as String?,
         paymentUrl: data['paymentUrl'] as String?,
         reference: data['reference'] as String?,
+        completed: data['completed'] as bool? ?? false,
       );
 
   Map<String, dynamic> toMap() => {
@@ -140,6 +147,7 @@ class PaymentInfo {
         'paymentId': paymentId,
         'paymentUrl': paymentUrl,
         'reference': reference,
+        'completed': completed,
       };
 
   factory PaymentInfo.fromJson(String data) =>
@@ -152,11 +160,13 @@ class PaymentInfo {
     String? paymentId,
     String? paymentUrl,
     String? reference,
+    bool? completed,
   }) =>
       PaymentInfo(
         status: status ?? this.status,
         paymentId: paymentId ?? this.paymentId,
         paymentUrl: paymentUrl ?? this.paymentUrl,
         reference: reference ?? this.reference,
+        completed: completed ?? this.completed,
       );
 }

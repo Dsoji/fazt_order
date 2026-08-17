@@ -5,6 +5,7 @@ import 'package:fazt_order/src/features/home/data/model/response/my_orders_list/
 import 'delivery_location.dart';
 import 'item.dart';
 import 'payment.dart';
+import 'rider.dart';
 import 'shop.dart';
 import 'status_history.dart';
 
@@ -30,6 +31,14 @@ class OrderResult {
   DateTime? updatedAt;
   String? id;
   int? riderOtp;
+  Rider? rider;
+
+  /// The parcel this order pays for, on parcel orders only.
+  ///
+  /// Parcels have their own endpoints — `/parcels/:id/actions`,
+  /// `/parcels/:id/cancel` — keyed by the parcel id, not the order id. Without
+  /// this the parcel screens would have nothing to address them with.
+  String? parcelId;
 
   OrderResult({
     this.deliveryLocation,
@@ -53,11 +62,13 @@ class OrderResult {
     this.updatedAt,
     this.id,
     this.riderOtp,
+    this.rider,
+    this.parcelId,
   });
 
   @override
   String toString() {
-    return 'OrderResult(deliveryLocation: $deliveryLocation, pickupLocation: $pickupLocation, orderNumber: $orderNumber, orderType: $orderType, orderStatus: $orderStatus, isDeleted: $isDeleted, user: $user, shop: $shop, store: $store, items: $items, packCount: $packCount, deliveryType: $deliveryType, storeMessage: $storeMessage, status: $status, statusHistory: $statusHistory, payment: $payment, orderPlacedAt: $orderPlacedAt, createdAt: $createdAt, updatedAt: $updatedAt, id: $id, riderOtp: $riderOtp)';
+    return 'OrderResult(deliveryLocation: $deliveryLocation, pickupLocation: $pickupLocation, orderNumber: $orderNumber, orderType: $orderType, orderStatus: $orderStatus, isDeleted: $isDeleted, user: $user, shop: $shop, store: $store, items: $items, packCount: $packCount, deliveryType: $deliveryType, storeMessage: $storeMessage, status: $status, statusHistory: $statusHistory, payment: $payment, orderPlacedAt: $orderPlacedAt, createdAt: $createdAt, updatedAt: $updatedAt, id: $id, riderOtp: $riderOtp, rider: $rider, parcelId: $parcelId)';
   }
 
   factory OrderResult.fromMap(Map<String, dynamic> data) => OrderResult(
@@ -104,7 +115,30 @@ class OrderResult {
             : DateTime.parse(data['updatedAt'] as String),
         id: data['id'] as String?,
         riderOtp: data['riderOTP'] as int?,
+        rider: Rider.fromOrderMap(data),
+        parcelId: _readParcelId(data),
       );
+
+  /// The parcel id, however this order happens to carry it.
+  ///
+  /// Either key — `parcelId` or `parcel` — may arrive as a bare id string or
+  /// as the populated parcel document, depending on whether the query
+  /// populated it. `GET /orders` currently populates `parcelId`, so reading
+  /// only the string form left every parcel order with no id at all, and with
+  /// it no cancel button and no pickup code.
+  static String? _readParcelId(Map<String, dynamic> data) {
+    for (final value in [data['parcelId'], data['parcel']]) {
+      if (value is String && value.isNotEmpty) return value;
+      // Not `Map<String, dynamic>`: a nested map decoded out of a wider
+      // payload can come through as `Map<dynamic, dynamic>` and would miss
+      // that test silently.
+      if (value is Map) {
+        final id = value['id'] ?? value['_id'];
+        if (id is String && id.isNotEmpty) return id;
+      }
+    }
+    return null;
+  }
 
   Map<String, dynamic> toMap() => {
         'deliveryLocation': deliveryLocation?.toMap(),
@@ -128,6 +162,8 @@ class OrderResult {
         'updatedAt': updatedAt?.toIso8601String(),
         'id': id,
         'riderOTP': riderOtp,
+        'parcelId': parcelId,
+        'rider': rider?.toMap(),
       };
 
   /// `dart:convert`
@@ -164,6 +200,8 @@ class OrderResult {
     DateTime? updatedAt,
     String? id,
     int? riderOtp,
+    Rider? rider,
+    String? parcelId,
   }) {
     return OrderResult(
       deliveryLocation: deliveryLocation ?? this.deliveryLocation,
@@ -187,6 +225,8 @@ class OrderResult {
       updatedAt: updatedAt ?? this.updatedAt,
       id: id ?? this.id,
       riderOtp: riderOtp ?? this.riderOtp,
+      parcelId: parcelId ?? this.parcelId,
+      rider: rider ?? this.rider,
     );
   }
 }

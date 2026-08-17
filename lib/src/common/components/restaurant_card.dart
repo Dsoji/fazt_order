@@ -10,9 +10,9 @@ import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:logger/logger.dart';
 
 import '../../features/home/data/controller/shop_controller.dart';
-import '../../features/home/data/model/response/shops_model/day_schedule.dart';
 import '../../features/home/data/model/response/shops_model/promotion_display.dart';
 import '../../features/home/data/model/response/shops_model/result.dart';
+import '../../features/home/data/model/response/shops_model/shop_extension.dart';
 
 final logger = Logger();
 
@@ -32,181 +32,18 @@ class RestaurantCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Function to get the current day's schedule and times
+    // Availability lives in one place — ShopStatusExtension.isOpenNow — so the
+    // card, the details screen and checkout can never disagree about whether a
+    // shop is taking orders.
+    final isOpen = restaurant.isOpenNow;
     logger.d(
-        'restaurant.store?.salesOperation?.schedule: ${restaurant.store?.salesOperation?.schedule}');
-
-    DaySchedule? getCurrentDaySchedule() {
-      final schedule = restaurant.store?.salesOperation?.schedule;
-      if (schedule == null) return null;
-
-      final now = DateTime.now();
-      final weekday = now.weekday; // 1 = Monday, 7 = Sunday
-
-      switch (weekday) {
-        case 1:
-          return schedule.monday;
-        case 2:
-          return schedule.tuesday;
-        case 3:
-          return schedule.wednesday;
-        case 4:
-          return schedule.thursday;
-        case 5:
-          return schedule.friday;
-        case 6:
-          return schedule.saturday;
-        case 7:
-          return schedule.sunday;
-        default:
-          return null;
-      }
-    }
-
-    // Helper function to check if restaurant is currently open based on emergency + schedule
-    bool isRestaurantOpen() {
-      // Check if schedule exists at all - schedule takes precedence
-      final schedule = restaurant.store?.salesOperation?.schedule;
-      final now = DateTime.now();
-
-      // If schedule exists, use it (schedule overrides restaurant.isOpen flag)
-      if (schedule != null) {
-        final currentDaySchedule = getCurrentDaySchedule();
-        logger.d(
-            '[RestaurantCard] shop=${restaurant.id} weekday=${now.weekday} dayOpen=${currentDaySchedule?.open}');
-
-        // If no schedule exists for current day, check emergency override
-        if (currentDaySchedule == null) {
-          logger.d(
-              '[RestaurantCard] shop=${restaurant.id} no day schedule, checking emergency override');
-          // Emergency override: explicit false always closes
-          if (restaurant.isOpen == false) {
-            return false;
-          }
-          // If restaurant.isOpen is explicitly true, return true
-          // If restaurant.isOpen is null, default to true (open by default)
-          return restaurant.isOpen ?? true;
-        }
-
-        // If schedule exists but day is marked closed
-        if (currentDaySchedule.open != true) {
-          logger.d(
-              '[RestaurantCard] shop=${restaurant.id} day marked closed, open=${currentDaySchedule.open}');
-          return false;
-        }
-
-        final timeSlots = currentDaySchedule.time;
-        logger.d('timeSlots: $timeSlots');
-        logger.d(
-            '[RestaurantCard] shop=${restaurant.id} dayOpen=true, timeSlots=${timeSlots?.length ?? 0}, isEmpty=${timeSlots?.isEmpty ?? true}, isNull=${timeSlots == null}');
-
-        // Day open with no time slots: open all day
-        // When schedule says open:true and time array is empty, shop is open all day
-        // This MUST be checked BEFORE processing any time slots
-        // Check for null or empty list - if either is true, return open all day
-        final hasTimeSlots = timeSlots != null && timeSlots.isNotEmpty;
-        if (!hasTimeSlots) {
-          logger.d(
-              '[RestaurantCard] shop=${restaurant.id} open all day (no time slots), returning true immediately');
-          return true;
-        }
-
-        // Only process time slots if the array is NOT empty
-        logger.d(
-            '[RestaurantCard] shop=${restaurant.id} has ${timeSlots.length} time slot(s), processing...');
-
-        Duration? clockFromIso(String iso) {
-          try {
-            // Extract time portion from ISO string (times are stored in UTC format but represent local business hours)
-            // Example: "2025-11-21T09:00:00.000Z" -> extract "09:00:00" -> 9 AM local time
-            final timePart =
-                iso.split('T').last.replaceAll('Z', '').split('.').first;
-            final segments = timePart.split(':');
-            if (segments.length < 2) return null;
-            final h = int.parse(segments[0]);
-            final m = int.parse(segments[1]);
-            final s = segments.length > 2 ? int.parse(segments[2]) : 0;
-            return Duration(hours: h, minutes: m, seconds: s);
-          } catch (e) {
-            logger.e('[RestaurantCard] Error parsing time "$iso": $e');
-            return null;
-          }
-        }
-
-        // Use local clock to compare against clock-only slot times
-        final nowClock =
-            Duration(hours: now.hour, minutes: now.minute, seconds: now.second);
-
-        var hasValidSlot = false;
-
-        for (final slot in timeSlots) {
-          if (slot.startTime == null || slot.endTime == null) continue;
-          final start = clockFromIso(slot.startTime!);
-          final end = clockFromIso(slot.endTime!);
-          if (start == null || end == null) {
-            logger.e(
-                '[RestaurantCard] Failed to parse times: startTime=${slot.startTime}, endTime=${slot.endTime}');
-            continue;
-          }
-          hasValidSlot = true;
-
-          final crossesMidnight = end <= start;
-          logger.d(
-              '[RestaurantCard] shop=${restaurant.id} slot: startTime=${slot.startTime} -> $start, endTime=${slot.endTime} -> $end, nowClock=$nowClock, crossesMidnight=$crossesMidnight');
-
-          // For same-day ranges: current time must be >= start AND < end (exclusive end)
-          // For overnight ranges: current time must be >= start OR < end
-          final inSameDayRange =
-              !crossesMidnight && nowClock >= start && nowClock < end;
-          final inOvernightRange =
-              crossesMidnight && (nowClock >= start || nowClock < end);
-
-          logger.d(
-              '[RestaurantCard] shop=${restaurant.id} inSameDayRange=$inSameDayRange, inOvernightRange=$inOvernightRange');
-
-          if (inSameDayRange || inOvernightRange) {
-            logger.d(
-                '[RestaurantCard] shop=${restaurant.id} is OPEN (within time slot)');
-            return true;
-          }
-        }
-
-        // If we had slots but none matched, closed
-        if (hasValidSlot) {
-          logger.d(
-              '[RestaurantCard] shop=${restaurant.id} is CLOSED (outside time slots)');
-          return false;
-        }
-
-        // Slots list existed but all were invalid: treat as closed to be safe
-        logger.d(
-            '[RestaurantCard] shop=${restaurant.id} is CLOSED (no valid time slots)');
-        return false;
-      }
-
-      // No schedule exists - fall back to restaurant.isOpen flag
-      logger.d(
-          '[RestaurantCard] shop=${restaurant.id} no schedule, isOpen=${restaurant.isOpen}');
-      // Emergency override: explicit false always closes
-      if (restaurant.isOpen == false) {
-        return false;
-      }
-      // If restaurant.isOpen is explicitly true, return true
-      // If restaurant.isOpen is null, default to true (open by default)
-      return restaurant.isOpen ?? true;
-    }
-
-    final isOpen = isRestaurantOpen();
-    logger.d(
-        '[RestaurantCard] shop=${restaurant.id} FINAL isOpen=$isOpen, restaurant.isOpen=${restaurant.isOpen}');
+        '[RestaurantCard] shop=${restaurant.id} isOpenNow=$isOpen, isOpen=${restaurant.isOpen}');
 
     Future<void> toggleFavorite() async {
       await ref
           .read(profileControllerProvider.notifier)
           .addToFavorites(shopId: restaurant.id ?? '');
-      await ref
-          .read(profileControllerProvider.notifier)
-          .fetchFavouritesList();
+      await ref.read(profileControllerProvider.notifier).fetchFavouritesList();
       await ref.read(shopControllerProvider.notifier).revalidateShops();
     }
 
@@ -308,38 +145,46 @@ class RestaurantCard extends ConsumerWidget {
               ],
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              // Right padding is applied per-child so the status pill can sit
+              // hard against the card edge while the text stays inset.
+              padding: const EdgeInsets.fromLTRB(14, 12, 0, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    restaurant.store?.storeName ?? '',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black,
-                      letterSpacing: 0.1,
-                      height: 1.2,
+                  Padding(
+                    padding: const EdgeInsets.only(right: 14),
+                    child: Text(
+                      restaurant.store?.storeName ?? '',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                        letterSpacing: 0.1,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Iconsax.location,
-                          size: 13, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          restaurant.shopName ?? '',
-                          style: TextStyle(
-                              fontSize: 12.5, color: Colors.grey[600]),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                  Padding(
+                    padding: const EdgeInsets.only(right: 14),
+                    child: Row(
+                      children: [
+                        Icon(Iconsax.location,
+                            size: 13, color: Colors.grey[500]),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            restaurant.shopName ?? '',
+                            style: TextStyle(
+                                fontSize: 12.5, color: Colors.grey[600]),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -355,7 +200,13 @@ class RestaurantCard extends ConsumerWidget {
                             color: kcPrimaryNeutral400),
                       ),
                       const Spacer(),
-                      RestaurantStatusPill(isOpen: isOpen),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: RestaurantStatusPill(
+                          isOpen: isOpen,
+                          label: restaurant.availabilityLabel,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -369,14 +220,18 @@ class RestaurantCard extends ConsumerWidget {
 }
 
 class RestaurantStatusPill extends StatelessWidget {
-  const RestaurantStatusPill({super.key, required this.isOpen});
+  const RestaurantStatusPill({super.key, required this.isOpen, this.label});
 
   final bool isOpen;
+
+  /// Overrides the default OPEN/CLOSED wording — used to spell out
+  /// "NOT ACCEPTING ORDERS" when the vendor has switched the toggle off.
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
     final color = isOpen ? AppColors.green800 : AppColors.red800;
-    final label = isOpen ? 'OPEN' : 'CLOSED';
+    final label = this.label ?? (isOpen ? 'OPEN' : 'CLOSED');
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -392,13 +247,17 @@ class RestaurantStatusPill extends StatelessWidget {
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
-              letterSpacing: 0.4,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: color,
+                letterSpacing: 0.4,
+              ),
             ),
           ),
         ],

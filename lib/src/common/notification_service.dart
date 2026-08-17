@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -23,16 +24,26 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   logger.d('📱 Background message received: ${message.notification?.title}');
   logger.d('📱 Message data: ${message.data}');
 
-  if (message.notification != null) {
+  final title = message.notification?.title ?? message.data['title'];
+  final body = message.notification?.body ?? message.data['body'];
+  if (title != null || body != null) {
     await NotificationService.showLocalNotification(
-      title: message.notification?.title,
-      body: message.notification?.body,
+      title: title,
+      body: body,
     );
   }
 }
 
 class NotificationService {
   static final _logger = Logger();
+
+  static final _foregroundMessages =
+      StreamController<RemoteMessage>.broadcast();
+
+  /// Every push that lands while the app is open, so screens can react (the
+  /// popup gate re-polls on it) without owning an FCM listener themselves.
+  static Stream<RemoteMessage> get foregroundMessages =>
+      _foregroundMessages.stream;
 
   static Future<void> initializeFCM() async {
     const androidInit = AndroidInitializationSettings('notify_icon');
@@ -58,6 +69,10 @@ class NotificationService {
     );
     _logger.d('Notification permission: ${permission.authorizationStatus}');
 
+    // iOS presents foreground notifications itself (reliable). Android never
+    // auto-presents in the foreground, so we show it manually there. The
+    // onMessage handler below therefore only shows on Android — otherwise iOS
+    // would display it twice (once by the system, once by us).
     await FirebaseMessaging.instance
         .setForegroundNotificationPresentationOptions(
       alert: true,
@@ -125,12 +140,20 @@ class NotificationService {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       _logger.d("📥 Foreground FCM message: ${message.notification?.title}");
       _logger.d("📥 Message data: ${message.data}");
+      _foregroundMessages.add(message);
 
-      if (message.notification != null) {
-        showLocalNotification(
-          title: message.notification?.title,
-          body: message.notification?.body,
-        );
+      // On iOS the system already presents this in the foreground (see
+      // setForegroundNotificationPresentationOptions above), so only show it
+      // manually on Android to avoid a duplicate on iOS.
+      if (Platform.isAndroid) {
+        final title = message.notification?.title ?? message.data['title'];
+        final body = message.notification?.body ?? message.data['body'];
+        if (title != null || body != null) {
+          showLocalNotification(
+            title: title,
+            body: body,
+          );
+        }
       }
     });
 

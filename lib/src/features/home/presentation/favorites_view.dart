@@ -9,6 +9,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../../common/app_colors.dart';
 import '../../../common/components/restaurant_card.dart';
 import '../../../common/widgets/text_styles.dart';
+import '../../../common/widgets/app_refresh_indicator.dart';
 
 class FavoritesView extends HookConsumerWidget {
   const FavoritesView({super.key});
@@ -102,7 +103,7 @@ class FavoritesView extends HookConsumerWidget {
             ],
           ),
         ),
-        data: (shops) => RefreshIndicator(
+        data: (shops) => AppRefreshIndicator(
           onRefresh: () async {
             await ref.read(profileControllerProvider.notifier).fetchProfile();
             await ref.read(shopControllerProvider.notifier).revalidateShops();

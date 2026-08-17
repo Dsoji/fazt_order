@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../model/payload/sign_up_payload.dart';
+import '../model/response/user_model/new_customer_promotion.dart';
 import '../model/response/user_model/user_model.dart';
 
 enum AuthenticationStatus {
@@ -24,6 +25,11 @@ class AuthenticationState {
   final AsyncValue<String> addressUpdate;
   final AsyncValue<String> sendOtp;
   final AsyncValue<String> verifyOtp;
+
+  /// Whether this handset may still claim the new-customer promo. Read before
+  /// the account exists so the signup screen can grey the offer out instead of
+  /// springing the refusal afterwards.
+  final AsyncValue<NewCustomerPromotion> promoEligibility;
   // final AsyncValue<ProfilePayload> profilePayload;
   // final AsyncValue<UserProfileModel> userDetails;
   final AsyncValue<String> userName;
@@ -45,6 +51,7 @@ class AuthenticationState {
     required this.addressUpdate,
     required this.sendOtp,
     required this.verifyOtp,
+    required this.promoEligibility,
   });
 
   factory AuthenticationState.initial() {
@@ -62,6 +69,8 @@ class AuthenticationState {
       addressUpdate: const AsyncValue.data(''),
       sendOtp: const AsyncValue.data(''),
       verifyOtp: const AsyncValue.data(''),
+      promoEligibility:
+          const AsyncValue.data(NewCustomerPromotion.unknown),
     );
   }
 
@@ -79,6 +88,7 @@ class AuthenticationState {
     AsyncValue<String>? addressUpdate,
     AsyncValue<String>? sendOtp,
     AsyncValue<String>? verifyOtp,
+    AsyncValue<NewCustomerPromotion>? promoEligibility,
   }) {
     return AuthenticationState(
       login: login ?? this.login,
@@ -94,6 +104,7 @@ class AuthenticationState {
       addressUpdate: addressUpdate ?? this.addressUpdate,
       sendOtp: sendOtp ?? this.sendOtp,
       verifyOtp: verifyOtp ?? this.verifyOtp,
+      promoEligibility: promoEligibility ?? this.promoEligibility,
     );
   }
 

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../shops_model/promotion_display.dart';
 import 'category.dart';
 import 'option_group.dart';
 
@@ -13,6 +14,9 @@ class Meal {
   Category? category;
   List<OptionGroup>? optionGroup;
 
+  /// Only present while the meal is running a promotion; null otherwise.
+  PromotionDisplay? promotionDisplay;
+
   Meal({
     this.id,
     this.mealName,
@@ -22,11 +26,12 @@ class Meal {
     this.priceDescription,
     this.category,
     this.optionGroup,
+    this.promotionDisplay,
   });
 
   @override
   String toString() {
-    return 'Meal(id: $id, mealName: $mealName, mealDescription: $mealDescription, mealImage: $mealImage, price: $price, priceDescription: $priceDescription, category: $category, optionGroup: $optionGroup)';
+    return 'Meal(id: $id, mealName: $mealName, mealDescription: $mealDescription, mealImage: $mealImage, price: $price, priceDescription: $priceDescription, category: $category, optionGroup: $optionGroup, promotionDisplay: $promotionDisplay)';
   }
 
   factory Meal.fromMap(Map<String, dynamic> data) => Meal(
@@ -42,6 +47,10 @@ class Meal {
         optionGroup: (data['optionGroup'] as List<dynamic>?)
             ?.map((e) => OptionGroup.fromMap(e as Map<String, dynamic>))
             .toList(),
+        promotionDisplay: data['promotionDisplay'] == null
+            ? null
+            : PromotionDisplay.fromMap(
+                data['promotionDisplay'] as Map<String, dynamic>),
       );
 
   Map<String, dynamic> toMap() => {
@@ -53,6 +62,7 @@ class Meal {
         'priceDescription': priceDescription,
         'category': category?.toMap(),
         'optionGroup': optionGroup?.map((e) => e.toMap()).toList(),
+        'promotionDisplay': promotionDisplay?.toMap(),
       };
 
   /// `dart:convert`
@@ -76,6 +86,7 @@ class Meal {
     String? priceDescription,
     Category? category,
     List<OptionGroup>? optionGroup,
+    PromotionDisplay? promotionDisplay,
   }) {
     return Meal(
       id: id ?? this.id,
@@ -86,6 +97,7 @@ class Meal {
       priceDescription: priceDescription ?? this.priceDescription,
       category: category ?? this.category,
       optionGroup: optionGroup ?? this.optionGroup,
+      promotionDisplay: promotionDisplay ?? this.promotionDisplay,
     );
   }
 }

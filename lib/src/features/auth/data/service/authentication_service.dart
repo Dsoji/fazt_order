@@ -5,9 +5,11 @@ import 'package:logger/logger.dart';
 import '../../../../common/api/api_client.dart';
 import '../../../../common/api/api_request_helper.dart';
 import '../../../../common/api/dio_api_client.dart';
+import '../../../../common/device_metadata.dart';
 import '../../../../common/utils/utils.dart';
 import '../model/payload/address_payload.dart';
 import '../model/payload/profile_payload.dart';
+import '../model/response/user_model/new_customer_promotion.dart';
 import '../model/response/user_model/user_model.dart';
 
 final logger = Logger();
@@ -46,6 +48,11 @@ class AuthenticationService {
       'Provide exactly one of password or code',
     );
     logger.d('fcmToken: $fcmToken');
+    // appVersion + platform + appType together are what make the backend attach
+    // its `appUpdate` decision to the response. Drop any one of the three and
+    // the block is simply absent — no error to notice.
+    final appVersion = await DeviceMetadata.appVersion();
+    final device = await DeviceMetadata.deviceId();
     return apiRequestHelper.handleApiRequest(
       () => apiClient.post(
         'auth/login',
@@ -54,6 +61,10 @@ class AuthenticationService {
           if (password != null && password.isNotEmpty) 'password': password,
           if (code != null && code.isNotEmpty) 'code': code,
           if (fcmToken != null) 'fcmToken': fcmToken,
+          if (appVersion != null) 'appVersion': appVersion,
+          'platform': DeviceMetadata.platform,
+          'appType': DeviceMetadata.appType,
+          if (device != null) 'deviceId': device,
         },
       ),
       parser: (data) {
@@ -79,6 +90,10 @@ class AuthenticationService {
     String? signupOtpToken,
     String? referralCode,
   }) async {
+    // `deviceId` is what enforces one new-customer promo per handset. Omit it
+    // and the lock fails open — the promo is granted again on every new account
+    // created on the same device.
+    final device = await DeviceMetadata.deviceId();
     return apiRequestHelper.handleApiRequest(
       () => apiClient.post(
         'auth/signup',
@@ -93,6 +108,10 @@ class AuthenticationService {
             'signupOtpToken': signupOtpToken,
           if (referralCode != null && referralCode.isNotEmpty)
             'referredByCode': referralCode,
+          if (device != null) 'deviceId': device,
+          'platform': DeviceMetadata.platform,
+          'appType': DeviceMetadata.appType,
+          if (fcmToken != null) 'fcmToken': fcmToken,
         },
       ),
       parser: (data) {
@@ -106,6 +125,35 @@ class AuthenticationService {
         return UserModel.fromMap(data);
       },
       showErrorToast: true,
+    );
+  }
+
+  /// Whether a signup from this handset would still be granted the new-customer
+  /// promo — `POST /auth/new-customer-promo/eligibility`, public and safe to
+  /// call before an account exists.
+  ///
+  /// Asking up front is the whole point: it lets the signup screen grey the
+  /// promo out rather than springing the refusal once the account is already
+  /// created and there is nothing the user can do about it.
+  ///
+  /// Never toasts, and falls back to "offered" when the device id is unknown or
+  /// the call fails — the signup itself is unaffected either way, and hiding a
+  /// promo someone is entitled to is the worse error.
+  Future<ResultValue<NewCustomerPromotion>>
+      checkNewCustomerPromoEligibility() async {
+    final device = await DeviceMetadata.deviceId();
+    return apiRequestHelper.handleApiRequest(
+      () => apiClient.post(
+        'auth/new-customer-promo/eligibility',
+        data: {
+          if (device != null) 'deviceId': device,
+        },
+      ),
+      parser: (data) => data is Map<String, dynamic>
+          ? NewCustomerPromotion.fromMap(data)
+          : NewCustomerPromotion.unknown,
+      showErrorToast: false,
+      showSuccessToast: false,
     );
   }
 

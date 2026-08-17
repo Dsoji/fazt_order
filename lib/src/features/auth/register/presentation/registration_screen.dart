@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:iconsax/iconsax.dart';
 import 'package:logger/logger.dart';
 
 import '../../../../common/res/app_colors.dart';
@@ -11,6 +12,7 @@ import '../../../../common/utils/validator.dart';
 import '../../../../common/widgets/custom_textfield.dart';
 import '../../../../common/widgets/reusable_buttons.dart';
 import '../../data/controller/authentication_controller.dart';
+import '../../data/model/response/user_model/new_customer_promotion.dart';
 
 final logger = Logger();
 
@@ -29,6 +31,23 @@ class RegistrationScreen extends HookConsumerWidget {
 
     final isSendingOtp =
         ref.watch(authenticationControllerProvider).sendOtp.isLoading;
+
+    // Asked once, before the account exists, so the promo can be shown as
+    // already claimed rather than refused after the fact. Purely informational
+    // — signup goes ahead either way, and the backend decides regardless.
+    useEffect(() {
+      Future.microtask(
+        () => ref
+            .read(authenticationControllerProvider.notifier)
+            .checkPromoEligibility(),
+      );
+      return null;
+    }, const []);
+
+    final promo = ref
+        .watch(authenticationControllerProvider)
+        .promoEligibility
+        .valueOrNull;
 
     return Scaffold(
       backgroundColor: AppColors.brand900,
@@ -133,6 +152,10 @@ class RegistrationScreen extends HookConsumerWidget {
                     keyboardType: TextInputType.text,
                     controller: referralCodeController,
                   ),
+                  if (promo != null) ...[
+                    const Gap(16),
+                    _NewCustomerPromoBanner(promo: promo),
+                  ],
                   const Gap(48),
                   FullButton(
                     text: "Continue",
@@ -206,6 +229,75 @@ class RegistrationScreen extends HookConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// States the new-customer promo up front: still available, or already used on
+/// this handset.
+///
+/// Greyed out is the whole point — a refusal that arrives after the account has
+/// been created is a surprise the user can do nothing about, whereas this is
+/// something they can see before they sign up.
+class _NewCustomerPromoBanner extends StatelessWidget {
+  const _NewCustomerPromoBanner({required this.promo});
+
+  final NewCustomerPromotion promo;
+
+  @override
+  Widget build(BuildContext context) {
+    final offered = promo.isOffered;
+    final accent = offered ? AppColors.brand400 : AppColors.neutral600;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: offered ? AppColors.brand980 : AppColors.neutral950,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            offered ? Iconsax.gift : Iconsax.info_circle,
+            size: 20,
+            color: accent,
+          ),
+          const Gap(10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  offered
+                      ? 'New Customer Promo'
+                      : 'New Customer Promo unavailable',
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Gap(4),
+                Text(
+                  // Dashboard-editable copy wins whenever the backend sent any.
+                  promo.message ??
+                      (offered
+                          ? 'This account will be signed up with our new customer promotion.'
+                          : 'This promotion can only be used once per device.'),
+                  style: const TextStyle(
+                    color: AppColors.neutral400,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

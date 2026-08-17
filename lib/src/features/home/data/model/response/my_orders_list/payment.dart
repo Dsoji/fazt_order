@@ -17,6 +17,14 @@ class Payment {
   String? paymentReference;
   String? transactionId;
 
+  /// The Paystack checkout URL, present while the charge is unsettled.
+  ///
+  /// A customer can close the checkout webview, drop off the network, or simply
+  /// change their mind; the order then sits unpaid with this link still live,
+  /// and it is the only way back into that same charge rather than starting a
+  /// new one.
+  String? paymentUrl;
+
   Payment({
     this.subtotal,
     this.deliveryFee,
@@ -33,6 +41,7 @@ class Payment {
     this.completedAt,
     this.paymentReference,
     this.transactionId,
+    this.paymentUrl,
   });
 
   static int? _toInt(dynamic value) {
@@ -45,7 +54,7 @@ class Payment {
 
   @override
   String toString() {
-    return 'Payment(subtotal: $subtotal, deliveryFee: $deliveryFee, serviceFee: $serviceFee, total: $total, discount: $discount, payableDeliveryFee: $payableDeliveryFee, freeDeliverySubsidy: $freeDeliverySubsidy, platformSubsidyAmount: $platformSubsidyAmount, paymentMethod: $paymentMethod, paymentStatus: $paymentStatus, initiatedAt: $initiatedAt, id: $id, completedAt: $completedAt, paymentReference: $paymentReference, transactionId: $transactionId)';
+    return 'Payment(subtotal: $subtotal, deliveryFee: $deliveryFee, serviceFee: $serviceFee, total: $total, discount: $discount, payableDeliveryFee: $payableDeliveryFee, freeDeliverySubsidy: $freeDeliverySubsidy, platformSubsidyAmount: $platformSubsidyAmount, paymentMethod: $paymentMethod, paymentStatus: $paymentStatus, initiatedAt: $initiatedAt, id: $id, completedAt: $completedAt, paymentReference: $paymentReference, transactionId: $transactionId, paymentUrl: $paymentUrl)';
   }
 
   factory Payment.fromMap(Map<String, dynamic> data) => Payment(
@@ -68,6 +77,7 @@ class Payment {
             : DateTime.parse(data['completedAt'] as String),
         paymentReference: data['paymentReference'] as String?,
         transactionId: data['transactionId'] as String?,
+        paymentUrl: data['paymentUrl'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -86,6 +96,7 @@ class Payment {
         'completedAt': completedAt?.toIso8601String(),
         'paymentReference': paymentReference,
         'transactionId': transactionId,
+        'paymentUrl': paymentUrl,
       };
 
   /// `dart:convert`
@@ -116,6 +127,7 @@ class Payment {
     DateTime? completedAt,
     String? paymentReference,
     String? transactionId,
+    String? paymentUrl,
   }) {
     return Payment(
       subtotal: subtotal ?? this.subtotal,
@@ -134,6 +146,7 @@ class Payment {
       completedAt: completedAt ?? this.completedAt,
       paymentReference: paymentReference ?? this.paymentReference,
       transactionId: transactionId ?? this.transactionId,
+      paymentUrl: paymentUrl ?? this.paymentUrl,
     );
   }
 }

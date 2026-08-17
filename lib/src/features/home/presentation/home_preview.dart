@@ -16,6 +16,7 @@ import '../../bottom_sheets/location_sheet.dart';
 import '../../profile/data/controller/profile_controller.dart';
 import '../data/controller/shop_controller.dart';
 import 'search_restaurant_view.dart';
+import '../../../common/widgets/app_refresh_indicator.dart';
 
 class HomePreview extends HookConsumerWidget {
   const HomePreview({super.key});
@@ -264,7 +265,7 @@ class HomePreview extends HookConsumerWidget {
                   ],
                 ),
               ),
-              data: (shops) => RefreshIndicator(
+              data: (shops) => AppRefreshIndicator(
                 onRefresh: () async {
                   await ref
                       .read(profileControllerProvider.notifier)

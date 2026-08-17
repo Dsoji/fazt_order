@@ -348,6 +348,8 @@ class EditAddressBottomSheet extends HookConsumerWidget {
                       ),
                     );
                 if (ok && context.mounted) {
+                  // Refreshing the profile is what publishes the new
+                  // coordinates to the location-aware requests.
                   ref.read(profileControllerProvider.notifier).fetchProfile();
                   Navigator.pop(context);
                 }

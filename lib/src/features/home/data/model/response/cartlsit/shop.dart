@@ -9,11 +9,16 @@ class Shop {
   String? id;
   Location? location;
 
-  Shop({this.shopName, this.store, this.id, this.location});
+  /// The vendor's "Accepting orders" switch. Carried on the cart so checkout
+  /// can stop an order for a restaurant that went unavailable after the items
+  /// were added.
+  bool? isOpen;
+
+  Shop({this.shopName, this.store, this.id, this.location, this.isOpen});
 
   @override
   String toString() =>
-      'Shop(shopName: $shopName, store: $store, id: $id, location: $location)';
+      'Shop(shopName: $shopName, store: $store, id: $id, location: $location, isOpen: $isOpen)';
 
   factory Shop.fromMap(Map<String, dynamic> data) => Shop(
         shopName: data['shopName'] as String?,
@@ -24,6 +29,7 @@ class Shop {
         location: data['location'] == null
             ? null
             : Location.fromMap(data['location'] as Map<String, dynamic>),
+        isOpen: data['isOpen'] as bool?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -31,6 +37,7 @@ class Shop {
         'store': store?.toMap(),
         'id': id,
         'location': location?.toMap(),
+        'isOpen': isOpen,
       };
 
   /// `dart:convert`
@@ -50,12 +57,14 @@ class Shop {
     Store? store,
     String? id,
     Location? location,
+    bool? isOpen,
   }) {
     return Shop(
       shopName: shopName ?? this.shopName,
       store: store ?? this.store,
       id: id ?? this.id,
       location: location ?? this.location,
+      isOpen: isOpen ?? this.isOpen,
     );
   }
 }

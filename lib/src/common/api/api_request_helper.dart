@@ -89,12 +89,45 @@ class ApiRequestHelper {
 
     return ResultValue.error(
       FailureHandler(
-        message: e.response?.statusMessage ?? 'Something went wrong',
+        message: _messageFrom(e.response) ??
+            e.response?.statusMessage ??
+            'Something went wrong',
         stackTrace: s,
         code: e.response?.statusCode,
         exception: e,
       ),
     );
+  }
+
+  /// The API's own `message` off an error body.
+  ///
+  /// `validateStatus` accepts only 200/201, so every 4xx arrives here as a
+  /// thrown [DioException] rather than a response to inspect. Without this the
+  /// only thing left is the bare HTTP status message — "Forbidden" in place of
+  /// "the rider has already collected it. Please contact support." The
+  /// backend's wording is the part worth keeping; the status line is the
+  /// fallback.
+  static String? _messageFrom(Response<dynamic>? response) {
+    var data = response?.data;
+    if (data is String) {
+      if (data.trim().isEmpty) return null;
+      try {
+        data = jsonDecode(data);
+      } catch (_) {
+        return null;
+      }
+    }
+    if (data is! Map) return null;
+
+    final message = data['message'];
+    if (message is String && message.trim().isNotEmpty) return message.trim();
+    // Validation errors come back as a list of messages; the first is the one
+    // worth showing.
+    if (message is List && message.isNotEmpty) {
+      final first = message.first;
+      if (first is String && first.trim().isNotEmpty) return first.trim();
+    }
+    return null;
   }
 
   ResultValue<T> _handleGeneralException<T>(

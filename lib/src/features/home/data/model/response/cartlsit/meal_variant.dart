@@ -9,11 +9,15 @@ class MealVariant {
   bool? inStock;
   String? notes;
 
-  MealVariant({this.shop, this.meal, this.inStock, this.notes});
+  /// The variant's own id, which a quantity change sends back so the backend
+  /// can check it still matches the cart item before writing to it.
+  String? id;
+
+  MealVariant({this.shop, this.meal, this.inStock, this.notes, this.id});
 
   @override
   String toString() {
-    return 'MealVariant(shop: $shop, meal: $meal, inStock: $inStock, notes: $notes)';
+    return 'MealVariant(shop: $shop, meal: $meal, inStock: $inStock, notes: $notes, id: $id)';
   }
 
   factory MealVariant.fromMap(Map<String, dynamic> data) => MealVariant(
@@ -25,6 +29,11 @@ class MealVariant {
             : Meal.fromMap(data['meal'] as Map<String, dynamic>),
         inStock: data['inStock'] as bool?,
         notes: data['notes'] as String?,
+        // The cart payload mixes conventions: subdocuments keep Mongo's
+        // `_id` while populated documents are serialised with `id`. Accepting
+        // either is what keeps a line addressable — without this id the row
+        // loses its stepper and its way back into the meal's options.
+        id: (data['_id'] ?? data['id']) as String?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -32,6 +41,7 @@ class MealVariant {
         'meal': meal?.toMap(),
         'inStock': inStock,
         'notes': notes,
+        '_id': id,
       };
 
   /// `dart:convert`
@@ -51,12 +61,14 @@ class MealVariant {
     Meal? meal,
     bool? inStock,
     String? notes,
+    String? id,
   }) {
     return MealVariant(
       shop: shop ?? this.shop,
       meal: meal ?? this.meal,
       inStock: inStock ?? this.inStock,
       notes: notes ?? this.notes,
+      id: id ?? this.id,
     );
   }
 }

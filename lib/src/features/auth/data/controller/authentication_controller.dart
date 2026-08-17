@@ -1,16 +1,19 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../../providers/navigation_provider.dart';
+import '../../../../common/user_location_provider.dart';
+import '../../../app_update/data/controller/app_update_controller.dart';
 import '../../../home/data/controller/shop_controller.dart';
 import '../../../profile/data/controller/profile_controller.dart';
 import '../model/payload/address_payload.dart';
 import '../model/payload/profile_payload.dart';
 import '../model/payload/sign_up_payload.dart';
+import '../model/response/user_model/new_customer_promotion.dart';
 import '../model/response/user_model/user_model.dart';
 import '../repository/authentication_repository.dart';
 import '../state/authentication_state.dart';
+import 'package:fazt_order/src/common/device_metadata.dart';
 
 final authenticationControllerProvider =
     StateNotifierProvider<AuthenticationController, AuthenticationState>((ref) {
@@ -66,10 +69,20 @@ class AuthenticationController extends StateNotifier<AuthenticationState> {
         return false;
       },
       (success) {
+        final user = result.getSuccess() ?? UserModel();
         state = state.copyWith(
-          login: AsyncValue.data(result.getSuccess() ?? UserModel()),
+          login: AsyncValue.data(user),
           status: AuthenticationStatus.loginSuccessful,
         );
+        // The login response already carries the update decision when the
+        // request sent appVersion + platform + appType, so taking it here saves
+        // the cold-start check a round trip. Absent block, nothing happens.
+        final update = user.appUpdate;
+        if (update != null) {
+          ref
+              .read(appUpdateControllerProvider.notifier)
+              .adoptFromLogin(update.toMap());
+        }
         return true;
       },
     );
@@ -119,6 +132,20 @@ class AuthenticationController extends StateNotifier<AuthenticationState> {
         return true;
       },
     );
+  }
+
+  /// Asks whether this handset can still claim the new-customer promo, so the
+  /// signup screen can show the offer as unavailable up front.
+  ///
+  /// Advisory only — the backend decides at signup regardless of what this
+  /// said, and a refusal never blocks registration.
+  Future<NewCustomerPromotion> checkPromoEligibility() async {
+    state = state.copyWith(promoEligibility: const AsyncValue.loading());
+    final result =
+        await _authenticationRepository.checkNewCustomerPromoEligibility();
+    final promo = result.getSuccess() ?? NewCustomerPromotion.unknown;
+    state = state.copyWith(promoEligibility: AsyncValue.data(promo));
+    return promo;
   }
 
   Future<bool> sendEmailOtp({
@@ -314,7 +341,10 @@ class AuthenticationController extends StateNotifier<AuthenticationState> {
     } catch (_) {
       // simulator / no-token environments
     }
-    await Hive.box('data').clear();
+    await DeviceMetadata.clearSession();
+    // The box clear drops the cached coordinates; this drops the copy the
+    // controller is still holding, so the next user does not inherit them.
+    ref.invalidate(userLocationProvider);
     ref.invalidate(profileControllerProvider);
     ref.invalidate(shopControllerProvider);
     ref.invalidate(navigationProvider);

@@ -1,13 +1,20 @@
 import 'package:fazt_order/src/features/courier/data/model/courier_list.dart';
+import 'package:fazt_order/src/features/courier/data/model/parcel_actions.dart';
 import 'package:fazt_order/src/features/courier/data/model/parcel_payment_details.dart';
+import 'package:fazt_order/src/features/courier/data/model/parcel_quote.dart';
 import 'package:fazt_order/src/features/courier/data/model/parcel_request.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../model/response/cartlsit/cart_quantity_result.dart';
 import '../model/response/cartlsit/cartlsit.dart';
+import '../model/response/cartlsit/remove_cart_item_result.dart';
+import '../model/response/discounted_meals/discounted_meals.dart';
+import '../model/response/featured_stores/featured_stores.dart';
 import '../model/response/meal_details/meal_details.dart';
 import '../model/response/meal_variant_menu/meal_variant_menu.dart';
 import '../model/response/my_orders_list/my_orders_list.dart';
 import '../model/response/order_link/order_link.dart';
+import '../model/response/pack_add_options/pack_add_options.dart';
 import '../model/response/search_global/search_global.dart';
 import '../model/response/shops_model/shops_model.dart';
 import '../model/response/store_categories/store_categories.dart';
@@ -31,6 +38,8 @@ class ShopState {
   final AsyncValue<String> addToCart;
   final AsyncValue<CartLsit> fetchCart;
   final AsyncValue<String> removePackFromCart;
+  final AsyncValue<RemoveCartItemResult> removeItemFromCart;
+  final AsyncValue<CartQuantityResult> updateCartQuantity;
   final AsyncValue<OrderLink> makeOrders;
   final AsyncValue<MyOrdersList> myOrdersList;
   final int myOrdersListPage;
@@ -54,6 +63,23 @@ class ShopState {
   final bool courierListHasMore;
   final bool isLoadingMoreCourierList;
   final AsyncValue<String> cancelOrder;
+  final AsyncValue<DiscountedMeals> discountedMeals;
+  final AsyncValue<FeaturedStores> featuredStores;
+
+  /// The price of the delivery currently being composed on the Courier form.
+  final AsyncValue<ParcelQuoteResponse> parcelQuote;
+
+  /// The Courier section's promotion badge. Display only.
+  final AsyncValue<ParcelPromotion> parcelPromotion;
+
+  /// What the caller may do with the parcel currently on screen.
+  final AsyncValue<ParcelActions> parcelActions;
+
+  final AsyncValue<String> cancelParcel;
+
+  /// What may be added to the pack the customer is currently looking at.
+  final AsyncValue<PackAddOptions> packAddOptions;
+
   const ShopState({
     required this.courierList,
     required this.courierListPage,
@@ -75,6 +101,8 @@ class ShopState {
     required this.addToCart,
     required this.fetchCart,
     required this.removePackFromCart,
+    required this.removeItemFromCart,
+    required this.updateCartQuantity,
     required this.makeOrders,
     required this.myOrdersList,
     required this.myOrdersListPage,
@@ -94,6 +122,13 @@ class ShopState {
     required this.makeParcelPayment,
     required this.mealDetails,
     required this.cancelOrder,
+    required this.discountedMeals,
+    required this.featuredStores,
+    required this.parcelQuote,
+    required this.parcelPromotion,
+    required this.parcelActions,
+    required this.cancelParcel,
+    required this.packAddOptions,
   });
 
   factory ShopState.initial() {
@@ -118,6 +153,9 @@ class ShopState {
       addToCart: const AsyncValue.data(''),
       fetchCart: AsyncValue.data(CartLsit()),
       removePackFromCart: const AsyncValue.data(''),
+      removeItemFromCart:
+          const AsyncValue.data(RemoveCartItemResult()),
+      updateCartQuantity: const AsyncValue.data(CartQuantityResult()),
       makeOrders: AsyncValue.data(OrderLink()),
       myOrdersList: AsyncValue.data(MyOrdersList()),
       myOrdersListPage: 1,
@@ -137,6 +175,13 @@ class ShopState {
       makeParcelPayment: const AsyncValue.data(ParcelPaymentDetails()),
       mealDetails: AsyncValue.data(MealDetails()),
       cancelOrder: const AsyncValue.data(''),
+      discountedMeals: AsyncValue.data(DiscountedMeals()),
+      featuredStores: AsyncValue.data(FeaturedStores()),
+      parcelQuote: const AsyncValue.data(ParcelQuoteResponse()),
+      parcelPromotion: const AsyncValue.data(ParcelPromotion.none),
+      parcelActions: const AsyncValue.data(ParcelActions.none),
+      cancelParcel: const AsyncValue.data(''),
+      packAddOptions: const AsyncValue.data(PackAddOptions.none),
     );
   }
 
@@ -161,6 +206,8 @@ class ShopState {
     AsyncValue<String>? addToCart,
     AsyncValue<CartLsit>? fetchCart,
     AsyncValue<String>? removePackFromCart,
+    AsyncValue<RemoveCartItemResult>? removeItemFromCart,
+    AsyncValue<CartQuantityResult>? updateCartQuantity,
     AsyncValue<OrderLink>? makeOrders,
     AsyncValue<MyOrdersList>? myOrdersList,
     int? myOrdersListPage,
@@ -180,6 +227,13 @@ class ShopState {
     AsyncValue<ParcelPaymentDetails>? makeParcelPayment,
     AsyncValue<MealDetails>? mealDetails,
     AsyncValue<String>? cancelOrder,
+    AsyncValue<DiscountedMeals>? discountedMeals,
+    AsyncValue<FeaturedStores>? featuredStores,
+    AsyncValue<ParcelQuoteResponse>? parcelQuote,
+    AsyncValue<ParcelPromotion>? parcelPromotion,
+    AsyncValue<ParcelActions>? parcelActions,
+    AsyncValue<String>? cancelParcel,
+    AsyncValue<PackAddOptions>? packAddOptions,
   }) {
     return ShopState(
       courierList: courierList ?? this.courierList,
@@ -206,6 +260,8 @@ class ShopState {
       addToCart: addToCart ?? this.addToCart,
       fetchCart: fetchCart ?? this.fetchCart,
       removePackFromCart: removePackFromCart ?? this.removePackFromCart,
+      removeItemFromCart: removeItemFromCart ?? this.removeItemFromCart,
+      updateCartQuantity: updateCartQuantity ?? this.updateCartQuantity,
       makeOrders: makeOrders ?? this.makeOrders,
       myOrdersList: myOrdersList ?? this.myOrdersList,
       myOrdersListPage: myOrdersListPage ?? this.myOrdersListPage,
@@ -230,6 +286,13 @@ class ShopState {
       makeParcelPayment: makeParcelPayment ?? this.makeParcelPayment,
       mealDetails: mealDetails ?? this.mealDetails,
       cancelOrder: cancelOrder ?? this.cancelOrder,
+      discountedMeals: discountedMeals ?? this.discountedMeals,
+      featuredStores: featuredStores ?? this.featuredStores,
+      parcelQuote: parcelQuote ?? this.parcelQuote,
+      parcelPromotion: parcelPromotion ?? this.parcelPromotion,
+      parcelActions: parcelActions ?? this.parcelActions,
+      cancelParcel: cancelParcel ?? this.cancelParcel,
+      packAddOptions: packAddOptions ?? this.packAddOptions,
     );
   }
 }

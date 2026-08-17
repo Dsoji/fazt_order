@@ -6,7 +6,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
@@ -17,6 +16,7 @@ import '../../../../common/widgets/custom_textfield.dart';
 import '../../../../router/app_router.dart';
 import '../../../profile/data/controller/profile_controller.dart';
 import '../../../../common/widgets/reusable_buttons.dart';
+import 'package:fazt_order/src/common/device_metadata.dart';
 
 class LoginScreen extends HookConsumerWidget {
   const LoginScreen({super.key});
@@ -221,7 +221,7 @@ class LoginCodeBottomSheet extends HookConsumerWidget {
         await profileNotifier.fetchProfile();
         router.go('/dashboard');
       } else {
-        await Hive.box('data').clear();
+        await DeviceMetadata.clearSession();
         Fluttertoast.showToast(
           msg: "You are not authorized as a user and cannot access this app",
           toastLength: Toast.LENGTH_LONG,

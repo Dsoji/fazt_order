@@ -4,6 +4,7 @@ import '../../../../common/utils/multiple_results.dart';
 import '../../../../common/utils/utils.dart';
 import '../model/payload/address_payload.dart';
 import '../model/payload/profile_payload.dart';
+import '../model/response/user_model/new_customer_promotion.dart';
 import '../model/response/user_model/user_model.dart';
 import '../service/authentication_service.dart';
 
@@ -84,6 +85,19 @@ class AuthenticationRepository {
       }
     } on FailureHandler catch (failure) {
       return Error(failure);
+    }
+  }
+
+  /// Pre-signup promo check. Never fails the caller: an error resolves to
+  /// [NewCustomerPromotion.unknown], which reads as "offered", so a flaky
+  /// network can't hide a promo the user is entitled to.
+  Future<Result<FailureHandler, NewCustomerPromotion>>
+      checkNewCustomerPromoEligibility() async {
+    try {
+      final data = await authService.checkNewCustomerPromoEligibility();
+      return Success(data.value ?? NewCustomerPromotion.unknown);
+    } on FailureHandler catch (_) {
+      return const Success(NewCustomerPromotion.unknown);
     }
   }
 

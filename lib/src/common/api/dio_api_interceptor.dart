@@ -12,6 +12,7 @@ import 'package:logger/logger.dart';
 
 import '../../router/app_router.dart';
 import '../res/base.dart';
+import 'package:fazt_order/src/common/device_metadata.dart';
 
 final logger = Logger();
 
@@ -77,6 +78,17 @@ class DioApiInterceptor extends Interceptor {
   Future<void> onError(
       DioException err, ErrorInterceptorHandler handler) async {
     final statusCode = err.response?.statusCode;
+
+    // The client rewrites every failure into an ApiException on its way out,
+    // which keeps the message and loses everything that says *which* call it
+    // came from. A rejected request is unreadable without that, so it is
+    // spelled out here, once, while the request is still attached to it.
+    if (kDebugMode) {
+      log('Request failed ❌: ${err.requestOptions.method} '
+          '${err.requestOptions.uri} → ${statusCode ?? err.type.name}\n'
+          'Sent: ${err.requestOptions.data}\n'
+          'Got: ${err.response?.data}');
+    }
 
     if (statusCode == 401) {
       var box = Hive.box('data');
@@ -175,8 +187,7 @@ class DioApiInterceptor extends Interceptor {
           textColor: Colors.white,
           fontSize: 14.0,
         );
-        final box = Hive.box('data');
-        await box.clear();
+        await DeviceMetadata.clearSession();
         ref.read(routerProvider).go('/onboarding');
       }
       rethrow;

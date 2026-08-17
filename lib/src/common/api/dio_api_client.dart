@@ -130,6 +130,7 @@ class DioApiClient implements IApiClient {
         uri,
         data: data,
         queryParameters: queryParameters,
+        options: Options(headers: header),
       );
 
       return response;

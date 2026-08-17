@@ -1,6 +1,6 @@
-import 'package:logger/logger.dart';
-import 'package:fazt_order/src/features/home/data/model/response/shops_model/result.dart';
 import 'package:fazt_order/src/features/home/data/model/response/shops_model/day_schedule.dart';
+import 'package:fazt_order/src/features/home/data/model/response/shops_model/result.dart';
+import 'package:logger/logger.dart';
 
 final _logger = Logger();
 
@@ -33,29 +33,39 @@ extension ShopStatusExtension on ShopResult {
     }
   }
 
+  /// Whether the vendor currently has "Accepting orders" switched on.
+  ///
+  /// This is the vendor's manual kill switch and it outranks the weekly
+  /// schedule: a shop that is inside its opening hours is still unavailable
+  /// once the vendor flips the toggle off. `null` means the backend never sent
+  /// the flag, which we read as accepting.
+  bool get isAcceptingOrders => isOpen != false;
+
   /// Checks if the restaurant is currently open based on schedule and emergency flags
   bool get isOpenNow {
+    // Emergency override: the vendor turned "Accepting orders" off, so the
+    // shop is closed no matter what the schedule says.
+    if (!isAcceptingOrders) {
+      _logger.d('[ShopResult Extension] shop=$id not accepting orders');
+      return false;
+    }
+
     // Check if schedule exists at all - schedule takes precedence
     final schedule = store?.salesOperation?.schedule;
     final now = DateTime.now();
 
-    // If schedule exists, use it (schedule overrides restaurant.isOpen flag)
+    // If schedule exists, use it
     if (schedule != null) {
       final currentSched = currentDaySchedule;
       _logger.d(
           '[ShopResult Extension] shop=$id weekday=${now.weekday} dayOpen=${currentSched?.open}');
 
-      // If no schedule exists for current day, check emergency override
+      // No schedule for the current day: fall back to the isOpen flag, which we
+      // already know is not an explicit false.
       if (currentSched == null) {
         _logger.d(
-            '[ShopResult Extension] shop=$id no day schedule, checking emergency override');
-        // Emergency override: explicit false always closes
-        if (isOpen == false) {
-          return false;
-        }
-        // If restaurant.isOpen is explicitly true, return true
-        // If restaurant.isOpen is null, default to true (open by default)
-        return isOpen ?? true;
+            '[ShopResult Extension] shop=$id no day schedule, defaulting to open');
+        return true;
       }
 
       // If schedule exists but day is marked closed
@@ -126,10 +136,14 @@ extension ShopStatusExtension on ShopResult {
     }
 
     // No schedule exists - fall back to restaurant.isOpen flag
-    _logger.d(
-        '[ShopResult Extension] shop=$id no schedule, isOpen=$isOpen');
-    if (isOpen == false) return false;
-    return isOpen ?? true;
+    _logger.d('[ShopResult Extension] shop=$id no schedule, isOpen=$isOpen');
+    return true;
+  }
+
+  /// Short status text for the availability pill.
+  String get availabilityLabel {
+    if (!isAcceptingOrders) return 'CLOSED';
+    return isOpenNow ? 'OPEN' : 'CLOSED';
   }
 
   /// Formats time from ISO string to readable format (e.g., "2PM")
@@ -154,18 +168,18 @@ extension ShopStatusExtension on ShopResult {
 
   /// Gets opening hours display text like "OPENING FROM 9AM TO 10PM" or "CLOSED" or "ALL DAY"
   String get openingHoursDisplayText {
+    if (!isAcceptingOrders) return 'CLOSED';
+
     final sched = currentDaySchedule;
 
     if (sched?.open != true) {
       return 'CLOSED';
     }
 
-    final startTime = sched?.time?.isNotEmpty == true
-        ? sched!.time!.first.startTime
-        : null;
-    final endTime = sched?.time?.isNotEmpty == true
-        ? sched!.time!.first.endTime
-        : null;
+    final startTime =
+        sched?.time?.isNotEmpty == true ? sched!.time!.first.startTime : null;
+    final endTime =
+        sched?.time?.isNotEmpty == true ? sched!.time!.first.endTime : null;
 
     if (startTime != null && endTime != null) {
       final formattedStartTime = _formatTime(startTime);

@@ -69,7 +69,11 @@ class OptionItemVariant {
             : OptionItem.fromMap(data['optionItem'] as Map<String, dynamic>),
         inStock: data['inStock'] as bool?,
         notes: data['notes'] as String?,
-        id: data['_id'] as String?,
+        // The cart payload mixes conventions: subdocuments keep Mongo's
+        // `_id` while populated documents are serialised with `id`. Accepting
+        // either is what keeps a line addressable — without this id the row
+        // loses its stepper and its way back into the meal's options.
+        id: (data['_id'] ?? data['id']) as String?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -122,7 +126,11 @@ class OptionItem {
         item: data['item'] as String?,
         price: data['price'] as int?,
         store: data['store'] as String?,
-        id: data['_id'] as String?,
+        // The cart payload mixes conventions: subdocuments keep Mongo's
+        // `_id` while populated documents are serialised with `id`. Accepting
+        // either is what keeps a line addressable — without this id the row
+        // loses its stepper and its way back into the meal's options.
+        id: (data['_id'] ?? data['id']) as String?,
       );
 
   Map<String, dynamic> toMap() => {

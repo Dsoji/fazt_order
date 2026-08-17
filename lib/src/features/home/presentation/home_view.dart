@@ -10,6 +10,7 @@ import '../../../../providers/restaurant_provider.dart';
 import '../../../common/app_colors.dart';
 import '../../../common/components/restaurant_card.dart';
 import '../../../common/ui_helpers.dart';
+import '../../../common/user_location_provider.dart';
 import '../../../common/widgets/shimmer_restaurant_card.dart';
 import '../../../common/widgets/text_styles.dart';
 import '../../auth/data/model/response/user_model/promotion_state.dart';
@@ -17,145 +18,16 @@ import '../../bottom_sheets/filters_sheet.dart';
 import '../../bottom_sheets/location_sheet.dart';
 import '../../profile/data/controller/profile_controller.dart';
 import '../data/controller/shop_controller.dart';
-import '../data/model/response/shops_model/day_schedule.dart';
+import '../data/model/response/shops_model/shop_extension.dart';
 import 'search_restaurant_view.dart';
+import 'widgets/discount_meals_section.dart';
+import 'widgets/featured_restaurants_section.dart';
+import '../../../common/widgets/app_refresh_indicator.dart';
 
 final _promoDialogShownProvider = StateProvider<bool>((_) => false);
 
 class HomeView extends HookConsumerWidget {
   const HomeView({super.key});
-
-  // Helper function to get the current day's schedule
-  DaySchedule? _getCurrentDaySchedule(ShopResult shop) {
-    final schedule = shop.store?.salesOperation?.schedule;
-    if (schedule == null) return null;
-
-    final now = DateTime.now();
-    final weekday = now.weekday; // 1 = Monday, 7 = Sunday
-
-    switch (weekday) {
-      case 1:
-        return schedule.monday;
-      case 2:
-        return schedule.tuesday;
-      case 3:
-        return schedule.wednesday;
-      case 4:
-        return schedule.thursday;
-      case 5:
-        return schedule.friday;
-      case 6:
-        return schedule.saturday;
-      case 7:
-        return schedule.sunday;
-      default:
-        return null;
-    }
-  }
-
-  // Helper function to check if restaurant is currently open based on schedule
-  bool _isRestaurantOpen(ShopResult shop) {
-    // Emergency override: explicit false always closes
-    if (shop.isOpen == false) {
-      return false;
-    }
-
-    // Check if schedule exists at all
-    final schedule = shop.store?.salesOperation?.schedule;
-
-    // If no schedule object exists at all, fall back to shop.isOpen flag
-    if (schedule == null) {
-      // If shop.isOpen is explicitly true, return true
-      // If shop.isOpen is null, default to true (open by default)
-      return shop.isOpen ?? true;
-    }
-
-    // Otherwise, check the schedule
-    final currentDaySchedule = _getCurrentDaySchedule(shop);
-
-    // If no schedule exists for current day, fall back to shop.isOpen flag
-    if (currentDaySchedule == null) {
-      // If shop.isOpen is explicitly true, return true
-      // If shop.isOpen is null, default to true (open by default)
-      return shop.isOpen ?? true;
-    }
-
-    // If schedule exists but day is marked closed
-    if (currentDaySchedule.open != true) {
-      return false;
-    }
-
-    final timeSlots = currentDaySchedule.time;
-
-    // Day open with no time slots: open all day
-    // When schedule says open:true and time array is empty, shop is open all day
-    // This takes precedence - if schedule says open, respect it
-    if (timeSlots == null || timeSlots.isEmpty) {
-      return true;
-    }
-
-    // Helper function to extract time from ISO string as Duration
-    Duration? clockFromIso(String iso) {
-      try {
-        // Parse as UTC DateTime first, then convert to local time
-        // This handles cases where times are stored in UTC but represent local business hours
-        final dateTime = DateTime.parse(iso).toLocal();
-        return Duration(
-            hours: dateTime.hour,
-            minutes: dateTime.minute,
-            seconds: dateTime.second);
-      } catch (e) {
-        // Fallback: try parsing as plain time (ignore timezone)
-        try {
-          final timePart = iso.split('T').last.replaceAll('Z', '');
-          final segments = timePart.split(':');
-          if (segments.length < 2) return null;
-          final h = int.parse(segments[0]);
-          final m = int.parse(segments[1]);
-          final s =
-              segments.length > 2 ? int.parse(segments[2].split('.').first) : 0;
-          return Duration(hours: h, minutes: m, seconds: s);
-        } catch (e2) {
-          return null;
-        }
-      }
-    }
-
-    final now = DateTime.now();
-    // Use local clock to compare against clock-only slot times
-    final nowClock =
-        Duration(hours: now.hour, minutes: now.minute, seconds: now.second);
-
-    var hasValidSlot = false;
-
-    for (final timeSlot in timeSlots) {
-      if (timeSlot.startTime == null || timeSlot.endTime == null) continue;
-
-      final start = clockFromIso(timeSlot.startTime!);
-      final end = clockFromIso(timeSlot.endTime!);
-      if (start == null || end == null) continue;
-
-      hasValidSlot = true;
-      final crossesMidnight = end <= start;
-
-      // For same-day ranges: current time must be >= start AND < end (exclusive end)
-      // For overnight ranges: current time must be >= start OR < end
-      final inSameDayRange =
-          !crossesMidnight && nowClock >= start && nowClock < end;
-      final inOvernightRange =
-          crossesMidnight && (nowClock >= start || nowClock < end);
-
-      if (inSameDayRange || inOvernightRange) {
-        return true;
-      }
-    }
-
-    // We had slots but none matched; treat as closed
-    if (hasValidSlot) return false;
-
-    // Slots list existed but all invalid
-    return false;
-  }
 
   Widget _buildFilterChip({
     required String label,
@@ -233,7 +105,10 @@ class HomeView extends HookConsumerWidget {
 
     final userDetails = ref.watch(profileControllerProvider).userDetails;
 
-    final promotionState = userDetails.value?.user?.promotionState;
+    // valueOrNull, not value: on an AsyncError carrying no previous data
+    // `value` rethrows the failure, which during build takes the whole home
+    // screen down over a profile fetch that the rest of the page copes with.
+    final promotionState = userDetails.valueOrNull?.user?.promotionState;
 
     useEffect(() {
       final freeDelivery = promotionState?.freeDeliveryRemaining ?? 0;
@@ -256,6 +131,35 @@ class HomeView extends HookConsumerWidget {
       promotionState?.freeDeliveryRemaining,
       promotionState?.discountRemaining,
     ]);
+
+    // The user's delivery address, restored from cache on launch. Null only
+    // before they have ever set one, in which case the feed goes out unlocated
+    // and is refetched by the effect below as soon as an address exists.
+    final coordinates = ref.watch(effectiveCoordinatesProvider);
+    final lat = coordinates?.lat;
+    final lng = coordinates?.lng;
+
+    // What the feed request fired on mount was built with. Only a change from
+    // this is worth a refetch — on a warm launch the cached coordinates were
+    // already on that first request.
+    final feedCoordinates = useRef<Coordinates?>(coordinates);
+
+    useEffect(() {
+      if (lat == null || lng == null) return null;
+      Future.microtask(() {
+        if (feedCoordinates.value != coordinates) {
+          feedCoordinates.value = coordinates;
+          ref.read(shopControllerProvider.notifier).revalidateShops();
+        }
+        ref
+            .read(shopControllerProvider.notifier)
+            .fetchDiscountedMeals(lat: lat, lng: lng);
+        ref
+            .read(shopControllerProvider.notifier)
+            .fetchFeaturedStores(lat: lat, lng: lng);
+      });
+      return null;
+    }, [lat, lng]);
 
     final shops = ref.watch(shopControllerProvider).shops;
     final shopsHasMore =
@@ -286,6 +190,27 @@ class HomeView extends HookConsumerWidget {
       await ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
       await ref.read(profileControllerProvider.notifier).fetchWallet();
       await ref.read(profileControllerProvider.notifier).fetchFavouritesList();
+      if (lat != null && lng != null) {
+        await ref
+            .read(shopControllerProvider.notifier)
+            .fetchDiscountedMeals(lat: lat, lng: lng, background: true);
+        await ref
+            .read(shopControllerProvider.notifier)
+            .fetchFeaturedStores(lat: lat, lng: lng, background: true);
+      }
+    }
+
+    // Promo rails sit above the restaurant list and only make sense on the
+    // unfiltered feed.
+    Widget promoSections() {
+      if (selectedFilter.value != null) return const SizedBox.shrink();
+      return const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DiscountMealsSection(),
+          FeaturedRestaurantsSection(),
+        ],
+      );
     }
 
     // Helper function to filter shops based on selected filter
@@ -298,7 +223,7 @@ class HomeView extends HookConsumerWidget {
 
       switch (selectedFilter.value) {
         case 'Open now':
-          return allShops.where((shop) => _isRestaurantOpen(shop)).toList();
+          return allShops.where((shop) => shop.isOpenNow).toList();
         case 'Favourites':
           return allShops.where((shop) => shop.isLiked == true).toList();
         default:
@@ -493,7 +418,7 @@ class HomeView extends HookConsumerWidget {
 
           // Restaurant List (Single ListView)
           Expanded(
-            child: RefreshIndicator(
+            child: AppRefreshIndicator(
               onRefresh: handleRefresh,
               child: shops.when(
                 loading: () => shops.maybeWhen(
@@ -502,12 +427,13 @@ class HomeView extends HookConsumerWidget {
                     return ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      itemCount: filteredShops.length,
+                      itemCount: filteredShops.length + 1,
                       itemBuilder: (context, index) {
-                        final shop = filteredShops[index];
+                        if (index == 0) return promoSections();
+                        final shop = filteredShops[index - 1];
                         return RestaurantCard(
                           restaurant: shop,
-                          index: index,
+                          index: index - 1,
                         );
                       },
                     );
@@ -515,9 +441,10 @@ class HomeView extends HookConsumerWidget {
                   orElse: () => ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    itemCount: 10,
-                    itemBuilder: (context, index) =>
-                        const ShimmerRestaurantCard(),
+                    itemCount: 11,
+                    itemBuilder: (context, index) => index == 0
+                        ? promoSections()
+                        : const ShimmerRestaurantCard(),
                   ),
                 ),
                 error: (error, stackTrace) => ListView(
@@ -560,7 +487,8 @@ class HomeView extends HookConsumerWidget {
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       children: [
-                        const SizedBox(height: 120),
+                        promoSections(),
+                        const SizedBox(height: 80),
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -594,9 +522,11 @@ class HomeView extends HookConsumerWidget {
                     controller: scrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    itemCount: filteredShops.length + (showFooter ? 1 : 0),
+                    itemCount: filteredShops.length + 1 + (showFooter ? 1 : 0),
                     itemBuilder: (context, index) {
-                      if (index >= filteredShops.length) {
+                      if (index == 0) return promoSections();
+                      final shopIndex = index - 1;
+                      if (shopIndex >= filteredShops.length) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 16.0),
                           child: Center(
@@ -618,10 +548,10 @@ class HomeView extends HookConsumerWidget {
                           ),
                         );
                       }
-                      final shop = filteredShops[index];
+                      final shop = filteredShops[shopIndex];
                       return RestaurantCard(
                         restaurant: shop,
-                        index: index,
+                        index: shopIndex,
                       );
                     },
                   );

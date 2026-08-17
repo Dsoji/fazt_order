@@ -11,6 +11,9 @@ import 'package:timelines_plus/timelines_plus.dart';
 
 import '../../common/app_colors.dart';
 import '../../common/widgets/text_styles.dart';
+import 'data/model/parcel_quote.dart';
+import 'data/model/parcel_request.dart';
+import 'widgets/parcel_payment_method_sheet.dart';
 
 class ParcelConfirmDetails extends HookConsumerWidget {
   const ParcelConfirmDetails({super.key});
@@ -19,6 +22,28 @@ class ParcelConfirmDetails extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDeliveryType = useState('Standard');
     final parcelAsync = ref.watch(shopControllerProvider).bookCourier;
+
+    // The pickup code never rides on the create response. `GET /parcels/:id`
+    // is the only endpoint that returns it, and only to the parcel's own
+    // sender — who is exactly who is standing on this screen — so the parcel
+    // is refetched by id once it has one, and kept here rather than in shared
+    // state so it can only ever be this parcel's.
+    final parcelId = parcelAsync.valueOrNull?.parcel?.id;
+    final loadedParcel = useState<Parcel?>(null);
+    useEffect(() {
+      if (parcelId == null || parcelId.isEmpty) return null;
+      var cancelled = false;
+      Future.microtask(() async {
+        final loaded = await ref
+            .read(shopControllerProvider.notifier)
+            .loadParcel(parcelId);
+        if (!cancelled) loadedParcel.value = loaded;
+      });
+      return () => cancelled = true;
+    }, [parcelId]);
+
+    final pickupCode = loadedParcel.value?.pickupOTP;
+
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -119,9 +144,16 @@ class ParcelConfirmDetails extends HookConsumerWidget {
                 _buildParcelTypeSection(p?.parcelType ?? '-'),
                 const Gap(24),
                 _buildOTPAndNoteSection(
-                    (p?.riderOTP ?? 0).toString().padLeft(4, '0')),
+                  // The create response is kept as a fallback in case it ever
+                  // starts carrying the field; today the fetched parcel is the
+                  // only source. A parcel from before pickup codes existed
+                  // resolves to null on both, and the block is left off.
+                  pickupOTP: pickupCode ?? p?.pickupOTP,
+                  deliveryOTP: p?.riderOTP,
+                ),
                 const Gap(24),
                 _buildPaymentDetailsSection(
+                  quote: req.quote,
                   deliveryFee: p?.deliveryFee,
                   serviceFee: p?.serviceFee,
                 ),
@@ -135,37 +167,52 @@ class ParcelConfirmDetails extends HookConsumerWidget {
                     width: double.infinity,
                     height: 48,
                     onPressed: () async {
+                      // Ask before charging: wallet settles inline, paystack
+                      // hands back a URL to open. Nothing is sent until the
+                      // user picks one.
+                      final method = await showParcelPaymentMethodSheet(
+                        context,
+                        amount: _payableTotal(
+                          quote: req.quote,
+                          deliveryFee: p?.deliveryFee,
+                          serviceFee: p?.serviceFee,
+                        ),
+                      );
+                      if (method == null || !context.mounted) return;
+
                       final result = await ref
                           .read(shopControllerProvider.notifier)
                           .makeParcelPayment(
                             p?.id ?? '',
-                            'paystack',
+                            method,
                             selectedDeliveryType.value,
                           );
-                      if (result) {
-                        final paymentUrl = ref
-                            .read(shopControllerProvider)
-                            .makeParcelPayment
-                            .valueOrNull
-                            ?.payment
-                            ?.paymentUrl;
-                        final reference = ref
-                            .read(shopControllerProvider)
-                            .makeParcelPayment
-                            .valueOrNull
-                            ?.payment
-                            ?.reference;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => FaztWebViewScreen(
-                              uri: paymentUrl ?? '',
-                              reference: reference ?? '',
-                              title: 'Parcel Payment',
-                            ),
-                          ),
-                        );
+                      if (!result || !context.mounted) return;
+
+                      final details = ref
+                          .read(shopControllerProvider)
+                          .makeParcelPayment
+                          .valueOrNull;
+
+                      // A wallet payment is already settled — there is no
+                      // redirect to follow, and pushing an empty webview would
+                      // strand the user on a blank page.
+                      if (details?.payment?.completed == true ||
+                          details?.redirectRequired != true) {
+                        Navigator.pop(context);
+                        return;
                       }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FaztWebViewScreen(
+                            uri: details?.payment?.paymentUrl ?? '',
+                            reference: details?.payment?.reference ?? '',
+                            title: 'Parcel Payment',
+                          ),
+                        ),
+                      );
                     },
                     color: AppColors.brand400,
                     textColor: kcWhite),
@@ -355,37 +402,38 @@ class ParcelConfirmDetails extends HookConsumerWidget {
     );
   }
 
-  Widget _buildOTPAndNoteSection(String otpCode) {
+  /// The codes this parcel will be handed over on, plus the standing note.
+  ///
+  /// Two codes, two people, two moments — so each is labelled with both. A code
+  /// the backend did not issue is left out rather than rendered as `0000`,
+  /// which is a real-looking number the sender would go on to read out: parcels
+  /// created before pickup codes existed have no [pickupOTP], and nothing is
+  /// asked for one at collection.
+  Widget _buildOTPAndNoteSection({int? pickupOTP, int? deliveryOTP}) {
     return Column(
       children: [
-        Row(
-          children: [
-            Icon(Iconsax.message_text, color: kcPrimaryGreen500, size: 20),
-            const Gap(12),
-            Expanded(
-              child: Text(
-                "OTP receiver shares with the rider",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                ),
-              ),
-            ),
-            Text(
-              otpCode,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const Gap(12),
-        const Divider(
-          color: Colors.grey,
-          thickness: 0.5,
-        ),
-        const Gap(12),
+        if (pickupOTP != null) ...[
+          _buildOTPRow(
+            icon: Iconsax.box,
+            label: "Pickup code",
+            hint: "Give this to the rider at collection",
+            code: pickupOTP,
+          ),
+          const Gap(12),
+          const Divider(color: Colors.grey, thickness: 0.5),
+          const Gap(12),
+        ],
+        if (deliveryOTP != null) ...[
+          _buildOTPRow(
+            icon: Iconsax.message_text,
+            label: "Delivery code",
+            hint: "Share with your receiver — they give it to the rider",
+            code: deliveryOTP,
+          ),
+          const Gap(12),
+          const Divider(color: Colors.grey, thickness: 0.5),
+          const Gap(12),
+        ],
         Row(
           children: [
             Icon(Iconsax.clipboard_text, color: kcPrimaryGreen500, size: 20),
@@ -405,10 +453,74 @@ class ParcelConfirmDetails extends HookConsumerWidget {
     );
   }
 
-  Widget _buildPaymentDetailsSection({num? deliveryFee, num? serviceFee}) {
-    final num dFee = deliveryFee ?? 0;
-    final num sFee = serviceFee ?? 0;
-    final num total = dFee + sFee;
+  Widget _buildOTPRow({
+    required IconData icon,
+    required String label,
+    required String hint,
+    required int code,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: kcPrimaryGreen500, size: 20),
+        const Gap(12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const Gap(2),
+              // Both codes are the sender's to pass on, to two different
+              // people. Without this line they are two anonymous 4-digit
+              // numbers on one screen.
+              Text(
+                hint,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          code.toString().padLeft(4, '0'),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// The payment breakdown.
+  ///
+  /// [quote] is the price the parcel was actually created under and wins
+  /// whenever it is present — it already accounts for any promotion, and it is
+  /// the figure the backend re-verifies at payment time. The parcel's own
+  /// `deliveryFee`/`serviceFee` are the pre-discount fallback for parcels
+  /// created before quoting existed; summing those when a promotion applied
+  /// would overstate the total.
+  Widget _buildPaymentDetailsSection({
+    ParcelQuote? quote,
+    num? deliveryFee,
+    num? serviceFee,
+  }) {
+    final num dFee = quote?.payableDeliveryFee ?? deliveryFee ?? 0;
+    final num sFee = quote?.serviceFee ?? serviceFee ?? 0;
+    final num discount = quote?.discount ?? 0;
+    final num total = _payableTotal(
+      quote: quote,
+      deliveryFee: deliveryFee,
+      serviceFee: serviceFee,
+    );
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -431,6 +543,10 @@ class ParcelConfirmDetails extends HookConsumerWidget {
           const Gap(8),
           _buildPaymentRow(
               "Tax and other fees", "N ${sFee.toStringAsFixed(0)}"),
+          if (discount > 0) ...[
+            const Gap(8),
+            _buildPaymentRow("Discount", "-N ${discount.toStringAsFixed(0)}"),
+          ],
           const Gap(8),
           _buildPaymentRow("Total", "N ${total.toStringAsFixed(0)}",
               isTotal: true),
@@ -462,35 +578,22 @@ class ParcelConfirmDetails extends HookConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _buildMakePaymentButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          // Handle payment
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Payment processing...')),
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: kcPrimaryGreen500,
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 56),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: const Text(
-          "Make Payment",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
+/// What the parcel actually costs to pay.
+///
+/// The quote's total wins whenever it is present — it already accounts for any
+/// promotion and is the figure the backend re-verifies at payment time. Summing
+/// the parcel's own pre-discount fees is the fallback for parcels created
+/// before quoting existed.
+num _payableTotal({
+  ParcelQuote? quote,
+  num? deliveryFee,
+  num? serviceFee,
+}) {
+  return quote?.totalPrice ??
+      ((quote?.payableDeliveryFee ?? deliveryFee ?? 0) +
+          (quote?.serviceFee ?? serviceFee ?? 0));
 }
 
 String _formatAddress(String? address, String? city, String? state) {

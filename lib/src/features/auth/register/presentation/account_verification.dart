@@ -11,6 +11,7 @@ import '../../../../common/res/app_colors.dart';
 import '../../../../common/widgets/reusable_buttons.dart';
 import '../../../profile/data/controller/profile_controller.dart';
 import '../../data/controller/authentication_controller.dart';
+import 'new_customer_promo_notice.dart';
 
 // Separate widget for countdown to isolate rebuilds
 class AccountVerificationScreen extends ConsumerStatefulWidget {
@@ -314,6 +315,18 @@ class _AccountVerificationScreenState
 
                       if (!context.mounted) return;
                       if (signedUp) {
+                        // The account exists at this point whatever the promo
+                        // said, so the refusal is shown on the way through
+                        // rather than treated as a failure to recover from.
+                        await showNewCustomerPromoNotice(
+                          context,
+                          ref
+                              .read(authenticationControllerProvider)
+                              .signUp
+                              .valueOrNull
+                              ?.newCustomerPromotion,
+                        );
+                        if (!context.mounted) return;
                         await ref
                             .read(profileControllerProvider.notifier)
                             .fetchProfile();
