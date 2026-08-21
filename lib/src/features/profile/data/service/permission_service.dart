@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-/// Service for handling app permissions (camera, storage, notifications)
+/// Service for handling app permissions (camera, notifications)
 class PermissionService {
   static final PermissionService _instance = PermissionService._internal();
   factory PermissionService() => _instance;
@@ -28,48 +28,6 @@ class PermissionService {
     return false;
   }
 
-  /// Request storage permission
-  /// Returns true if permission is granted, false otherwise
-  Future<bool> requestStoragePermission({bool showDialog = true}) async {
-    // For Android 13+ (API 33+), use photos permission
-    // For older Android versions, use storage permission
-
-    // Try photos permission first (Android 13+)
-    PermissionStatus photosStatus = await Permission.photos.status;
-    if (photosStatus.isGranted) {
-      return true;
-    }
-
-    if (photosStatus.isDenied || photosStatus.isLimited) {
-      final result = await Permission.photos.request();
-      if (result.isGranted) {
-        return true;
-      }
-    }
-
-    // Try storage permission (older Android versions)
-    PermissionStatus storageStatus = await Permission.storage.status;
-    if (storageStatus.isGranted) {
-      return true;
-    }
-
-    if (storageStatus.isDenied) {
-      final result = await Permission.storage.request();
-      if (result.isGranted) {
-        return true;
-      }
-    }
-
-    // Handle permanently denied for either permission
-    if ((photosStatus.isPermanentlyDenied ||
-            storageStatus.isPermanentlyDenied) &&
-        showDialog) {
-      await _showPermissionDeniedDialog('Storage');
-    }
-
-    return false;
-  }
-
   /// Request notification permission
   /// Returns true if permission is granted, false otherwise
   Future<bool> requestNotificationPermission({bool showDialog = true}) async {
@@ -91,13 +49,12 @@ class PermissionService {
     return false;
   }
 
-  /// Request all permissions (camera, storage, notification)
+  /// Request all permissions (camera, notification)
   /// Returns a map with permission status
   Future<Map<String, bool>> requestAllPermissions(
       {bool showDialog = true}) async {
     return {
       'camera': await requestCameraPermission(showDialog: showDialog),
-      'storage': await requestStoragePermission(showDialog: showDialog),
       'notification':
           await requestNotificationPermission(showDialog: showDialog),
     };
@@ -106,16 +63,6 @@ class PermissionService {
   /// Check if camera permission is granted
   Future<bool> isCameraPermissionGranted() async {
     return (await Permission.camera.status).isGranted;
-  }
-
-  /// Check if storage permission is granted
-  Future<bool> isStoragePermissionGranted() async {
-    // Check photos permission first
-    if ((await Permission.photos.status).isGranted) {
-      return true;
-    }
-    // Check storage permission
-    return (await Permission.storage.status).isGranted;
   }
 
   /// Check if notification permission is granted

@@ -1,78 +1,30 @@
-import 'package:fazt_order/src/common/app_colors.dart';
-import 'package:fazt_order/src/common/ui_helpers.dart';
 import 'package:fazt_order/src/features/bottom_sheets/cancel_order.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:gap/gap.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:iconsax/iconsax.dart';
-import 'package:logger/logger.dart';
+import 'package:iconsax_plus/iconsax_plus.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../common/components/vertical_stripe_pattern.dart';
+import '../../common/res/app_colors.dart';
 import '../../common/widgets/reusable_buttons.dart';
-import '../../common/widgets/text_styles.dart';
+import '../home/data/controller/shop_controller.dart';
 import '../home/data/model/response/my_orders_list/result.dart';
+import 'widgets/order_detail_widgets.dart';
+import '../../common/widgets/app_refresh_indicator.dart';
 
-final logger = Logger();
+/// Statuses where the order has left the ongoing flow for good.
+const _terminalStatuses = {'delivered', 'cancelled', 'rejected', 'refunded'};
 
-class OrderStatusHelper {
-  static String getLottieAsset(String? status) {
-    switch (status) {
-      case 'paid':
-      case 'accepted':
-        return 'asset/lottie/delivery-accepted.json';
-      case 'preparing':
-      case 'ready':
-        return 'asset/lottie/rice-cooker.json';
-      case 'in_transit':
-      case 'arrived':
-        return 'asset/lottie/yes-brruu.json';
-      case 'delivered':
-        return 'asset/lottie/rice-cooker.json';
-      default:
-        return 'asset/lottie/delivery-accepted.json';
-    }
-  }
+/// Statuses where a rider should be attached to the order.
+const _riderStatuses = {'ready', 'in_transit', 'arrived'};
 
-  static String getStatusDescription(String? status) {
-    switch (status) {
-      case 'pending':
-        return "Waiting for payment to be processed.";
-      case 'paid':
-        return "Order has been paid for, waiting for vendor to confirm your order.";
-      case 'accepted':
-        return "Order is accepted by vendor";
-      case 'preparing':
-        return "Your order is being prepared by the vendor";
-      case 'ready':
-        return "Order ready and will be picked up by the rider";
-      case 'in_transit':
-        return "Order has been picked up and is on the way to you";
-      case 'arrived':
-        return "Rider has arrived";
-      case 'delivered':
-        return "Order has been delivered";
-      default:
-        return "Waiting for vendor to confirm your order.";
-    }
-  }
-
-  static int getProgressStep(String? status) {
-    switch (status) {
-      case 'pending': return 0;
-      case 'paid': return 1;
-      case 'accepted': return 2;
-      case 'preparing': return 2; // FIX: previously missed, skipped to 7
-      case 'ready': return 3;
-      case 'in_transit': return 4;
-      case 'arrived': return 5;
-      case 'delivered': return 6;
-      default: return 0;
-    }
-  }
-}
-
-class OngoingOrderView extends HookConsumerWidget {
+/// The customer-facing order details page.
+///
+/// Mirrors the vendor Order Details layout — summary card, progress timeline,
+/// items with the payment breakdown, delivery details — so the same order reads
+/// the same way on both sides of the app. The cards themselves live in
+/// `widgets/order_detail_widgets.dart` and are shared with [CompletedOrderView].
+class OngoingOrderView extends ConsumerWidget {
   final OrderResult orderItems;
 
   const OngoingOrderView({
@@ -91,269 +43,341 @@ class OngoingOrderView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final canCancel = orderItems.status == 'pending';
-    final cancelText = canCancel
-        ? "Waiting for vendor to confirm your order. You can still cancel this order at the moment."
-        : "You can not cancel this order at this moment.";
+    // Track the order in the list state so a refresh (vendor accepted, rider
+    // assigned, ...) is reflected here without leaving the page.
+    final ordersList = ref.watch(shopControllerProvider).myOrdersList;
+    final order = ordersList.valueOrNull?.results?.firstWhere(
+          (result) => result.id == orderItems.id,
+          orElse: () => orderItems,
+        ) ??
+        orderItems;
 
-    logger.d('Order Items: ${orderItems.status}');
+    final status = order.status?.toLowerCase();
+    final isTerminal = status != null && _terminalStatuses.contains(status);
+    final canCancel = status == 'pending' || status == 'paid';
+
+    Future<void> refreshOrders() =>
+        ref.read(shopControllerProvider.notifier).fetchMyOrdersList();
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(Iconsax.arrow_left_2),
-        ),
-        title: Text(
-          "Your Order",
-          style: ktBodySemiBoldSize20.copyWith(
-            fontSize: 24,
-            letterSpacing: 1,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.white,
+        leading: const OrderDetailBackButton(),
+        title: const Text(
+          'Order details',
+          style: TextStyle(
+            color: AppColors.neutral100,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
+        centerTitle: true,
       ),
-      backgroundColor: kcPrimaryNeutral950,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: SizedBox(
-          width: double.infinity,
+      body: AppRefreshIndicator(
+        color: AppColors.brand300,
+        onRefresh: refreshOrders,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with Icon and Order Status
-              Center(
-                child: Column(
-                  children: [
-                    SizedBox(
-                        height: 150,
-                        width: 150,
-                        child: Lottie.asset(OrderStatusHelper.getLottieAsset(orderItems.status))),
-                    verticalSpaceSmall,
-
-                    verticalSpaceSmall,
-                    Text(
-                      textAlign: TextAlign.center,
-                      OrderStatusHelper.getStatusDescription(orderItems.status),
-                      style: const TextStyle(
-                          fontSize: 16,
-                          color: kcPrimaryNeutral200,
-                          letterSpacing: 1),
-                    ),
-                    verticalSpaceSmall,
-                    // const Text(
-                    //   '00:00 ',
-                    //   style: TextStyle(
-                    //       fontSize: 16,
-                    //       color: kcPrimaryNeutral200,
-                    //       fontWeight: FontWeight.w600),
-                    // ),
-                    verticalSpaceSmall,
-                    DashProgressBar(
-                        currentStep: OrderStatusHelper.getProgressStep(orderItems.status),
-                        totalSteps: 7,
-                        activeColor: kcPrimary200,
-                        inactiveColor: kcPrimary800),
-                    verticalSpaceSmall,
-                    if (orderItems.status == 'pending' ||
-                        orderItems.status == 'paid') ...[
-                      verticalSpaceSmall,
-                      Text(
-                        cancelText,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: Colors.grey, letterSpacing: 1),
-                      ),
-                      verticalSpaceMedium,
-                      FullButton(
-                        text: 'Cancel Order',
-                        width: 150,
-                        height: 48,
-                        onPressed: () {
-                          _showCancelOrderDialog(context);
-                        },
-                        color: kcPrimary400,
-                        textColor: kcWhite,
-                      ),
-                    ],
-                    // if (isCompleted) verticalSpaceSmall,
-                  ],
-                ),
-              ),
-              verticalSpaceSmall,
-              SvgPicture.asset('asset/svgs/dotted_line.svg'), // Dashed divider
-              verticalSpace(4),
-
-              // Delivery Details
-              const Text(
-                "Delivery Details",
-                style: TextStyle(fontSize: 14, letterSpacing: 1),
-              ),
-              Row(
-                children: [
-                  const Icon(Iconsax.location, size: 20, color: Colors.grey),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      orderItems.deliveryLocation?.address ?? '',
-                      style: const TextStyle(
-                          color: kcPrimaryNeutral500, fontSize: 11),
-                    ),
-                  ),
-                ],
-              ),
-              verticalSpaceSmall,
-              SvgPicture.asset('asset/svgs/dotted_line.svg'),
-              verticalSpaceSmall,
-
-              // OTP Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Iconsax.message, size: 20, color: Colors.grey),
-                      SizedBox(width: 8),
-                      Text(
-                        "OTP to share with your rider",
-                        style: TextStyle(
-                            color: kcPrimaryNeutral200,
-                            fontSize: 12,
-                            letterSpacing: 1),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '${orderItems.riderOtp}',
-                    // '0000',
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: kcPrimaryNeutral200),
-                  )
-                ],
-              ),
-
-              verticalSpaceSmall,
-              SvgPicture.asset('asset/svgs/dotted_line.svg'), // Dashed divider
-              verticalSpaceSmall,
-
-              // Order Summary
-              const Row(
-                children: [
-                  Icon(Iconsax.task_square,
-                      size: 20, color: kcPrimaryNeutral200),
-                  SizedBox(width: 8),
-                  Text(
-                    "Order Summary",
-                    style: TextStyle(
-                        fontWeight: FontWeight.w400,
-                        fontSize: 16,
-                        color: kcPrimaryNeutral200),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ...(orderItems.items ?? []).map((item) {
-                return Padding(
-                  padding: const EdgeInsets.only(left: 25.0, bottom: 4, top: 5),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        item.mealVariant?.meal?.mealName ?? '',
-                        style: const TextStyle(color: kcPrimaryNeutral500),
-                      ),
-                      Text(
-                        "x${item.mealQuantity ?? 0}",
-                        style: const TextStyle(color: kcPrimaryNeutral500),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-
-              verticalSpaceSmall,
-              SvgPicture.asset('asset/svgs/dotted_line.svg'), // Dashed divider
-              verticalSpaceSmall,
-
-              // Payment Details
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Payment Details",
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 1,
-                          color: kcPrimaryNeutral100),
-                    ),
-                    verticalSpaceSmall,
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Subtotal (${orderItems.items?.length} items)",
-                            style: const TextStyle(
-                                color: kcPrimaryNeutral300, fontSize: 14)),
-                        Text(
-                            "₦${orderItems.payment?.subtotal?.toStringAsFixed(0) ?? '0'}",
-                            style: const TextStyle(
-                                color: kcPrimaryNeutral100, fontSize: 12)),
-                      ],
-                    ),
-                    verticalSpaceSmall,
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("Delivery Fee",
-                            style: TextStyle(
-                                color: kcPrimaryNeutral300, fontSize: 14)),
-                        Text("₦${orderItems.payment?.deliveryFee}",
-                            style: const TextStyle(
-                                color: kcPrimaryNeutral100, fontSize: 12)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("Tax and other fees",
-                            style: TextStyle(
-                                color: kcPrimaryNeutral300, fontSize: 14)),
-                        Text("₦${orderItems.payment?.serviceFee}",
-                            style: const TextStyle(
-                                color: kcPrimaryNeutral100, fontSize: 12)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text("Total",
-                            style: TextStyle(
-                                color: kcPrimaryNeutral100,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600)),
-                        Text("₦${orderItems.payment?.total}",
-                            style: const TextStyle(
-                                color: kcPrimaryNeutral100,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              OrderSummaryCard(order: order),
+              const Gap(16),
+              if (status == 'cancelled' || status == 'rejected')
+                TerminalBanner(status: status!)
+              else
+                _TimelineCard(order: order),
+              if (_shouldShowRider(order, status)) ...[
+                const Gap(16),
+                RiderCard(rider: order.rider),
+              ],
+              const Gap(16),
+              OrderItemsCard(order: order),
+              const Gap(16),
+              OrderDeliveryCard(order: order),
             ],
           ),
+        ),
+      ),
+      bottomNavigationBar: isTerminal
+          ? null
+          : _ActionBar(
+              status: status,
+              canCancel: canCancel,
+              onCancel: () => _showCancelOrderDialog(context),
+            ),
+    );
+  }
+
+  /// The rider section appears once one is attached, and from the pickup stage
+  /// onwards it also explains that a rider is still being assigned.
+  bool _shouldShowRider(OrderResult order, String? status) {
+    if (order.rider?.hasDetails == true) return true;
+    return status != null && _riderStatuses.contains(status);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Progress
+// ---------------------------------------------------------------------------
+
+class _TimelineCard extends StatelessWidget {
+  final OrderResult order;
+
+  const _TimelineCard({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = order.status?.toLowerCase();
+    final steps = _stepsFor(order);
+    final currentStep = _stepForStatus(status);
+
+    return SectionCard(
+      title: 'Progress',
+      child: Column(
+        children: [
+          Center(
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 130,
+                  width: 130,
+                  child: Lottie.asset(_lottieForStatus(status)),
+                ),
+                const Gap(6),
+                Text(
+                  _statusDescription(status),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.neutral400,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Gap(18),
+          for (var i = 0; i < steps.length; i++)
+            TimelineStep(
+              title: steps[i].title,
+              subtitle: steps[i].subtitle,
+              isDone: i < currentStep,
+              isCurrent: i == currentStep,
+              isLast: i == steps.length - 1,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepData {
+  final String title;
+  final String subtitle;
+
+  const _StepData(this.title, this.subtitle);
+}
+
+/// The animation that plays above the timeline for the current status.
+String _lottieForStatus(String? status) {
+  switch (status) {
+    case 'paid':
+    case 'accepted':
+      return 'asset/lottie/delivery-accepted.json';
+    case 'preparing':
+    case 'ready':
+    case 'delivered':
+      return 'asset/lottie/rice-cooker.json';
+    case 'in_transit':
+    case 'arrived':
+      return 'asset/lottie/yes-brruu.json';
+    default:
+      return 'asset/lottie/delivery-accepted.json';
+  }
+}
+
+String _statusDescription(String? status) {
+  switch (status) {
+    case 'pending':
+      return 'Waiting for payment to be processed.';
+    case 'paid':
+      return 'Order has been paid for, waiting for the vendor to confirm it.';
+    case 'accepted':
+      return 'Your order was accepted by the vendor.';
+    case 'preparing':
+      return 'Your order is being prepared by the vendor.';
+    case 'ready':
+      return 'Order ready and waiting to be picked up by a rider.';
+    case 'in_transit':
+      return 'Your order has been picked up and is on the way to you.';
+    case 'arrived':
+      return 'Your rider has arrived.';
+    case 'delivered':
+      return 'Your order has been delivered.';
+    default:
+      return 'Waiting for the vendor to confirm your order.';
+  }
+}
+
+List<_StepData> _stepsFor(OrderResult order) {
+  final status = order.status?.toLowerCase();
+  final placedAt = order.orderPlacedAt ?? order.createdAt;
+  final isPickedUp =
+      status == 'in_transit' || status == 'arrived' || status == 'delivered';
+
+  return [
+    _StepData(
+      'Order placed',
+      placedAt != null ? formatDateTime(placedAt) : 'Placed',
+    ),
+    _StepData(
+      'Vendor confirmed the order',
+      (status == 'pending' || status == 'paid')
+          ? 'Waiting for the vendor'
+          : 'Order accepted',
+    ),
+    _StepData(
+      'Preparing your order',
+      status == 'preparing'
+          ? 'In progress'
+          : (status == 'ready' || isPickedUp)
+              ? 'Completed'
+              : 'Yet to start',
+    ),
+    _StepData(
+      'Ready for pickup',
+      status == 'ready'
+          ? 'Waiting for a rider'
+          : isPickedUp
+              ? 'Picked up by the rider'
+              : 'Not ready yet',
+    ),
+    _StepData(
+      'On the way to you',
+      switch (status) {
+        'in_transit' => 'The rider is on the way',
+        'arrived' => 'The rider has arrived',
+        'delivered' => 'Completed',
+        _ => 'Yet to be picked up',
+      },
+    ),
+    _StepData(
+      'Order delivered',
+      status == 'delivered' ? 'Order delivered' : 'Yet to be delivered',
+    ),
+  ];
+}
+
+int _stepForStatus(String? status) {
+  switch (status) {
+    case 'pending':
+    case 'paid':
+      return 0;
+    case 'accepted':
+      return 1;
+    case 'preparing':
+      return 2;
+    case 'ready':
+      return 3;
+    case 'in_transit':
+    case 'arrived':
+      return 4;
+    case 'delivered':
+      return 5;
+    default:
+      return 0;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Action bar
+// ---------------------------------------------------------------------------
+
+class _ActionBar extends StatelessWidget {
+  final String? status;
+  final bool canCancel;
+  final VoidCallback onCancel;
+
+  const _ActionBar({
+    required this.status,
+    required this.canCancel,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget content;
+
+    if (canCancel) {
+      content = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Waiting for the vendor to confirm your order. You can still cancel it for now.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: AppColors.neutral500),
+          ),
+          const Gap(10),
+          OutlinButton(
+            text: 'Cancel order',
+            width: double.infinity,
+            height: 50,
+            fontSize: 15,
+            onPressed: onCancel,
+            color: AppColors.red500,
+            bgColor: Colors.transparent,
+          ),
+        ],
+      );
+    } else {
+      final banner = switch (status) {
+        'accepted' => const WaitingBanner(
+            icon: IconsaxPlusLinear.tick_circle,
+            title: 'Order confirmed',
+            message: 'The vendor accepted your order and will start soon.',
+          ),
+        'preparing' => const WaitingBanner(
+            icon: IconsaxPlusLinear.reserve,
+            title: 'Being prepared',
+            message: 'The vendor is preparing your order right now.',
+          ),
+        'ready' => const WaitingBanner(
+            icon: IconsaxPlusLinear.box_tick,
+            title: 'Waiting for a rider',
+            message: 'Your order is ready and waiting to be picked up.',
+          ),
+        'in_transit' => const WaitingBanner(
+            icon: IconsaxPlusLinear.truck,
+            title: 'On the way',
+            message: 'The rider is bringing your order to you.',
+          ),
+        'arrived' => const WaitingBanner(
+            icon: IconsaxPlusLinear.location_tick,
+            title: 'Rider has arrived',
+            message: 'Share your OTP with the rider to collect your order.',
+          ),
+        _ => null,
+      };
+
+      if (banner == null) return const SizedBox.shrink();
+      content = banner;
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppColors.neutral900)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: content,
         ),
       ),
     );

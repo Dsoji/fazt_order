@@ -1,8 +1,10 @@
+import '../features/popups/presentation/popup_gate.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../features/app_update/presentation/app_update_gate.dart';
 import '../features/auth/login/presentation/login_screen.dart';
 import '../features/auth/map/map_location_screen.dart';
 import '../features/auth/register/presentation/account_verification.dart';
@@ -44,7 +46,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', redirect: (_, __) => null),
       GoRoute(
         path: '/onboarding',
-        builder: (_, __) => const OnboardingScreen(),
+        builder: (_, __) => const AppUpdateGate(child: OnboardingScreen()),
       ),
       GoRoute(
         path: '/login',
@@ -74,7 +76,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/dashboard',
-        builder: (_, __) => const DashboardView(),
+        builder: (_, __) => const AppUpdateGate(child: PopupGate(child: DashboardView())),
       ),
       GoRoute(
         path: '/guest',

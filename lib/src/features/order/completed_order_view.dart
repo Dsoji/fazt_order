@@ -1,301 +1,314 @@
-import 'package:fazt_order/src/common/app_colors.dart';
-import 'package:fazt_order/src/common/ui_helpers.dart';
-import 'package:fazt_order/src/features/home/data/model/response/my_orders_list/result.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:iconsax/iconsax.dart';
+import 'package:gap/gap.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../common/widgets/text_styles.dart';
+import '../../common/res/app_colors.dart';
+import '../../common/widgets/app_refresh_indicator.dart';
+import '../home/data/controller/shop_controller.dart';
+import '../home/data/model/response/my_orders_list/result.dart';
+import '../home/data/model/response/my_orders_list/status_history.dart';
+import 'widgets/order_detail_widgets.dart';
 
-class CompletedOrderView extends StatelessWidget {
+/// The detail page for an order that has finished — delivered, cancelled or
+/// declined.
+///
+/// Built from the same cards as [OngoingOrderView] so an order reads the same
+/// way before and after it lands: gradient header, outcome, the rider who
+/// brought it, items with the payment breakdown, delivery details. The
+/// differences are all things that only make sense once an order is over — the
+/// timeline is rebuilt from what actually happened rather than projected
+/// forward, the OTP is gone, and the rider can no longer be called.
+class CompletedOrderView extends ConsumerWidget {
   const CompletedOrderView({super.key, required this.orderItems});
+
   final OrderResult orderItems;
 
   @override
-  Widget build(BuildContext context) {
-    final isDelivered = orderItems.status == 'delivered';
-    final isCancelled = orderItems.status == 'cancelled';
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Read the order back out of the list state, the same way [OngoingOrderView]
+    // does, so a pull-to-refresh here shows what the refetch brought back —
+    // a refund settling, a rider record filling in — instead of redrawing the
+    // snapshot this page was pushed with.
+    final ordersList = ref.watch(shopControllerProvider).myOrdersList;
+    final order = ordersList.valueOrNull?.results?.firstWhere(
+          (result) => result.id == orderItems.id,
+          orElse: () => orderItems,
+        ) ??
+        orderItems;
+
+    final status = order.status?.toLowerCase();
+    final isDelivered = status == 'delivered';
+    final rider = order.rider;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(Iconsax.arrow_left_2),
-        ),
-        title: Text(
-          "Order Details",
-          style: ktBodySemiBoldSize20.copyWith(
-            fontSize: 24,
-            letterSpacing: 1,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.white,
+        leading: const OrderDetailBackButton(),
+        title: const Text(
+          'Order details',
+          style: TextStyle(
+            color: AppColors.neutral100,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
+        centerTitle: true,
       ),
-      backgroundColor: kcPrimaryNeutral950,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: SizedBox(
-          width: double.infinity,
+      body: AppRefreshIndicator(
+        color: AppColors.brand300,
+        onRefresh: ref.read(shopControllerProvider.notifier).fetchMyOrdersList,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with Icon and Order Status
-              Center(
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: 150,
-                      width: 150,
-                      child: Lottie.asset(
-                        isDelivered
-                            ? 'asset/lottie/yes-brruu.json'
-                            : 'asset/lottie/cancel.json',
-                      ),
-                    ),
-                    verticalSpaceSmall,
-                    Text(
-                      isDelivered
-                          ? "Order has been delivered successfully!"
-                          : "Order has been cancelled",
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: kcPrimaryNeutral200,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    verticalSpaceSmall,
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDelivered ? Colors.green : Colors.red,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        orderItems.status?.toUpperCase() ?? 'UNKNOWN',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (orderItems.createdAt != null) ...[
-                      verticalSpaceSmall,
-                      Text(
-                        'Order Date: ${_formatDate(orderItems.createdAt!)}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: kcPrimaryNeutral400,
-                        ),
-                      ),
-                    ],
-                    if (orderItems.orderNumber != null) ...[
-                      verticalSpaceTiny,
-                      Text(
-                        'Order #${orderItems.orderNumber}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: kcPrimaryNeutral400,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+              OrderSummaryCard(
+                order: order,
+                gradient: isDelivered
+                    ? null
+                    : const [AppColors.neutral300, AppColors.neutral200],
               ),
-              verticalSpaceSmall,
-              SvgPicture.asset('asset/svgs/dotted_line.svg'),
-              verticalSpaceSmall,
-
-              // Delivery Details
-              const Text(
-                "Delivery Details",
-                style: TextStyle(
-                  fontSize: 14,
-                  letterSpacing: 1,
-                  color: kcPrimaryNeutral200,
-                ),
-              ),
-              verticalSpaceTiny,
-              Row(
-                children: [
-                  const Icon(Iconsax.location, size: 20, color: Colors.grey),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      orderItems.deliveryLocation?.address ??
-                          'No address provided',
-                      style: const TextStyle(
-                        color: kcPrimaryNeutral500,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              verticalSpaceSmall,
-              SvgPicture.asset('asset/svgs/dotted_line.svg'),
-              verticalSpaceSmall,
-
-              // Order Summary
-              const Row(
-                children: [
-                  Icon(Iconsax.task_square,
-                      size: 20, color: kcPrimaryNeutral200),
-                  SizedBox(width: 8),
-                  Text(
-                    "Order Summary",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w400,
-                      fontSize: 16,
-                      color: kcPrimaryNeutral200,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ...(orderItems.items ?? []).map((item) {
-                return Padding(
-                  padding: const EdgeInsets.only(left: 25.0, bottom: 4, top: 5),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.mealVariant?.meal?.mealName ?? 'Unknown Item',
-                          style: const TextStyle(color: kcPrimaryNeutral500),
-                        ),
-                      ),
-                      Text(
-                        "x${item.mealQuantity ?? 0}",
-                        style: const TextStyle(color: kcPrimaryNeutral500),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-
-              verticalSpaceSmall,
-              SvgPicture.asset('asset/svgs/dotted_line.svg'),
-              verticalSpaceSmall,
-
-              // Payment Details
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Payment Details",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 1,
-                        color: kcPrimaryNeutral100,
-                      ),
-                    ),
-                    verticalSpaceSmall,
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Subtotal (${orderItems.items?.length ?? 0} items)",
-                          style: const TextStyle(
-                            color: kcPrimaryNeutral300,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          "₦${orderItems.payment?.subtotal?.toStringAsFixed(0) ?? '0'}",
-                          style: const TextStyle(
-                            color: kcPrimaryNeutral100,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    verticalSpaceSmall,
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Delivery Fee",
-                          style: TextStyle(
-                            color: kcPrimaryNeutral300,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          "₦${orderItems.payment?.deliveryFee ?? '0'}",
-                          style: const TextStyle(
-                            color: kcPrimaryNeutral100,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Tax and other fees",
-                          style: TextStyle(
-                            color: kcPrimaryNeutral300,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          "₦${orderItems.payment?.serviceFee ?? '0'}",
-                          style: const TextStyle(
-                            color: kcPrimaryNeutral100,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Total",
-                          style: TextStyle(
-                            color: kcPrimaryNeutral100,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          "₦${orderItems.payment?.total ?? '0'}",
-                          style: const TextStyle(
-                            color: kcPrimaryNeutral100,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              const Gap(16),
+              if (isDelivered)
+                _DeliveredCard(order: order)
+              else ...[
+                TerminalBanner(status: status ?? 'cancelled'),
+                const Gap(16),
+                _HistoryCard(order: order),
+              ],
+              // A cancelled order never had a rider, so only a delivered one has
+              // anything worth showing here.
+              if (isDelivered && rider?.hasDetails == true) ...[
+                const Gap(16),
+                RiderCard(rider: rider, canCall: false),
+              ],
+              const Gap(16),
+              OrderItemsCard(order: order),
+              const Gap(16),
+              OrderDeliveryCard(order: order, showOtp: false),
             ],
           ),
         ),
       ),
     );
   }
+}
 
-  String _formatDate(DateTime date) {
-    return "${date.day}/${date.month}/${date.year}";
+// ---------------------------------------------------------------------------
+// Outcome
+// ---------------------------------------------------------------------------
+
+/// The celebration card for a delivered order, with the journey it took.
+class _DeliveredCard extends StatelessWidget {
+  final OrderResult order;
+
+  const _DeliveredCard({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    final deliveredAt = _timestampFor(order, 'delivered') ?? order.updatedAt;
+
+    return SectionCard(
+      title: 'Outcome',
+      child: Column(
+        children: [
+          Center(
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 130,
+                  width: 130,
+                  child: Lottie.asset('asset/lottie/yes-brruu.json'),
+                ),
+                const Gap(6),
+                const Text(
+                  'Order delivered successfully.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.neutral100,
+                  ),
+                ),
+                if (deliveredAt != null) ...[
+                  const Gap(4),
+                  Text(
+                    'Delivered on ${formatDate(deliveredAt)} '
+                    'at ${formatTime(deliveredAt)}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.neutral400,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const Gap(18),
+          _CompletedTimeline(order: order),
+        ],
+      ),
+    );
   }
+}
+
+/// What happened to an order that never made it, laid out as a rail.
+class _HistoryCard extends StatelessWidget {
+  final OrderResult order;
+
+  const _HistoryCard({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    return SectionCard(
+      title: 'What happened',
+      child: _CompletedTimeline(order: order),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Timeline
+// ---------------------------------------------------------------------------
+
+/// The stages this order actually went through.
+///
+/// The ongoing page projects the full six-step journey and marks how far the
+/// order has got. Here the journey is over, so the rail is built from the
+/// status history the backend recorded — every step shown is one that really
+/// happened, and the final one is where the order stopped.
+class _CompletedTimeline extends StatelessWidget {
+  final OrderResult order;
+
+  const _CompletedTimeline({required this.order});
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = _stepsFor(order);
+
+    if (steps.isEmpty) {
+      return const Text(
+        'No history was recorded for this order.',
+        style: TextStyle(fontSize: 13, color: AppColors.neutral500),
+      );
+    }
+
+    return Column(
+      children: [
+        for (var i = 0; i < steps.length; i++)
+          TimelineStep(
+            title: steps[i].title,
+            subtitle: steps[i].subtitle,
+            // Everything here already happened, so every step is done except
+            // the last, which is highlighted as where the order came to rest.
+            isDone: i < steps.length - 1,
+            isCurrent: i == steps.length - 1,
+            isLast: i == steps.length - 1,
+          ),
+      ],
+    );
+  }
+}
+
+class _StepData {
+  final String title;
+  final String subtitle;
+
+  const _StepData(this.title, this.subtitle);
+}
+
+/// Builds the rail from the recorded status history.
+///
+/// Falls back to a two-step placed/finished rail when the backend sent no
+/// history, so the card is never empty for an order we do have dates for.
+List<_StepData> _stepsFor(OrderResult order) {
+  final history = order.statusHistory ?? const <StatusHistory>[];
+  final placedAt = order.orderPlacedAt ?? order.createdAt;
+
+  final entries = history
+      .where((entry) => entry.status != null && entry.status!.isNotEmpty)
+      .toList()
+    ..sort((a, b) {
+      final aTime = a.timestamp;
+      final bTime = b.timestamp;
+      if (aTime == null || bTime == null) return 0;
+      return aTime.compareTo(bTime);
+    });
+
+  if (entries.isEmpty) {
+    final finishedAt = order.updatedAt;
+    return [
+      _StepData(
+        'Order placed',
+        placedAt != null ? formatDateTime(placedAt) : 'Placed',
+      ),
+      _StepData(
+        _titleForStatus(order.status?.toLowerCase()),
+        finishedAt != null ? formatDateTime(finishedAt) : 'Completed',
+      ),
+    ];
+  }
+
+  return [
+    for (final entry in entries)
+      _StepData(
+        _titleForStatus(entry.status?.toLowerCase()),
+        entry.timestamp != null
+            ? formatDateTime(entry.timestamp!)
+            : (entry.notes?.trim().isNotEmpty == true
+                ? entry.notes!.trim()
+                : 'Recorded'),
+      ),
+  ];
+}
+
+String _titleForStatus(String? status) {
+  switch (status) {
+    case 'pending':
+      return 'Order placed';
+    case 'processing':
+      return 'Confirming your payment';
+    case 'paid':
+    case 'received':
+      return 'Payment confirmed';
+    case 'accepted':
+      return 'Vendor confirmed the order';
+    case 'preparing':
+      return 'Preparing your order';
+    case 'ready':
+      return 'Ready for pickup';
+    case 'rider_arrived_for_pickup':
+      return 'Rider arrived at pickup';
+    case 'in_transit':
+      return 'On the way to you';
+    case 'arrived':
+      return 'Rider arrived';
+    case 'delivered':
+      return 'Order delivered';
+    case 'cancelled':
+      return 'Order cancelled';
+    case 'rejected':
+      return 'Order declined by the vendor';
+    case 'refunded':
+      return 'Refunded to your wallet';
+    default:
+      return status?.replaceAll('_', ' ') ?? 'Order updated';
+  }
+}
+
+/// The moment the order first reached [status], if the backend recorded it.
+DateTime? _timestampFor(OrderResult order, String status) {
+  for (final entry in order.statusHistory ?? const <StatusHistory>[]) {
+    if (entry.status?.toLowerCase() == status && entry.timestamp != null) {
+      return entry.timestamp;
+    }
+  }
+  return null;
 }

@@ -104,13 +104,32 @@ class PaymentScreen extends HookConsumerWidget {
                           color: kcPrimaryNeutral300),
                     ),
                     Text(
-                      "₦${selectedItems.deliveryFee?.toStringAsFixed(0) ?? "0"}",
+                      "₦${(selectedItems.payableDeliveryFee ?? 0).toStringAsFixed(0)}",
                       style: ktBodyRegularSize14.copyWith(
                           color: kcPrimaryNeutral100,
                           fontWeight: FontWeight.w400),
                     ),
                   ],
                 ),
+                if ((selectedItems.packagingFee ?? 0) > 0) ...[
+                  verticalSpaceTiny,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Takeaway/Packaging",
+                        style: ktBodyRegularSize14.copyWith(
+                            color: kcPrimaryNeutral300),
+                      ),
+                      Text(
+                        "₦${(selectedItems.packagingFee ?? 0).toStringAsFixed(0)}",
+                        style: ktBodyRegularSize14.copyWith(
+                            color: kcPrimaryNeutral100,
+                            fontWeight: FontWeight.w400),
+                      ),
+                    ],
+                  ),
+                ],
                 verticalSpaceTiny,
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -20,6 +20,7 @@ import '../../auth/data/model/response/user_model/promotion_state.dart';
 import '../../home/presentation/favorites_view.dart';
 import '../data/controller/profile_controller.dart';
 import 'edit_profile.dart';
+import '../../../common/widgets/app_refresh_indicator.dart';
 
 class ProfileView extends HookConsumerWidget {
   const ProfileView({super.key});
@@ -255,7 +256,7 @@ class ProfileView extends HookConsumerWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: RefreshIndicator(
+        child: AppRefreshIndicator(
           color: kcPrimary600,
           onRefresh: () =>
               ref.read(profileControllerProvider.notifier).fetchProfile(),
@@ -375,7 +376,7 @@ class ProfileView extends HookConsumerWidget {
                     final result = await ref
                         .read(profileControllerProvider.notifier)
                         .deleteUser(
-                          userId: userDetails.value?.user?.id ?? '',
+                          userId: userDetails.valueOrNull?.user?.id ?? '',
                         );
                     if (result == true) {
                       await wipeLocalCache();

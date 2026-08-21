@@ -17,7 +17,10 @@ import '../../../providers/order_provider.dart';
 import '../../common/app_colors.dart';
 import '../../common/widgets/reusable_buttons.dart';
 import '../home/data/controller/shop_controller.dart';
+import '../home/data/model/response/cartlsit/cart.dart';
 import 'my_orders.dart';
+import 'unavailable_items_banner.dart';
+import '../../common/widgets/app_refresh_indicator.dart';
 
 class OrderView extends HookConsumerWidget {
   const OrderView({super.key});
@@ -57,7 +60,22 @@ class OrderView extends HookConsumerWidget {
         data: (cartData) {
           // Extract cart items from the async data
           final cartItems = cartData.carts ?? [];
-          final availableCarts = cartData.availableCarts ?? 0;
+          // A cart with no items can still carry "removed" notices, so it
+          // stays on screen until they are dismissed; `availableCarts` alone
+          // only counts carts that have items.
+          final availableCarts = cartItems
+              .where((c) =>
+                  (c.items?.isNotEmpty ?? false) ||
+                  (c.unavailableItems?.isNotEmpty ?? false))
+              .length;
+          // One row for a cart's notices, one for the cart itself.
+          final rows = <({Cart cart, bool isNotice})>[
+            for (final c in cartItems) ...[
+              if (c.unavailableItems?.isNotEmpty ?? false)
+                (cart: c, isNotice: true),
+              if (c.items?.isNotEmpty ?? false) (cart: c, isNotice: false),
+            ],
+          ];
           logger.d('Cart Items: ${cartItems.length}');
 
           if (availableCarts == 0) {
@@ -93,7 +111,7 @@ class OrderView extends HookConsumerWidget {
             );
           }
 
-          return RefreshIndicator(
+          return AppRefreshIndicator(
             onRefresh: () async {
               await ref.read(shopControllerProvider.notifier).fetchCart();
               await ref
@@ -101,170 +119,183 @@ class OrderView extends HookConsumerWidget {
                   .fetchMyOrdersList();
             },
             child: ListView.builder(
-              itemCount: cartItems.length,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 130),
+              itemCount: rows.length,
               itemBuilder: (context, index) {
-                final item = cartItems[index];
-                if ((item.items?.length ?? 0) < 1) {
-                  return const SizedBox.shrink();
+                final row = rows[index];
+                final item = row.cart;
+                if (row.isNotice) {
+                  return UnavailableItemsBanner(cart: item);
                 }
-                return Column(
-                  children: [
-                    Stack(
+                final imageUrl = item.shop?.store?.storeDisplayImage;
+                Widget imageFallback() => Container(
+                      width: 72,
+                      height: 72,
+                      color: kcPrimaryNeutral950,
+                      child: const Icon(
+                        Icons.storefront,
+                        color: kcPrimaryNeutral500,
+                        size: 28,
+                      ),
+                    );
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: kcWhite,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: kcPrimaryNeutral900),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 8),
-                          child: Row(
-                            children: [
-                              // Image
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Builder(
-                                  builder: (context) {
-                                    final imageUrl =
-                                        item.shop?.store?.storeDisplayImage;
-                                    Widget fallback() => Container(
-                                          width: 80,
-                                          height: 80,
-                                          color: Colors.grey[300],
-                                          child: Icon(
-                                            Icons.storefront,
-                                            color: Colors.grey[600],
-                                            size: 30,
-                                          ),
-                                        );
-                                    if (imageUrl == null || imageUrl.isEmpty) {
-                                      return fallback();
-                                    }
-                                    return CachedNetworkImage(
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: (imageUrl == null || imageUrl.isEmpty)
+                                  ? imageFallback()
+                                  : CachedNetworkImage(
                                       imageUrl: imageUrl,
-                                      width: 80,
-                                      height: 80,
+                                      width: 72,
+                                      height: 72,
                                       fit: BoxFit.cover,
                                       placeholder: (context, url) =>
-                                          fallback(),
+                                          imageFallback(),
                                       errorWidget: (context, url, error) =>
-                                          fallback(),
-                                    );
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 7),
-                              // Details
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
+                                          imageFallback(),
+                                    ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
                                           item.shop?.shopName ?? "Courier Item",
                                           style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500),
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        SvgPicture.asset(
-                                            "asset/svgs/delivery_icon.svg"),
-                                        const SizedBox(width: 4),
-                                        Flexible(
-                                          child: Text(
-                                            item.shop?.location?.address ?? "",
-                                            maxLines: 2,
-                                            softWrap: true,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                                color: kcPrimaryNeutral300,
-                                                fontSize: 12),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "${item.items?.length ?? 0} items",
-                                      style: const TextStyle(
-                                          color: kcPrimaryNeutral300,
-                                          fontSize: 12),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "₦${(item.totalPrice ?? 0).toStringAsFixed(0)}",
-                                      style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                          color: kcPrimaryNeutral300),
-                                    ),
-                                    if ((item.discount ?? 0) > 0) ...[
-                                      const SizedBox(height: 4),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green.shade50,
-                                          borderRadius:
-                                              BorderRadius.circular(4),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(Icons.local_offer_outlined,
-                                                size: 11,
-                                                color: Colors.green.shade700),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              "You saved ₦${item.discount!.toStringAsFixed(0)}",
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.green.shade700,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
+                                      ),
+                                      GestureDetector(
+                                        behavior: HitTestBehavior.translucent,
+                                        onTap: () async {
+                                          final result = await ref
+                                              .read(shopControllerProvider
+                                                  .notifier)
+                                              .clearCart(item.id ?? '');
+                                          if (result) {
+                                            ref
+                                                .read(shopControllerProvider
+                                                    .notifier)
+                                                .fetchCart();
+                                          }
+                                        },
+                                        child: const CircleAvatar(
+                                          backgroundColor: kcPrimaryRed900,
+                                          radius: 14,
+                                          child: Icon(IconsaxPlusLinear.trash,
+                                              size: 15, color: kcPrimaryRed200),
                                         ),
                                       ),
                                     ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      SvgPicture.asset(
+                                          "asset/svgs/delivery_icon.svg"),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          item.shop?.location?.address ?? "",
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                              color: kcPrimaryNeutral500,
+                                              fontSize: 12),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: kcPrimaryNeutral950,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                        ),
+                                        child: Text(
+                                          "${item.items?.length ?? 0} items",
+                                          style: const TextStyle(
+                                              color: kcPrimaryNeutral400,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        "₦${(item.totalPrice ?? 0).toStringAsFixed(0)}",
+                                        style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: kcPrimary300),
+                                      ),
+                                    ],
+                                  ),
+                                  if ((item.discount ?? 0) > 0) ...[
+                                    const SizedBox(height: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade50,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.local_offer_outlined,
+                                              size: 11,
+                                              color: Colors.green.shade700),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            "You saved ₦${item.discount!.toStringAsFixed(0)}",
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.green.shade700,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ],
-                                ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ),
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onTap: () async {
-                              final result = await ref
-                                  .read(shopControllerProvider.notifier)
-                                  .clearCart(item.id ?? '');
-                              if (result) {
-                                ref
-                                    .read(shopControllerProvider.notifier)
-                                    .fetchCart();
-                              }
-                            },
-                            child: const CircleAvatar(
-                              backgroundColor: kcPrimaryRed900,
-                              radius: 12,
-                              child: Icon(IconsaxPlusLinear.trash,
-                                  size: 15, color: kcPrimaryRed200),
                             ),
-                          ),
+                          ],
                         ),
-                        Positioned(
-                          bottom: 10,
-                          right: 10,
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onTap: () {
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -274,22 +305,23 @@ class OrderView extends HookConsumerWidget {
                                 ),
                               );
                             },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: kcPrimary300,
-                                borderRadius: BorderRadius.circular(30),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kcPrimary300,
+                              foregroundColor: kcWhite,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Text('Checkout',
-                                  style: TextStyle(color: kcWhite)),
                             ),
+                            child: const Text('Checkout',
+                                style: TextStyle(
+                                    fontSize: 14, fontWeight: FontWeight.w600)),
                           ),
                         ),
                       ],
                     ),
-                    SvgPicture.asset("asset/svgs/dotted_line.svg"),
-                  ],
+                  ),
                 );
               },
             ),
@@ -366,14 +398,19 @@ class OrderView extends HookConsumerWidget {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.neutral950,
       appBar: AppBar(
+        backgroundColor: AppColors.neutral950,
+        surfaceTintColor: AppColors.neutral950,
+        elevation: 0,
         title: const Text("Orders",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          Container(
+            height: 46,
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: SegmentedTabControl(
               tabPadding: const EdgeInsets.all(0),
               controller: tabController,
@@ -384,12 +421,14 @@ class OrderView extends HookConsumerWidget {
                 vertical: 4,
               ),
               textStyle: const TextStyle(
-                fontSize: 12,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
                 color: AppColors.neutral500,
               ),
               barDecoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: AppColors.neutral900),
               ),
               indicatorDecoration: BoxDecoration(
                 color: AppColors.brand300,

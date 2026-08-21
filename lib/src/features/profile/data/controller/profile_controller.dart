@@ -5,6 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:logger/logger.dart';
 
+import '../../../../common/user_location_provider.dart';
 import '../model/payload/add_shop_payload.dart';
 import '../model/payload/sales_operation_payload.dart';
 import '../repository/profile_repository.dart';
@@ -150,6 +151,11 @@ class ProfileController extends StateNotifier<ProfileState> {
         state = state.copyWith(
           userDetails: AsyncValue.data(success),
         );
+        // Keeps the saved delivery address available as a fallback for the
+        // location-aware requests when the handset has no fix to offer.
+        ref
+            .read(userLocationProvider.notifier)
+            .setProfileCoordinates(success.user?.location?.coordinates);
         return true;
       },
     );
